@@ -1,5 +1,5 @@
 {
-  "name": "@nex22/seatmap-react",
+  "name": "@nex125/seatmap-react",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nex22/seatmap-core": "*",
+    "@nex125/seatmap-core": "*",
     "pixi.js": "^8",
     "@pixi/react": "^8",
     "zustand": "^5"

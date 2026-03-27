@@ -1,4 +1,4 @@
-import type { Venue, Section, Row, Seat, PricingCategory } from "@nex22/seatmap-core";
+import type { Venue, Section, Row, Seat, PricingCategory } from "@nex125/seatmap-core";
 
 const CATEGORIES: PricingCategory[] = [
   { id: "cat-vip", name: "VIP", color: "#e91e63" },

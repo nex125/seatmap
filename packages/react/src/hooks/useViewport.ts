@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
-import { venueAABB } from "@nex22/seatmap-core";
-import type { ViewportState } from "@nex22/seatmap-core";
+import { venueAABB } from "@nex125/seatmap-core";
+import type { ViewportState } from "@nex125/seatmap-core";
 import { useSeatmapContext } from "../context/SeatmapContext";
 
 export function useViewport() {

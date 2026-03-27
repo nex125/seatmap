@@ -1,5 +1,5 @@
 {
-  "name": "@nex22/seatmap-editor",
+  "name": "@nex125/seatmap-editor",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,8 +23,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nex22/seatmap-core": "*",
-    "@nex22/seatmap-react": "*",
+    "@nex125/seatmap-core": "*",
+    "@nex125/seatmap-react": "*",
     "zustand": "^5"
   },
   "peerDependencies": {

@@ -1,4 +1,4 @@
-# @nex22/seatmap
+# @nex125/seatmap
 
 A high-performance, React-based seat map system for venues of all sizes — from small theaters to 50,000+ seat stadiums. Built with PixiJS v8 (WebGL/WebGPU) for smooth 60fps rendering.
 
@@ -6,10 +6,10 @@ A high-performance, React-based seat map system for venues of all sizes — from
 
 | Package | Description |
 |---------|-------------|
-| `@nex22/seatmap-core` | Framework-agnostic engine: data models, spatial index, viewport, LOD system, command history |
-| `@nex22/seatmap-react` | React components and hooks: `SeatmapCanvas`, `SeatmapProvider`, `TooltipOverlay`, `Minimap` |
-| `@nex22/seatmap-viewer` | Customer-facing viewer with seat selection, tooltips, and real-time status updates |
-| `@nex22/seatmap-editor` | Admin editor with tool system, property panel, category manager, and undo/redo |
+| `@nex125/seatmap-core` | Framework-agnostic engine: data models, spatial index, viewport, LOD system, command history |
+| `@nex125/seatmap-react` | React components and hooks: `SeatmapCanvas`, `SeatmapProvider`, `TooltipOverlay`, `Minimap` |
+| `@nex125/seatmap-viewer` | Customer-facing viewer with seat selection, tooltips, and real-time status updates |
+| `@nex125/seatmap-editor` | Admin editor with tool system, property panel, category manager, and undo/redo |
 
 ## Quick Start
 
@@ -21,7 +21,7 @@ pnpm dev       # starts demo app at http://localhost:3000
 ### Viewer Usage
 
 ```tsx
-import { SeatmapViewer } from '@nex22/seatmap-viewer';
+import { SeatmapViewer } from '@nex125/seatmap-viewer';
 
 function TicketPage({ venue }) {
   return (
@@ -38,7 +38,7 @@ function TicketPage({ venue }) {
 ### Editor Usage
 
 ```tsx
-import { SeatmapEditor } from '@nex22/seatmap-editor';
+import { SeatmapEditor } from '@nex125/seatmap-editor';
 
 function VenueAdmin({ venue }) {
   return (
@@ -53,7 +53,7 @@ function VenueAdmin({ venue }) {
 ### SSE Integration (Real-time seat status)
 
 ```tsx
-import { SeatmapViewer, useSeatStatus } from '@nex22/seatmap-viewer';
+import { SeatmapViewer, useSeatStatus } from '@nex125/seatmap-viewer';
 
 function LiveViewer({ venue }) {
   return (

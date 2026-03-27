@@ -5,7 +5,7 @@ import {
   LODLevel,
   venueAABB,
   CategoryTextureCache,
-} from "@nex22/seatmap-core";
+} from "@nex125/seatmap-core";
 import type {
   Section,
   Seat,
@@ -14,7 +14,7 @@ import type {
   AABB,
   GeneralAdmissionArea,
   Table,
-} from "@nex22/seatmap-core";
+} from "@nex125/seatmap-core";
 import { useSeatmapContext } from "../context/SeatmapContext";
 import { useStore } from "zustand";
 
@@ -326,12 +326,22 @@ export function SeatmapCanvas({
     boundsG.stroke({ color: 0x4a4a7a, width: 2 });
     world.addChild(boundsG);
 
-    // Render background image if loaded
+    // Render background image if loaded (aspect-ratio preserving, centered)
     if (bgTextureRef.current && bgTextureRef.current !== Texture.EMPTY) {
-      const bgSprite = new Sprite(bgTextureRef.current);
-      bgSprite.position.set(0, 0);
-      bgSprite.width = venue.bounds.width;
-      bgSprite.height = venue.bounds.height;
+      const tex = bgTextureRef.current;
+      const imgW = tex.width;
+      const imgH = tex.height;
+      const scale = Math.min(venue.bounds.width / imgW, venue.bounds.height / imgH);
+      const scaledW = imgW * scale;
+      const scaledH = imgH * scale;
+
+      const bgSprite = new Sprite(tex);
+      bgSprite.width = scaledW;
+      bgSprite.height = scaledH;
+      bgSprite.position.set(
+        (venue.bounds.width - scaledW) / 2,
+        (venue.bounds.height - scaledH) / 2,
+      );
       bgSprite.alpha = venue.backgroundImageOpacity ?? 0.5;
       world.addChild(bgSprite);
     }

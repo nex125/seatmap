@@ -1,5 +1,5 @@
 {
-  "name": "@nex22/seatmap-root",
+  "name": "@nex125/seatmap-root",
   "private": true,
   "workspaces": [
     "apps/*",

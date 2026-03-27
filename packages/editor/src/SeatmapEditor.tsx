@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Venue } from "@nex22/seatmap-core";
-import { CommandHistory, venueAABB, serializeVenue, deserializeVenue, type Viewport } from "@nex22/seatmap-core";
-import { SeatmapProvider, SeatmapCanvas, useSeatmapContext } from "@nex22/seatmap-react";
+import type { Venue } from "@nex125/seatmap-core";
+import { CommandHistory, venueAABB, serializeVenue, deserializeVenue, type Viewport } from "@nex125/seatmap-core";
+import { SeatmapProvider, SeatmapCanvas, useSeatmapContext } from "@nex125/seatmap-react";
 import { useStore } from "zustand";
 import { PanTool } from "./tools/PanTool";
 import { SelectTool } from "./tools/SelectTool";

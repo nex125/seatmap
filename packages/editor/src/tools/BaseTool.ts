@@ -1,5 +1,5 @@
-import type { Viewport } from "@nex22/seatmap-core";
-import type { SeatmapStore } from "@nex22/seatmap-react";
+import type { Viewport } from "@nex125/seatmap-core";
+import type { SeatmapStore } from "@nex125/seatmap-react";
 
 export interface ToolPointerEvent {
   worldX: number;

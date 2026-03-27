@@ -1,5 +1,5 @@
 {
-  "name": "@nex22/seatmap-core",
+  "name": "@nex125/seatmap-core",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.cjs",

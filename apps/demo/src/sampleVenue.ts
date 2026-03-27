@@ -1,4 +1,4 @@
-import type { Venue, Section, Row, Seat } from "@nex22/seatmap-core";
+import type { Venue, Section, Row, Seat } from "@nex125/seatmap-core";
 
 function createRow(
   rowId: string,

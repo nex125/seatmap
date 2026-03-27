@@ -1,7 +1,7 @@
-import type { Viewport, SpatialIndex, CommandHistory } from "@nex22/seatmap-core";
-import { generateId, pointInPolygon } from "@nex22/seatmap-core";
-import type { Seat, Row } from "@nex22/seatmap-core";
-import type { SeatmapStore } from "@nex22/seatmap-react";
+import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
+import { generateId, pointInPolygon } from "@nex125/seatmap-core";
+import type { Seat, Row } from "@nex125/seatmap-core";
+import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const GRID = 20;

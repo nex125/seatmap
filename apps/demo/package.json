@@ -1,5 +1,5 @@
 {
-  "name": "@nex22/seatmap-demo",
+  "name": "@nex125/seatmap-demo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nex22/seatmap-core": "*",
-    "@nex22/seatmap-react": "*",
-    "@nex22/seatmap-viewer": "*",
-    "@nex22/seatmap-editor": "*",
+    "@nex125/seatmap-core": "*",
+    "@nex125/seatmap-react": "*",
+    "@nex125/seatmap-viewer": "*",
+    "@nex125/seatmap-editor": "*",
     "pixi.js": "^8",
     "react": "^19",
     "react-dom": "^19"

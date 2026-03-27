@@ -1,6 +1,6 @@
-import type { Viewport, CommandHistory, GeneralAdmissionArea } from "@nex22/seatmap-core";
-import { generateId } from "@nex22/seatmap-core";
-import type { SeatmapStore } from "@nex22/seatmap-react";
+import type { Viewport, CommandHistory, GeneralAdmissionArea } from "@nex125/seatmap-core";
+import { generateId } from "@nex125/seatmap-core";
+import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 export class DrawGATool extends BaseTool {
