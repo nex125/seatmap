@@ -1,0 +1,20 @@
+
+> @ticketok/seatmap-demo@0.1.0 build /Users/nex22/VSCodeProjects/TicketokProjects/seatmap/apps/demo
+> tsc -b && vite build
+
+vite v6.4.1 building for production...
+transforming...
+✓ 787 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                               0.32 kB │ gzip:   0.23 kB
+dist/assets/Filter-BvNyRc3Z.js                0.90 kB │ gzip:   0.47 kB
+dist/assets/BufferResource-VRwYI0NB.js       10.60 kB │ gzip:   2.80 kB
+dist/assets/webworkerAll-BV9cSNjP.js         11.97 kB │ gzip:   3.96 kB
+dist/assets/CanvasRenderer-GIRtpo81.js       23.34 kB │ gzip:   7.28 kB
+dist/assets/WebGPURenderer-MV7O0hcn.js       39.09 kB │ gzip:  10.97 kB
+dist/assets/browserAll-BrIhcfgM.js           43.23 kB │ gzip:  11.34 kB
+dist/assets/RenderTargetSystem-BJPV0nU9.js   46.18 kB │ gzip:  12.76 kB
+dist/assets/WebGLRenderer-C9Z3hoX6.js        68.60 kB │ gzip:  18.82 kB
+dist/assets/index-DueJNIpg.js               467.91 kB │ gzip: 145.88 kB
+✓ built in 1.50s
