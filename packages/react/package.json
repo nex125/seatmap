@@ -23,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@nex22/seatmap-core": "workspace:*",
+    "@nex22/seatmap-core": "*",
     "pixi.js": "^8",
     "@pixi/react": "^8",
     "zustand": "^5"

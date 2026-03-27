@@ -1,6 +1,10 @@
 {
   "name": "@nex22/seatmap-root",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -12,8 +16,5 @@
     "turbo": "^2",
     "typescript": "^5.7"
   },
-  "packageManager": "pnpm@10.6.5",
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
-  }
+  "packageManager": "npm@11.11.1"
 }
