@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import type { Venue } from "@ticketok/seatmap-core";
-import { deserializeVenue } from "@ticketok/seatmap-core";
-import { SeatmapViewer } from "@ticketok/seatmap-viewer";
-import { SeatmapEditor } from "@ticketok/seatmap-editor";
+import type { Venue } from "@nex22/seatmap-core";
+import { deserializeVenue } from "@nex22/seatmap-core";
+import { SeatmapViewer } from "@nex22/seatmap-viewer";
+import { SeatmapEditor } from "@nex22/seatmap-editor";
 import { sampleVenue } from "./sampleVenue";
 import { generateLargeVenue } from "./generateLargeVenue";
 

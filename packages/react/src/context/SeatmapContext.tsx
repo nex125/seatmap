@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
-import type { Venue } from "@ticketok/seatmap-core";
-import { Viewport, SpatialIndex } from "@ticketok/seatmap-core";
+import type { Venue } from "@nex22/seatmap-core";
+import { Viewport, SpatialIndex } from "@nex22/seatmap-core";
 import { create } from "zustand";
 
 export interface SeatmapState {

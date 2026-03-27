@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { Seat, Section, Row } from "@ticketok/seatmap-core";
-import { seatWorldPosition } from "@ticketok/seatmap-core";
+import type { Seat, Section, Row } from "@nex22/seatmap-core";
+import { seatWorldPosition } from "@nex22/seatmap-core";
 import { useSeatmapContext } from "../context/SeatmapContext";
 import { useStore } from "zustand";
 

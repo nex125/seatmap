@@ -1,6 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from "react";
-import { venueAABB, sectionAABB } from "@ticketok/seatmap-core";
-import type { PricingCategory } from "@ticketok/seatmap-core";
+import { venueAABB, sectionAABB } from "@nex22/seatmap-core";
+import type { PricingCategory } from "@nex22/seatmap-core";
 import { useSeatmapContext } from "../context/SeatmapContext";
 import { useStore } from "zustand";
 

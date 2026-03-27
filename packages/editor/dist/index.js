@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { clampToPolygon, generateId, pointInPolygon, CommandHistory, serializeVenue, deserializeVenue, venueAABB } from '@ticketok/seatmap-core';
-import { SeatmapProvider, useSeatmapContext, SeatmapCanvas } from '@ticketok/seatmap-react';
+import { clampToPolygon, generateId, pointInPolygon, CommandHistory, serializeVenue, deserializeVenue, venueAABB } from '@nex22/seatmap-core';
+import { SeatmapProvider, useSeatmapContext, SeatmapCanvas } from '@nex22/seatmap-react';
 import { useStore } from 'zustand';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 

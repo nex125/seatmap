@@ -1,7 +1,7 @@
 'use strict';
 
 var react = require('react');
-var seatmapCore = require('@ticketok/seatmap-core');
+var seatmapCore = require('@nex22/seatmap-core');
 var zustand = require('zustand');
 var jsxRuntime = require('react/jsx-runtime');
 var pixi_js = require('pixi.js');

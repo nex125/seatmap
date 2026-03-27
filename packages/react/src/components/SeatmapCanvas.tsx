@@ -5,7 +5,7 @@ import {
   LODLevel,
   venueAABB,
   CategoryTextureCache,
-} from "@ticketok/seatmap-core";
+} from "@nex22/seatmap-core";
 import type {
   Section,
   Seat,
@@ -14,7 +14,7 @@ import type {
   AABB,
   GeneralAdmissionArea,
   Table,
-} from "@ticketok/seatmap-core";
+} from "@nex22/seatmap-core";
 import { useSeatmapContext } from "../context/SeatmapContext";
 import { useStore } from "zustand";
 

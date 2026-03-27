@@ -1,7 +1,7 @@
-import type { Viewport } from "@ticketok/seatmap-core";
-import { generateId } from "@ticketok/seatmap-core";
-import type { CommandHistory, Section, Vec2 } from "@ticketok/seatmap-core";
-import type { SeatmapStore } from "@ticketok/seatmap-react";
+import type { Viewport } from "@nex22/seatmap-core";
+import { generateId } from "@nex22/seatmap-core";
+import type { CommandHistory, Section, Vec2 } from "@nex22/seatmap-core";
+import type { SeatmapStore } from "@nex22/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const CLOSE_THRESHOLD = 15;

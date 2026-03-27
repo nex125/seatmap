@@ -1,7 +1,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
-import type { Venue, Section, PricingCategory, CommandHistory, Row } from "@ticketok/seatmap-core";
-import { generateId } from "@ticketok/seatmap-core";
-import type { SeatmapStore } from "@ticketok/seatmap-react";
+import type { Venue, Section, PricingCategory, CommandHistory, Row } from "@nex22/seatmap-core";
+import { generateId } from "@nex22/seatmap-core";
+import type { SeatmapStore } from "@nex22/seatmap-react";
 
 export interface PropertyPanelProps {
   venue: Venue | null;

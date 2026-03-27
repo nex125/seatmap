@@ -1,7 +1,7 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
-import { Venue, SeatStatus } from '@ticketok/seatmap-core';
-import { TooltipData } from '@ticketok/seatmap-react';
-export { useSeatStatus } from '@ticketok/seatmap-react';
+import { Venue, SeatStatus } from '@nex22/seatmap-core';
+import { TooltipData } from '@nex22/seatmap-react';
+export { useSeatStatus } from '@nex22/seatmap-react';
 
 interface SeatmapViewerProps {
     venue: Venue;

@@ -1,10 +1,10 @@
-import type { Venue, SeatStatus } from "@ticketok/seatmap-core";
+import type { Venue, SeatStatus } from "@nex22/seatmap-core";
 import {
   SeatmapProvider,
   SeatmapCanvas,
   TooltipOverlay,
-} from "@ticketok/seatmap-react";
-import type { TooltipData } from "@ticketok/seatmap-react";
+} from "@nex22/seatmap-react";
+import type { TooltipData } from "@nex22/seatmap-react";
 
 export interface SeatmapViewerProps {
   venue: Venue;

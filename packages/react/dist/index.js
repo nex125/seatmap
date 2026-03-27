@@ -1,5 +1,5 @@
 import { createContext, useContext, useRef, useEffect, useMemo, useCallback, useState, useSyncExternalStore } from 'react';
-import { Viewport, SpatialIndex, CategoryTextureCache, LODLevel, getLODLevel, venueAABB, seatWorldPosition, sectionAABB } from '@ticketok/seatmap-core';
+import { Viewport, SpatialIndex, CategoryTextureCache, LODLevel, getLODLevel, venueAABB, seatWorldPosition, sectionAABB } from '@nex22/seatmap-core';
 import { create, useStore } from 'zustand';
 import { jsx, jsxs } from 'react/jsx-runtime';
 import { Sprite, Graphics, Container, Texture, Application, Assets } from 'pixi.js';

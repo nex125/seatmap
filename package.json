@@ -1,5 +1,5 @@
 {
-  "name": "@ticketok/seatmap-root",
+  "name": "@nex22/seatmap-root",
   "private": true,
   "scripts": {
     "dev": "turbo run dev",

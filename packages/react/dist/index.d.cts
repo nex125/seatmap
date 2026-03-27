@@ -1,8 +1,8 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
 import { ReactNode, CSSProperties } from 'react';
-import * as _ticketok_seatmap_core from '@ticketok/seatmap-core';
-import { Venue, Seat, Row, Section, SeatStatus, Viewport, SpatialIndex } from '@ticketok/seatmap-core';
+import * as _nex22_seatmap_core from '@nex22/seatmap-core';
+import { Venue, Seat, Row, Section, SeatStatus, Viewport, SpatialIndex } from '@nex22/seatmap-core';
 import * as zustand from 'zustand';
 
 interface SeatmapProviderProps {
@@ -46,7 +46,7 @@ declare function useViewport(): {
     pan: (dx: number, dy: number) => void;
     zoomAt: (x: number, y: number, factor: number) => void;
     fitToVenue: () => void;
-    viewport: _ticketok_seatmap_core.Viewport;
+    viewport: _nex22_seatmap_core.Viewport;
     x: number;
     y: number;
     zoom: number;
@@ -60,12 +60,12 @@ declare function useSelection(): {
 };
 
 declare function useSeatmap(): {
-    venue: _ticketok_seatmap_core.Venue | null;
-    setVenue: (venue: _ticketok_seatmap_core.Venue) => void;
+    venue: _nex22_seatmap_core.Venue | null;
+    setVenue: (venue: _nex22_seatmap_core.Venue) => void;
     hoveredSeatId: string | null;
     setHoveredSeat: (seatId: string | null) => void;
-    viewport: _ticketok_seatmap_core.Viewport;
-    spatialIndex: _ticketok_seatmap_core.SpatialIndex;
+    viewport: _nex22_seatmap_core.Viewport;
+    spatialIndex: _nex22_seatmap_core.SpatialIndex;
 };
 
 /**

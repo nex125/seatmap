@@ -1,5 +1,5 @@
-import { SeatmapProvider, SeatmapCanvas, TooltipOverlay } from '@ticketok/seatmap-react';
-export { useSeatStatus } from '@ticketok/seatmap-react';
+import { SeatmapProvider, SeatmapCanvas, TooltipOverlay } from '@nex22/seatmap-react';
+export { useSeatStatus } from '@nex22/seatmap-react';
 import { jsx, jsxs } from 'react/jsx-runtime';
 
 // src/SeatmapViewer.tsx

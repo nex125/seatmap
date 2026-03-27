@@ -17,16 +17,16 @@ importers:
 
   apps/demo:
     dependencies:
-      '@ticketok/seatmap-core':
+      '@nex22/seatmap-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@ticketok/seatmap-editor':
+      '@nex22/seatmap-editor':
         specifier: workspace:*
         version: link:../../packages/editor
-      '@ticketok/seatmap-react':
+      '@nex22/seatmap-react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@ticketok/seatmap-viewer':
+      '@nex22/seatmap-viewer':
         specifier: workspace:*
         version: link:../../packages/viewer
       pixi.js:
@@ -76,10 +76,10 @@ importers:
 
   packages/editor:
     dependencies:
-      '@ticketok/seatmap-core':
+      '@nex22/seatmap-core':
         specifier: workspace:*
         version: link:../core
-      '@ticketok/seatmap-react':
+      '@nex22/seatmap-react':
         specifier: workspace:*
         version: link:../react
       zustand:
@@ -110,12 +110,12 @@ importers:
 
   packages/react:
     dependencies:
+      '@nex22/seatmap-core':
+        specifier: workspace:*
+        version: link:../core
       '@pixi/react':
         specifier: ^8
         version: 8.0.5(@types/react@19.2.14)(pixi.js@8.17.1)(react@19.2.4)
-      '@ticketok/seatmap-core':
-        specifier: workspace:*
-        version: link:../core
       pixi.js:
         specifier: ^8
         version: 8.17.1
@@ -144,10 +144,10 @@ importers:
 
   packages/viewer:
     dependencies:
-      '@ticketok/seatmap-core':
+      '@nex22/seatmap-core':
         specifier: workspace:*
         version: link:../core
-      '@ticketok/seatmap-react':
+      '@nex22/seatmap-react':
         specifier: workspace:*
         version: link:../react
     devDependencies:

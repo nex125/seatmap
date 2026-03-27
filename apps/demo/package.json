@@ -1,5 +1,5 @@
 {
-  "name": "@ticketok/seatmap-demo",
+  "name": "@nex22/seatmap-demo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@ticketok/seatmap-core": "workspace:*",
-    "@ticketok/seatmap-react": "workspace:*",
-    "@ticketok/seatmap-viewer": "workspace:*",
-    "@ticketok/seatmap-editor": "workspace:*",
+    "@nex22/seatmap-core": "workspace:*",
+    "@nex22/seatmap-react": "workspace:*",
+    "@nex22/seatmap-viewer": "workspace:*",
+    "@nex22/seatmap-editor": "workspace:*",
     "pixi.js": "^8",
     "react": "^19",
     "react-dom": "^19"

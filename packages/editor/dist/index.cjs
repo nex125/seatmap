@@ -1,8 +1,8 @@
 'use strict';
 
 var react = require('react');
-var seatmapCore = require('@ticketok/seatmap-core');
-var seatmapReact = require('@ticketok/seatmap-react');
+var seatmapCore = require('@nex22/seatmap-core');
+var seatmapReact = require('@nex22/seatmap-react');
 var zustand = require('zustand');
 var jsxRuntime = require('react/jsx-runtime');
 

@@ -1,5 +1,5 @@
 {
-  "name": "@ticketok/seatmap-viewer",
+  "name": "@nex22/seatmap-viewer",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,8 +23,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@ticketok/seatmap-core": "workspace:*",
-    "@ticketok/seatmap-react": "workspace:*"
+    "@nex22/seatmap-core": "workspace:*",
+    "@nex22/seatmap-react": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19",

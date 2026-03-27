@@ -1,7 +1,7 @@
-import type { Viewport, SpatialIndex, CommandHistory } from "@ticketok/seatmap-core";
-import { clampToPolygon } from "@ticketok/seatmap-core";
-import type { Vec2 } from "@ticketok/seatmap-core";
-import type { SeatmapStore } from "@ticketok/seatmap-react";
+import type { Viewport, SpatialIndex, CommandHistory } from "@nex22/seatmap-core";
+import { clampToPolygon } from "@nex22/seatmap-core";
+import type { Vec2 } from "@nex22/seatmap-core";
+import type { SeatmapStore } from "@nex22/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const GRID = 20;

@@ -1,4 +1,4 @@
-import type { Viewport } from "@ticketok/seatmap-core";
+import type { Viewport } from "@nex22/seatmap-core";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 export class PanTool extends BaseTool {

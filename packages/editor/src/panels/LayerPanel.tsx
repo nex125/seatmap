@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { Venue, Section } from "@ticketok/seatmap-core";
+import type { Venue, Section } from "@nex22/seatmap-core";
 
 export interface LayerPanelProps {
   venue: Venue | null;

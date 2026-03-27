@@ -1,6 +1,6 @@
 
 
-> @ticketok/seatmap-core@0.1.0 build /Users/nex22/VSCodeProjects/TicketokProjects/seatmap/packages/core
+> @nex22/seatmap-core@0.1.0 build /Users/nex22/VSCodeProjects/TicketokProjects/seatmap/packages/core
 > tsup
 
 [34mCLI[39m Building entry: src/index.ts
@@ -11,13 +11,13 @@
 [34mCLI[39m Cleaning output folder
 [34mESM[39m Build start
 [34mCJS[39m Build start
-[32mESM[39m [1mdist/index.js     [22m[32m10.89 KB[39m
-[32mESM[39m [1mdist/index.js.map [22m[32m27.88 KB[39m
-[32mESM[39m ⚡️ Build success in 92ms
 [32mCJS[39m [1mdist/index.cjs     [22m[32m11.44 KB[39m
 [32mCJS[39m [1mdist/index.cjs.map [22m[32m27.92 KB[39m
-[32mCJS[39m ⚡️ Build success in 93ms
+[32mCJS[39m ⚡️ Build success in 87ms
+[32mESM[39m [1mdist/index.js     [22m[32m10.89 KB[39m
+[32mESM[39m [1mdist/index.js.map [22m[32m27.88 KB[39m
+[32mESM[39m ⚡️ Build success in 87ms
 DTS Build start
-DTS ⚡️ Build success in 1019ms
+DTS ⚡️ Build success in 971ms
 DTS dist/index.d.ts  4.66 KB
 DTS dist/index.d.cts 4.66 KB

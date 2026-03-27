@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import type { Venue } from "@ticketok/seatmap-core";
-import { Viewport, SpatialIndex } from "@ticketok/seatmap-core";
+import type { Venue } from "@nex22/seatmap-core";
+import { Viewport, SpatialIndex } from "@nex22/seatmap-core";
 import { SeatmapContext, createSeatmapStore } from "../context/SeatmapContext";
 
 export interface SeatmapProviderProps {

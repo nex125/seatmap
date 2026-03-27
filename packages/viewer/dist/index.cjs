@@ -1,6 +1,6 @@
 'use strict';
 
-var seatmapReact = require('@ticketok/seatmap-react');
+var seatmapReact = require('@nex22/seatmap-react');
 var jsxRuntime = require('react/jsx-runtime');
 
 // src/SeatmapViewer.tsx
