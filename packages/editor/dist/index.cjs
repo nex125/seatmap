@@ -1610,7 +1610,7 @@ function EditorInner({ onChange }) {
     if (!venue) return;
     viewport.fitBounds(seatmapCore.venueAABB(venue));
   }, [venue, viewport]);
-  react.useCallback(() => {
+  const handleUploadBackground = react.useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -1632,7 +1632,7 @@ function EditorInner({ onChange }) {
     };
     input.click();
   }, [store]);
-  react.useCallback(() => {
+  const handleRemoveBackground = react.useCallback(() => {
     const v = store.getState().venue;
     if (!v) return;
     store.getState().setVenue({
@@ -1641,7 +1641,7 @@ function EditorInner({ onChange }) {
       backgroundImageOpacity: void 0
     });
   }, [store]);
-  react.useCallback(
+  const handleBackgroundOpacityChange = react.useCallback(
     (opacity) => {
       const v = store.getState().venue;
       if (!v) return;
@@ -1809,7 +1809,10 @@ function EditorInner({ onChange }) {
             venue,
             selectedSeatIds,
             history: historyRef.current,
-            store
+            store,
+            onUploadBackground: handleUploadBackground,
+            onRemoveBackground: handleRemoveBackground,
+            onBackgroundOpacityChange: handleBackgroundOpacityChange
           }
         ),
         /* @__PURE__ */ jsxRuntime.jsx("div", { style: { height: 1, background: "#2a2a4a", margin: "0 16px" } }),

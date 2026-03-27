@@ -1608,7 +1608,7 @@ function EditorInner({ onChange }) {
     if (!venue) return;
     viewport.fitBounds(venueAABB(venue));
   }, [venue, viewport]);
-  useCallback(() => {
+  const handleUploadBackground = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -1630,7 +1630,7 @@ function EditorInner({ onChange }) {
     };
     input.click();
   }, [store]);
-  useCallback(() => {
+  const handleRemoveBackground = useCallback(() => {
     const v = store.getState().venue;
     if (!v) return;
     store.getState().setVenue({
@@ -1639,7 +1639,7 @@ function EditorInner({ onChange }) {
       backgroundImageOpacity: void 0
     });
   }, [store]);
-  useCallback(
+  const handleBackgroundOpacityChange = useCallback(
     (opacity) => {
       const v = store.getState().venue;
       if (!v) return;
@@ -1807,7 +1807,10 @@ function EditorInner({ onChange }) {
             venue,
             selectedSeatIds,
             history: historyRef.current,
-            store
+            store,
+            onUploadBackground: handleUploadBackground,
+            onRemoveBackground: handleRemoveBackground,
+            onBackgroundOpacityChange: handleBackgroundOpacityChange
           }
         ),
         /* @__PURE__ */ jsx("div", { style: { height: 1, background: "#2a2a4a", margin: "0 16px" } }),
