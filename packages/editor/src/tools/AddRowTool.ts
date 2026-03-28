@@ -22,13 +22,40 @@ export class AddRowTool extends BaseTool {
 
   onPointerDown(e: ToolPointerEvent, _viewport: Viewport, store: SeatmapStore): void {
     const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 50);
-    const sectionHit = hits.find((h) => h.type === "section");
-    if (!sectionHit) return;
 
     const venue = store.getState().venue;
     if (!venue) return;
 
-    const section = venue.sections.find((s) => s.id === sectionHit.sectionId);
+    const sectionHits = hits.filter((h) => h.type === "section");
+    if (sectionHits.length === 0) return;
+
+    const sectionIds = [...new Set(sectionHits.map((h) => h.sectionId))];
+    let section = sectionIds
+      .map((id) => venue.sections.find((s) => s.id === id))
+      .filter((s): s is NonNullable<typeof s> => Boolean(s))
+      .find((s) => {
+        if (s.outline.length < 3) return true;
+        const cos = Math.cos(-s.rotation);
+        const sin = Math.sin(-s.rotation);
+        const relX = e.worldX - s.position.x;
+        const relY = e.worldY - s.position.y;
+        const local = {
+          x: relX * cos - relY * sin,
+          y: relX * sin + relY * cos,
+        };
+        return pointInPolygon(local, s.outline);
+      });
+
+    if (!section) {
+      section = sectionIds
+        .map((id) => venue.sections.find((s) => s.id === id))
+        .filter((s): s is NonNullable<typeof s> => Boolean(s))
+        .sort(
+          (a, b) =>
+            Math.hypot(e.worldX - a.position.x, e.worldY - a.position.y) -
+            Math.hypot(e.worldX - b.position.x, e.worldY - b.position.y),
+        )[0];
+    }
     if (!section) return;
 
     // Convert click to section-local coordinates

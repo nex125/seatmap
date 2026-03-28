@@ -1,10 +1,11 @@
 import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
-import { clampToPolygon } from "@nex125/seatmap-core";
+import { pointInPolygon } from "@nex125/seatmap-core";
 import type { Vec2 } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const GRID = 20;
+const MIN_SEAT_DISTANCE = 16;
 
 function snapToGrid(v: number): number {
   return Math.round(v / GRID) * GRID;
@@ -113,7 +114,7 @@ export class SelectTool extends BaseTool {
       const localDx = dx * c - dy * s2;
       const localDy = dx * s2 + dy * c;
 
-      const outline = section.outline;
+      const constrained = this.constrainSeatGroupDelta(section, originals, localDx, localDy);
       store.getState().setVenue({
         ...venue,
         sections: venue.sections.map((sec) => {
@@ -125,13 +126,10 @@ export class SelectTool extends BaseTool {
               seats: r.seats.map((st) => {
                 const orig = originals.get(st.id);
                 if (!orig) return st;
-                let pos = {
-                  x: orig.pos.x + localDx,
-                  y: orig.pos.y + localDy,
+                const pos = {
+                  x: orig.pos.x + constrained.x,
+                  y: orig.pos.y + constrained.y,
                 };
-                if (outline.length >= 3) {
-                  pos = clampToPolygon(pos, outline);
-                }
                 return { ...st, position: pos };
               }),
             })),
@@ -201,17 +199,31 @@ export class SelectTool extends BaseTool {
       const section = venue.sections.find((s) => s.id === sectionId);
       if (!section) return;
 
-      // Snap final positions to grid on commit
-      const finals = new Map<string, Vec2>();
+      let draggedDelta: Vec2 | null = null;
       for (const row of section.rows) {
         for (const seat of row.seats) {
-          if (originals.has(seat.id)) {
-            finals.set(seat.id, {
-              x: snapToGrid(seat.position.x),
-              y: snapToGrid(seat.position.y),
-            });
-          }
+          const orig = originals.get(seat.id);
+          if (!orig) continue;
+          draggedDelta = {
+            x: seat.position.x - orig.pos.x,
+            y: seat.position.y - orig.pos.y,
+          };
+          break;
         }
+        if (draggedDelta) break;
+      }
+      if (!draggedDelta) return;
+
+      // Snap movement to grid while preserving section constraints.
+      const snappedDelta = this.snapSeatGroupDelta(section, originals, draggedDelta.x, draggedDelta.y);
+
+      // Snap final positions to grid on commit
+      const finals = new Map<string, Vec2>();
+      for (const [seatId, orig] of originals.entries()) {
+        finals.set(seatId, {
+          x: orig.pos.x + snappedDelta.x,
+          y: orig.pos.y + snappedDelta.y,
+        });
       }
 
       // Apply snapped positions immediately so the user sees the snap
@@ -321,5 +333,88 @@ export class SelectTool extends BaseTool {
 
   onDeactivate(): void {
     this.reset();
+  }
+
+  private constrainSeatGroupDelta(
+    section: { outline: Vec2[]; rows: Array<{ seats: Array<{ id: string; position: Vec2 }> }> },
+    originals: Map<string, { rowId: string; pos: Vec2 }>,
+    desiredDx: number,
+    desiredDy: number,
+  ): Vec2 {
+    const canPlace = (dx: number, dy: number): boolean => {
+      const hasOutline = section.outline.length >= 3;
+      const staticSeats: Vec2[] = [];
+      for (const row of section.rows) {
+        for (const seat of row.seats) {
+          if (!originals.has(seat.id)) staticSeats.push(seat.position);
+        }
+      }
+
+      for (const { pos } of originals.values()) {
+        const moved = { x: pos.x + dx, y: pos.y + dy };
+        if (hasOutline && !pointInPolygon(moved, section.outline)) {
+          return false;
+        }
+        for (const other of staticSeats) {
+          if (Math.hypot(other.x - moved.x, other.y - moved.y) < MIN_SEAT_DISTANCE) {
+            return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    if (canPlace(desiredDx, desiredDy)) {
+      return { x: desiredDx, y: desiredDy };
+    }
+    if (!canPlace(0, 0)) {
+      return { x: desiredDx, y: desiredDy };
+    }
+
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 14; i++) {
+      const mid = (lo + hi) * 0.5;
+      if (canPlace(desiredDx * mid, desiredDy * mid)) lo = mid;
+      else hi = mid;
+    }
+    return { x: desiredDx * lo, y: desiredDy * lo };
+  }
+
+  private snapSeatGroupDelta(
+    section: { outline: Vec2[]; rows: Array<{ seats: Array<{ id: string; position: Vec2 }> }> },
+    originals: Map<string, { rowId: string; pos: Vec2 }>,
+    desiredDx: number,
+    desiredDy: number,
+  ): Vec2 {
+    const snappedDx = Math.round(desiredDx / GRID) * GRID;
+    const snappedDy = Math.round(desiredDy / GRID) * GRID;
+    const snapped = this.constrainSeatGroupDelta(section, originals, snappedDx, snappedDy);
+
+    // If a constrained snap already lands on the grid, use it.
+    if (snapToGrid(snapped.x) === snapped.x && snapToGrid(snapped.y) === snapped.y) {
+      return snapped;
+    }
+
+    // Otherwise, back off in grid-sized steps until we find a valid on-grid movement.
+    const stepCount = Math.max(Math.abs(snappedDx), Math.abs(snappedDy)) / GRID;
+    if (!Number.isFinite(stepCount) || stepCount <= 0) {
+      return { x: 0, y: 0 };
+    }
+
+    for (let step = Math.floor(stepCount); step >= 0; step--) {
+      const ratio = step / stepCount;
+      const candidate = this.constrainSeatGroupDelta(
+        section,
+        originals,
+        Math.round((snappedDx * ratio) / GRID) * GRID,
+        Math.round((snappedDy * ratio) / GRID) * GRID,
+      );
+      if (snapToGrid(candidate.x) === candidate.x && snapToGrid(candidate.y) === candidate.y) {
+        return candidate;
+      }
+    }
+
+    return { x: 0, y: 0 };
   }
 }
