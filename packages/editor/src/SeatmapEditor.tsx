@@ -269,6 +269,81 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
     [venue, store],
   );
 
+  const renderActiveToolOptionsOverlay = () => {
+    if (activeToolName !== "add-row") return null;
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top: 12,
+          left: 12,
+          right: 12,
+          zIndex: 20,
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 12px",
+            border: "1px solid #3a3a5a",
+            borderRadius: 8,
+            background: "rgba(21, 21, 40, 0.92)",
+            backdropFilter: "blur(2px)",
+            pointerEvents: "auto",
+          }}
+        >
+          <span
+            style={{
+              color: "#c7c7df",
+              fontSize: 12,
+              fontFamily: "system-ui",
+              fontWeight: 600,
+              letterSpacing: 0.2,
+            }}
+          >
+            Row Tool Options
+          </span>
+          <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+          <label
+            style={{
+              color: "#9e9e9e",
+              fontSize: 12,
+              fontFamily: "system-ui",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            Seats/row:
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={seatsPerRow}
+              onChange={(e) =>
+                handleSeatsPerRowChange(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
+              }
+              style={{
+                width: 56,
+                padding: "3px 6px",
+                background: "#2a2a4a",
+                border: "1px solid #3a3a5a",
+                borderRadius: 4,
+                color: "#e0e0e0",
+                fontSize: 13,
+                fontFamily: "system-ui",
+              }}
+            />
+          </label>
+        </div>
+      </div>
+    );
+  };
+
   // Keyboard shortcuts — skip when user is typing in an input field
   useEffect(() => {
     const isTyping = () => {
@@ -394,8 +469,6 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
         onFitView={handleFitView}
         onSave={handleSave}
         onLoad={handleLoad}
-        seatsPerRow={seatsPerRow}
-        onSeatsPerRowChange={handleSeatsPerRowChange}
       />
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -406,6 +479,7 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
           onPointerUp={handleCanvasPointerUp}
         >
           <SeatmapCanvas panOnLeftClick={false} />
+          {renderActiveToolOptionsOverlay()}
           {polygonPoints.length > 0 && (
             <PolygonPreviewOverlay
               points={polygonPoints}
