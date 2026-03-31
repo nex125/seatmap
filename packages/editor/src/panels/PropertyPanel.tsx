@@ -12,6 +12,8 @@ export interface PropertyPanelProps {
   onUploadBackground?: () => void;
   onRemoveBackground?: () => void;
   onBackgroundOpacityChange?: (opacity: number) => void;
+  onBackgroundSizeChange?: (size: { width?: number; height?: number }) => void;
+  onBackgroundKeepAspectRatioChange?: (keepAspectRatio: boolean) => void;
   style?: CSSProperties;
 }
 
@@ -74,6 +76,8 @@ export function PropertyPanel({
   onUploadBackground,
   onRemoveBackground,
   onBackgroundOpacityChange,
+  onBackgroundSizeChange,
+  onBackgroundKeepAspectRatioChange,
   style,
 }: PropertyPanelProps) {
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
@@ -487,6 +491,57 @@ export function PropertyPanel({
               onChange={(e) => onBackgroundOpacityChange?.(parseInt(e.target.value) / 100)}
               style={{ width: "100%", accentColor: "#6a6aaa", cursor: "pointer" }}
             />
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={labelStyle}>Width</div>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={Math.round(venue.backgroundImageWidth ?? venue.bounds.width)}
+                  onChange={(e) =>
+                    onBackgroundSizeChange?.({
+                      width: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                    })
+                  }
+                  style={inputStyle}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={labelStyle}>Height</div>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={Math.round(venue.backgroundImageHeight ?? venue.bounds.height)}
+                  onChange={(e) =>
+                    onBackgroundSizeChange?.({
+                      height: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                    })
+                  }
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 8,
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={venue.backgroundImageKeepAspectRatio ?? true}
+                onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
+              />
+              Keep aspect ratio
+            </label>
             <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
               <button onClick={onUploadBackground} style={btnSmall}>
                 Replace

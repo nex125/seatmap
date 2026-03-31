@@ -76,6 +76,12 @@ export interface Venue {
   bounds: Bounds;
   backgroundImage?: string;
   backgroundImageOpacity?: number;
+  backgroundImageWidth?: number;
+  backgroundImageHeight?: number;
+  backgroundImageX?: number;
+  backgroundImageY?: number;
+  backgroundImageAspectRatio?: number;
+  backgroundImageKeepAspectRatio?: boolean;
   sections: Section[];
   gaAreas: GeneralAdmissionArea[];
   tables: Table[];

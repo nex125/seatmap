@@ -327,21 +327,25 @@ export function SeatmapCanvas({
     boundsG.stroke({ color: 0x4a4a7a, width: 2 });
     world.addChild(boundsG);
 
-    // Render background image if loaded (aspect-ratio preserving, centered)
+    // Render background image if loaded (configurable size and position)
     if (bgTextureRef.current && bgTextureRef.current !== Texture.EMPTY) {
       const tex = bgTextureRef.current;
       const imgW = tex.width;
       const imgH = tex.height;
       const scale = Math.min(venue.bounds.width / imgW, venue.bounds.height / imgH);
-      const scaledW = imgW * scale;
-      const scaledH = imgH * scale;
+      const fallbackWidth = imgW * scale;
+      const fallbackHeight = imgH * scale;
+      const scaledW = Math.max(1, venue.backgroundImageWidth ?? fallbackWidth);
+      const scaledH = Math.max(1, venue.backgroundImageHeight ?? fallbackHeight);
 
       const bgSprite = new Sprite(tex);
       bgSprite.width = scaledW;
       bgSprite.height = scaledH;
+      const bgX = venue.backgroundImageX ?? ((venue.bounds.width - scaledW) / 2);
+      const bgY = venue.backgroundImageY ?? ((venue.bounds.height - scaledH) / 2);
       bgSprite.position.set(
-        (venue.bounds.width - scaledW) / 2,
-        (venue.bounds.height - scaledH) / 2,
+        bgX,
+        bgY,
       );
       bgSprite.alpha = venue.backgroundImageOpacity ?? 0.5;
       world.addChild(bgSprite);
