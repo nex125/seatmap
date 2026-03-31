@@ -4,13 +4,15 @@ import type { Venue, Section } from "@nex125/seatmap-core";
 export interface LayerPanelProps {
   venue: Venue | null;
   selectedSeatIds: Set<string>;
-  onSelectSection: (sectionId: string) => void;
+  selectedSectionIds: Set<string>;
+  onSelectSection: (sectionId: string, options?: { multi?: boolean }) => void;
   style?: CSSProperties;
 }
 
 export function LayerPanel({
   venue,
   selectedSeatIds,
+  selectedSectionIds: storeSelectedSectionIds,
   onSelectSection,
   style,
 }: LayerPanelProps) {
@@ -25,7 +27,7 @@ export function LayerPanel({
     return null;
   };
 
-  const selectedSectionId = selectedSeatIds.size > 0
+  const selectedSectionIdFromSeats = selectedSeatIds.size > 0
     ? findSectionForSeat([...selectedSeatIds][0]!)
     : null;
 
@@ -37,13 +39,17 @@ export function LayerPanel({
 
       {venue.sections.map((section: Section) => {
         const seatCount = section.rows.reduce((t, r) => t + r.seats.length, 0);
-        const isActive = section.id === selectedSectionId;
+        const isActive = storeSelectedSectionIds.has(section.id) || section.id === selectedSectionIdFromSeats;
         const catColor = venue.categories.find((c) => c.id === section.categoryId)?.color ?? "#666";
 
         return (
           <div
             key={section.id}
-            onClick={() => onSelectSection(section.id)}
+            onClick={(event) =>
+              onSelectSection(section.id, {
+                multi: event.ctrlKey || event.metaKey,
+              })
+            }
             style={{
               display: "flex",
               alignItems: "center",

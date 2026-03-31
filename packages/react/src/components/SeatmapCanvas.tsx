@@ -89,6 +89,7 @@ export function SeatmapCanvas({
   const isSectionDotsVisible = showSectionGridDots ?? showGrid;
   const venue = useStore(store, (s) => s.venue);
   const selectedSeatIds = useStore(store, (s) => s.selectedSeatIds);
+  const selectedSectionIds = useStore(store, (s) => s.selectedSectionIds);
   const hoveredSeatId = useStore(store, (s) => s.hoveredSeatId);
 
   const getCategoryColor = useCallback(
@@ -380,17 +381,38 @@ export function SeatmapCanvas({
 
       sectionContainer.position.set(section.position.x, section.position.y);
       sectionContainer.rotation = section.rotation;
+
+      if (selectedSectionIds.has(section.id)) {
+        const highlight = new Graphics();
+        if (section.outline.length > 2) {
+          highlight.poly(section.outline.flatMap((p) => [p.x, p.y]));
+        } else {
+          const seats = section.rows.flatMap((r) => r.seats);
+          if (seats.length > 0) {
+            const xs = seats.map((s) => s.position.x);
+            const ys = seats.map((s) => s.position.y);
+            const pad = 10;
+            const minX = Math.min(...xs) - pad;
+            const minY = Math.min(...ys) - pad;
+            const maxX = Math.max(...xs) + pad;
+            const maxY = Math.max(...ys) + pad;
+            highlight.rect(minX, minY, maxX - minX, maxY - minY);
+          }
+        }
+        highlight.stroke({ color: 0x4dabf7, width: 4, alpha: 0.8, alignment: 1 });
+        highlight.fill({ color: 0x4dabf7, alpha: 0.1 });
+        sectionContainer.addChild(highlight);
+      }
+
       parent.addChild(sectionContainer);
     },
     [
       getCategoryColor,
-      selectedSeatIds,
-      hoveredSeatId,
-      getSeatTexture,
       zoomToSection,
       renderSeat,
       isSectionDotsVisible,
       sectionGridMarkerStyle,
+      selectedSectionIds,
     ],
   );
 
@@ -539,6 +561,7 @@ export function SeatmapCanvas({
     isGridLinesVisible,
     canvasGridLineStyle,
     sectionGridMarkerStyle,
+    selectedSectionIds,
   ]);
 
   // Keep renderRef always pointing to the latest renderScene
@@ -670,7 +693,7 @@ export function SeatmapCanvas({
   // Re-render when data changes
   useEffect(() => {
     scheduleRender();
-  }, [venue, selectedSeatIds, hoveredSeatId, scheduleRender]);
+  }, [venue, selectedSeatIds, selectedSectionIds, hoveredSeatId, scheduleRender]);
 
   // Ensure grid visibility toggles immediately without waiting for other updates.
   useEffect(() => {

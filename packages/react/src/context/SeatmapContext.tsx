@@ -7,6 +7,8 @@ export interface SeatmapState {
   venue: Venue | null;
   venueUpdateOrigin: "internal" | "external" | null;
   selectedSeatIds: Set<string>;
+  selectedSectionIds: Set<string>;
+  selectedSectionId: string | null;
   hoveredSeatId: string | null;
 
   setVenue: (venue: Venue) => void;
@@ -14,6 +16,9 @@ export interface SeatmapState {
   selectSeat: (seatId: string) => void;
   deselectSeat: (seatId: string) => void;
   toggleSeat: (seatId: string) => void;
+  selectSection: (sectionId: string | null) => void;
+  toggleSection: (sectionId: string) => void;
+  setSectionSelection: (sectionIds: string[]) => void;
   clearSelection: () => void;
   setSelection: (seatIds: string[]) => void;
   setHoveredSeat: (seatId: string | null) => void;
@@ -43,6 +48,8 @@ export const createSeatmapStore = () => {
     venue: null,
     venueUpdateOrigin: null,
     selectedSeatIds: new Set(),
+    selectedSectionIds: new Set(),
+    selectedSectionId: null,
     hoveredSeatId: null,
 
     setVenue: (venue) => applyVenue(set, venue, "internal"),
@@ -68,7 +75,34 @@ export const createSeatmapStore = () => {
         return { selectedSeatIds: next };
       }),
 
-    clearSelection: () => set({ selectedSeatIds: new Set() }),
+    selectSection: (sectionId) =>
+      set({
+        selectedSectionId: sectionId,
+        selectedSectionIds: sectionId ? new Set([sectionId]) : new Set(),
+      }),
+
+    toggleSection: (sectionId) =>
+      set((state) => {
+        const next = new Set(state.selectedSectionIds);
+        if (next.has(sectionId)) next.delete(sectionId);
+        else next.add(sectionId);
+        const firstSelectedSectionId = next.values().next().value ?? null;
+        return {
+          selectedSectionIds: next,
+          selectedSectionId: firstSelectedSectionId,
+        };
+      }),
+
+    setSectionSelection: (sectionIds) => {
+      const sectionSet = new Set(sectionIds);
+      const firstSelectedSectionId = sectionSet.values().next().value ?? null;
+      set({
+        selectedSectionIds: sectionSet,
+        selectedSectionId: firstSelectedSectionId,
+      });
+    },
+
+    clearSelection: () => set({ selectedSeatIds: new Set(), selectedSectionIds: new Set(), selectedSectionId: null }),
 
     setSelection: (seatIds) =>
       set({ selectedSeatIds: new Set(seatIds) }),

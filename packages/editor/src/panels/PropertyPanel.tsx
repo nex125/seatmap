@@ -7,6 +7,7 @@ import type { SeatmapStore } from "@nex125/seatmap-react";
 export interface PropertyPanelProps {
   venue: Venue | null;
   selectedSeatIds: Set<string>;
+  selectedSectionIds: Set<string>;
   history: CommandHistory;
   store: SeatmapStore;
   onUploadBackground?: () => void;
@@ -71,6 +72,7 @@ function setVenue(store: SeatmapStore, venue: Venue) {
 export function PropertyPanel({
   venue,
   selectedSeatIds,
+  selectedSectionIds,
   history,
   store,
   onUploadBackground,
@@ -80,25 +82,38 @@ export function PropertyPanel({
   onBackgroundKeepAspectRatioChange,
   style,
 }: PropertyPanelProps) {
-  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+  const [selectedSections, setSelectedSections] = useState<Section[]>([]);
 
   useEffect(() => {
-    if (!venue || selectedSeatIds.size === 0) {
-      setSelectedSection(null);
+    if (!venue) {
+      setSelectedSections([]);
       return;
     }
 
-    const firstSeatId = [...selectedSeatIds][0];
-    for (const section of venue.sections) {
-      for (const row of section.rows) {
-        if (row.seats.some((s) => s.id === firstSeatId)) {
-          setSelectedSection(section);
-          return;
-        }
-      }
-    }
-    setSelectedSection(null);
-  }, [venue, selectedSeatIds]);
+    setSelectedSections(venue.sections.filter((section) => selectedSectionIds.has(section.id)));
+  }, [venue, selectedSectionIds]);
+
+  const updateVenueName = (newName: string) => {
+    const v = freshVenue(store);
+    if (!v) return;
+    const oldName = v.name;
+    history.execute({
+      description: `Rename venue to "${newName}"`,
+      execute: () => setVenue(store, { ...v, name: newName }),
+      undo: () => setVenue(store, { ...v, name: oldName }),
+    });
+  };
+
+  const updateVenueId = (newId: string) => {
+    const v = freshVenue(store);
+    if (!v) return;
+    const oldId = v.id;
+    history.execute({
+      description: `Change venue ID to "${newId}"`,
+      execute: () => setVenue(store, { ...v, id: newId }),
+      undo: () => setVenue(store, { ...v, id: oldId }),
+    });
+  };
 
   const updateSectionLabel = (sectionId: string, newLabel: string) => {
     const v = freshVenue(store);
@@ -173,6 +188,97 @@ export function PropertyPanel({
                 }
               : s,
           ),
+        });
+      },
+    });
+  };
+
+  const updateSelectedSectionsLabel = (sectionIds: string[], newLabel: string) => {
+    if (sectionIds.length === 0) return;
+    const v = freshVenue(store);
+    if (!v) return;
+    const targetIds = new Set(sectionIds);
+    const previousLabels = new Map(
+      v.sections
+        .filter((section) => targetIds.has(section.id))
+        .map((section) => [section.id, section.label]),
+    );
+
+    history.execute({
+      description: `Rename ${sectionIds.length} section(s)`,
+      execute: () => {
+        const cur = freshVenue(store);
+        if (!cur) return;
+        setVenue(store, {
+          ...cur,
+          sections: cur.sections.map((section) =>
+            targetIds.has(section.id) ? { ...section, label: newLabel } : section,
+          ),
+        });
+      },
+      undo: () => {
+        const cur = freshVenue(store);
+        if (!cur) return;
+        setVenue(store, {
+          ...cur,
+          sections: cur.sections.map((section) =>
+            targetIds.has(section.id)
+              ? { ...section, label: previousLabels.get(section.id) ?? section.label }
+              : section,
+          ),
+        });
+      },
+    });
+  };
+
+  const updateSelectedSectionsCategory = (sectionIds: string[], categoryId: string) => {
+    if (sectionIds.length === 0) return;
+    const v = freshVenue(store);
+    if (!v) return;
+    const targetIds = new Set(sectionIds);
+    const previousCategoryBySectionId = new Map(
+      v.sections
+        .filter((section) => targetIds.has(section.id))
+        .map((section) => [section.id, section.categoryId]),
+    );
+
+    history.execute({
+      description: `Change category for ${sectionIds.length} section(s)`,
+      execute: () => {
+        const cur = freshVenue(store);
+        if (!cur) return;
+        setVenue(store, {
+          ...cur,
+          sections: cur.sections.map((section) => {
+            if (!targetIds.has(section.id)) return section;
+            return {
+              ...section,
+              categoryId,
+              rows: section.rows.map((row) => ({
+                ...row,
+                seats: row.seats.map((seat) => ({ ...seat, categoryId })),
+              })),
+            };
+          }),
+        });
+      },
+      undo: () => {
+        const cur = freshVenue(store);
+        if (!cur) return;
+        setVenue(store, {
+          ...cur,
+          sections: cur.sections.map((section) => {
+            if (!targetIds.has(section.id)) return section;
+            const previousCategoryId = previousCategoryBySectionId.get(section.id) ?? section.categoryId;
+            return {
+              ...section,
+              categoryId: previousCategoryId,
+              rows: section.rows.map((row) => ({
+                ...row,
+                seats: row.seats.map((seat) => ({ ...seat, categoryId: previousCategoryId })),
+              })),
+            };
+          }),
         });
       },
     });
@@ -425,17 +531,22 @@ export function PropertyPanel({
   const isMixedSeatStatus = selectedSeatStatusIds.size > 1;
   const selectedSeatStatusId =
     selectedSeatStatusIds.size > 0 ? [...selectedSeatStatusIds][0] : AVAILABLE_STATUS_ID;
+  const hasMultipleSelectedSections = selectedSections.length > 1;
+  const selectedSectionIdsList = selectedSections.map((section) => section.id);
+  const selectedSectionLabels = new Set(selectedSections.map((section) => section.label));
+  const selectedSectionCategoryIds = new Set(selectedSections.map((section) => section.categoryId));
+  const sharedLabelValue = selectedSectionLabels.size === 1 ? selectedSections[0]?.label ?? "" : "";
+  const sharedCategoryValue = selectedSectionCategoryIds.size === 1 ? selectedSections[0]?.categoryId ?? "" : "__mixed__";
 
-  if (!selectedSection) {
-    return (
-      <div style={{ padding: 16, ...style }}>
-        <div style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui", marginBottom: 12 }}>
-          {selectedSeatIds.size === 0
-            ? "Select seats to edit section properties"
-            : `${selectedSeatIds.size} seat(s) selected`}
-        </div>
-        {selectedSeatsEverywhere.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
+  return (
+    <div style={{ padding: 16, ...style }}>
+      {selectedSeatIds.size > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+            Seat Config ({selectedSeatIds.size} selected)
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
             <div style={labelStyle}>Seat Status</div>
             <select
               style={selectStyle}
@@ -452,254 +563,306 @@ export function PropertyPanel({
               ))}
             </select>
           </div>
-        )}
-        <div style={labelStyle}>Venue</div>
-        <div style={{ color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>{venue.name}</div>
-        <div style={{ ...labelStyle, marginTop: 12 }}>Sections: {venue.sections.length}</div>
-        <div style={{ ...labelStyle, marginTop: 4 }}>
-          Seats: {venue.sections.reduce((t, s) => t + s.rows.reduce((rt, r) => rt + r.seats.length, 0), 0)}
-        </div>
 
-        <div style={{ height: 1, background: "#2a2a4a", margin: "14px 0" }} />
-        <div style={labelStyle}>Background Image</div>
-        {venue.backgroundImage ? (
-          <div style={{ marginTop: 6 }}>
-            <div
-              style={{
-                width: "100%",
-                height: 80,
-                borderRadius: 4,
-                border: "1px solid #3a3a5a",
-                overflow: "hidden",
-                marginBottom: 8,
-              }}
-            >
-              <img
-                src={venue.backgroundImage}
-                alt="Background"
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-            </div>
-            <div style={{ ...labelStyle, marginBottom: 4 }}>
-              Opacity: {Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}%
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}
-              onChange={(e) => onBackgroundOpacityChange?.(parseInt(e.target.value) / 100)}
-              style={{ width: "100%", accentColor: "#6a6aaa", cursor: "pointer" }}
-            />
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={labelStyle}>Width</div>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={Math.round(venue.backgroundImageWidth ?? venue.bounds.width)}
-                  onChange={(e) =>
-                    onBackgroundSizeChange?.({
-                      width: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                    })
+          <div style={{ marginBottom: 10 }}>
+            <div style={labelStyle}>Selected Seats ({selectedSeatIds.size})</div>
+            <div style={{ maxHeight: 200, overflowY: "auto" }}>
+              {Array.from(selectedSeatIds).map((seatId) => {
+                let found: { seat: Seat; row: Row; section: Section } | null = null;
+                for (const section of venue.sections) {
+                  for (const row of section.rows) {
+                    const seat = row.seats.find((s) => s.id === seatId);
+                    if (seat) {
+                      found = { seat, row, section };
+                      break;
+                    }
                   }
-                  style={inputStyle}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={labelStyle}>Height</div>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={Math.round(venue.backgroundImageHeight ?? venue.bounds.height)}
-                  onChange={(e) =>
-                    onBackgroundSizeChange?.({
-                      height: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                    })
-                  }
-                  style={inputStyle}
-                />
-              </div>
-            </div>
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                marginTop: 8,
-                color: "#c7c7df",
-                fontSize: 12,
-                fontFamily: "system-ui",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={venue.backgroundImageKeepAspectRatio ?? true}
-                onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
-              />
-              Keep aspect ratio
-            </label>
-            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-              <button onClick={onUploadBackground} style={btnSmall}>
-                Replace
-              </button>
-              <button onClick={onRemoveBackground} style={btnDanger}>
-                Remove
-              </button>
+                  if (found) break;
+                }
+
+                if (!found) return null;
+                const { seat, row, section } = found;
+                return (
+                  <div
+                    key={seat.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "2px 6px",
+                      fontSize: 12,
+                      fontFamily: "system-ui",
+                      color: "#e0e0e0",
+                      background: "#2a2a4a",
+                      marginBottom: 2,
+                      borderRadius: 4,
+                    }}
+                  >
+                    <span style={{ flex: 1 }}>{section.label} &middot; Row {row.label}, Seat {seat.label}</span>
+                    <button
+                      onClick={() => deleteSeat(section.id, row.id, seat.id)}
+                      style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
+                      title="Delete seat"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
-        ) : (
-          <button
-            onClick={onUploadBackground}
-            style={{ ...btnSmall, marginTop: 6, width: "100%" }}
-          >
-            Upload Image
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  const selectedSeatList: Array<{ seat: typeof selectedSection.rows[0]["seats"][0]; row: Row }> = [];
-  for (const row of selectedSection.rows) {
-    for (const seat of row.seats) {
-      if (selectedSeatIds.has(seat.id)) {
-        selectedSeatList.push({ seat, row });
-      }
-    }
-  }
-
-  return (
-    <div style={{ padding: 16, ...style }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
-          Section
-        </div>
-        <button onClick={() => deleteSection(selectedSection.id)} style={btnDanger} title="Delete section">
-          Delete
-        </button>
-      </div>
-
-      <div style={{ marginBottom: 10 }}>
-        <div style={labelStyle}>Label</div>
-        <input
-          style={inputStyle}
-          value={selectedSection.label}
-          onChange={(e) => updateSectionLabel(selectedSection.id, e.target.value)}
-        />
-      </div>
-
-      <div style={{ marginBottom: 10 }}>
-        <div style={labelStyle}>Category</div>
-        <select
-          style={selectStyle}
-          value={selectedSection.categoryId}
-          onChange={(e) => updateSectionCategory(selectedSection.id, e.target.value)}
-        >
-          {venue.categories.map((cat: PricingCategory) => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {selectedSeatsEverywhere.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={labelStyle}>Seat Status</div>
-          <select
-            style={selectStyle}
-            value={isMixedSeatStatus ? "__mixed__" : selectedSeatStatusId}
-            onChange={(e) => updateSelectedSeatStatus(e.target.value)}
-          >
-            {isMixedSeatStatus && (
-              <option value="__mixed__" disabled>
-                Mixed
-              </option>
-            )}
-            {venue.seatStatuses.map((status) => (
-              <option key={status.id} value={status.id}>{status.name}</option>
-            ))}
-          </select>
+          <div style={{ height: 1, background: "#2a2a4a", margin: "20px 0" }} />
         </div>
       )}
 
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={labelStyle}>
-            Rows ({selectedSection.rows.length}) &middot;{" "}
-            {selectedSection.rows.reduce((t, r) => t + r.seats.length, 0)} seats
+      {selectedSeatIds.size === 0 && selectedSections.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
+              Section Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
+            </div>
           </div>
-          <button onClick={() => addSingleSeat(selectedSection.id)} style={btnSmall} title="Add a single seat to the last row">
-            + Seat
-          </button>
+
+          {hasMultipleSelectedSections && (
+            <div style={{ marginBottom: 12, padding: 10, borderRadius: 6, background: "#26264a" }}>
+              <div style={{ marginBottom: 10 }}>
+                <div style={labelStyle}>Label (apply to all selected)</div>
+                <input
+                  style={inputStyle}
+                  value={sharedLabelValue}
+                  placeholder="Mixed labels"
+                  onChange={(e) => updateSelectedSectionsLabel(selectedSectionIdsList, e.target.value)}
+                />
+              </div>
+              <div>
+                <div style={labelStyle}>Category (apply to all selected)</div>
+                <select
+                  style={selectStyle}
+                  value={sharedCategoryValue}
+                  onChange={(e) => updateSelectedSectionsCategory(selectedSectionIdsList, e.target.value)}
+                >
+                  {sharedCategoryValue === "__mixed__" && (
+                    <option value="__mixed__" disabled>Mixed</option>
+                  )}
+                  {venue.categories.map((cat: PricingCategory) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {selectedSections.map((selectedSection) => (
+            <div key={selectedSection.id} style={{ marginBottom: 14, padding: 10, borderRadius: 6, background: "#222242" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ color: "#c7c7df", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
+                  ID: {selectedSection.id}
+                </div>
+                <button onClick={() => deleteSection(selectedSection.id)} style={btnDanger} title="Delete section">
+                  Delete
+                </button>
+              </div>
+
+              {!hasMultipleSelectedSections && (
+                <>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={labelStyle}>Label</div>
+                    <input
+                      style={inputStyle}
+                      value={selectedSection.label}
+                      onChange={(e) => updateSectionLabel(selectedSection.id, e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={labelStyle}>Category</div>
+                    <select
+                      style={selectStyle}
+                      value={selectedSection.categoryId}
+                      onChange={(e) => updateSectionCategory(selectedSection.id, e.target.value)}
+                    >
+                      {venue.categories.map((cat: PricingCategory) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={labelStyle}>
+                    Rows ({selectedSection.rows.length}) &middot;{" "}
+                    {selectedSection.rows.reduce((t, r) => t + r.seats.length, 0)} seats
+                  </div>
+                  <button onClick={() => addSingleSeat(selectedSection.id)} style={btnSmall} title="Add a single seat to the last row">
+                    + Seat
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ maxHeight: 220, overflowY: "auto" }}>
+                {selectedSection.rows.map((row) => (
+                  <div
+                    key={row.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "3px 6px",
+                      borderRadius: 4,
+                      marginBottom: 2,
+                      background: "#2a2a4a",
+                      fontSize: 12,
+                      fontFamily: "system-ui",
+                      color: "#e0e0e0",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, minWidth: 24 }}>Row {row.label}</span>
+                    <span style={{ flex: 1, color: "#9e9e9e" }}>{row.seats.length} seats</span>
+                    <button
+                      onClick={() => deleteRow(selectedSection.id, row.id)}
+                      style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
+                      title={`Delete row ${row.label}`}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
-      <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: 10 }}>
-        {selectedSection.rows.map((row) => (
-          <div
-            key={row.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "3px 6px",
-              borderRadius: 4,
-              marginBottom: 2,
-              background: "#2a2a4a",
-              fontSize: 12,
-              fontFamily: "system-ui",
-              color: "#e0e0e0",
-            }}
-          >
-            <span style={{ fontWeight: 600, minWidth: 24 }}>Row {row.label}</span>
-            <span style={{ flex: 1, color: "#9e9e9e" }}>{row.seats.length} seats</span>
-            <button
-              onClick={() => deleteRow(selectedSection.id, row.id)}
-              style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
-              title={`Delete row ${row.label}`}
-            >
-              ✕
-            </button>
+      {selectedSections.length === 0 && selectedSeatIds.size === 0 && (
+        <div>
+          <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+            Venue Config
           </div>
-        ))}
-      </div>
 
-      {selectedSeatList.length > 0 && selectedSeatList.length <= 10 && (
-        <div style={{ marginBottom: 10 }}>
-          <div style={labelStyle}>Selected Seats ({selectedSeatList.length})</div>
-          <div style={{ maxHeight: 120, overflowY: "auto" }}>
-            {selectedSeatList.map(({ seat, row }) => (
+          <div style={{ marginBottom: 10 }}>
+            <div style={labelStyle}>Venue Name</div>
+            <input
+              style={inputStyle}
+              value={venue.name}
+              onChange={(e) => updateVenueName(e.target.value)}
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <div style={labelStyle}>Venue ID</div>
+            <input
+              style={inputStyle}
+              value={venue.id}
+              onChange={(e) => updateVenueId(e.target.value)}
+            />
+          </div>
+
+          <div style={{ color: "#9e9e9e", fontSize: 11, fontFamily: "system-ui", marginBottom: 12 }}>
+            Stats: {venue.sections.length} sections &middot;{" "}
+            {venue.sections.reduce((t, s) => t + s.rows.reduce((rt, r) => rt + r.seats.length, 0), 0)} seats
+          </div>
+
+          <div style={{ height: 1, background: "#2a2a4a", margin: "14px 0" }} />
+          <div style={labelStyle}>Background Image</div>
+          {venue.backgroundImage ? (
+            <div style={{ marginTop: 6 }}>
               <div
-                key={seat.id}
+                style={{
+                  width: "100%",
+                  height: 80,
+                  borderRadius: 4,
+                  border: "1px solid #3a3a5a",
+                  overflow: "hidden",
+                  marginBottom: 8,
+                }}
+              >
+                <img
+                  src={venue.backgroundImage}
+                  alt="Background"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              </div>
+              <div style={{ ...labelStyle, marginBottom: 4 }}>
+                Opacity: {Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}%
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}
+                onChange={(e) => onBackgroundOpacityChange?.(parseInt(e.target.value) / 100)}
+                style={{ width: "100%", accentColor: "#6a6aaa", cursor: "pointer" }}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={labelStyle}>Width</div>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={Math.round(venue.backgroundImageWidth ?? venue.bounds.width)}
+                    onChange={(e) =>
+                      onBackgroundSizeChange?.({
+                        width: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                      })
+                    }
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={labelStyle}>Height</div>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={Math.round(venue.backgroundImageHeight ?? venue.bounds.height)}
+                    onChange={(e) =>
+                      onBackgroundSizeChange?.({
+                        height: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                      })
+                    }
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              <label
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 6,
-                  padding: "2px 6px",
+                  gap: 8,
+                  marginTop: 8,
+                  color: "#c7c7df",
                   fontSize: 12,
                   fontFamily: "system-ui",
-                  color: "#e0e0e0",
+                  cursor: "pointer",
                 }}
               >
-                <span style={{ flex: 1 }}>Row {row.label}, Seat {seat.label}</span>
-                <button
-                  onClick={() => deleteSeat(selectedSection.id, row.id, seat.id)}
-                  style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
-                  title="Delete seat"
-                >
-                  ✕
+                <input
+                  type="checkbox"
+                  checked={venue.backgroundImageKeepAspectRatio ?? true}
+                  onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
+                />
+                Keep aspect ratio
+              </label>
+              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                <button onClick={onUploadBackground} style={btnSmall}>
+                  Replace
+                </button>
+                <button onClick={onRemoveBackground} style={btnDanger}>
+                  Remove
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {selectedSeatList.length > 10 && (
-        <div style={{ ...labelStyle, marginBottom: 10 }}>
-          {selectedSeatList.length} seats selected
+            </div>
+          ) : (
+            <button
+              onClick={onUploadBackground}
+              style={{ ...btnSmall, marginTop: 6, width: "100%" }}
+            >
+              Upload Image
+            </button>
+          )}
         </div>
       )}
     </div>

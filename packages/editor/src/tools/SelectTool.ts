@@ -17,7 +17,13 @@ function snapToGrid(v: number): number {
 type DragMode =
   | { type: "none" }
   | { type: "seats"; sectionId: string; originals: Map<string, { rowId: string; pos: Vec2 }>; delta: Vec2 }
-  | { type: "section"; sectionId: string; origPos: Vec2; delta: Vec2 }
+  | {
+      type: "section";
+      primarySectionId: string;
+      sectionIds: string[];
+      originalPositions: Map<string, Vec2>;
+      delta: Vec2;
+    }
   | {
       type: "resize-corner";
       sectionId: string;
@@ -150,10 +156,22 @@ export class SelectTool extends BaseTool {
     if (!this.sectionResizeEnabled && sectionHit && !seatHit) {
       const section = venue.sections.find((s) => s.id === sectionHit.sectionId);
       if (section) {
+        const selectedSectionIds = store.getState().selectedSectionIds;
+        const sectionIds =
+          selectedSectionIds.has(section.id) && selectedSectionIds.size > 1
+            ? [...selectedSectionIds]
+            : [section.id];
+        const originalPositions = new Map<string, Vec2>();
+        for (const sec of venue.sections) {
+          if (sectionIds.includes(sec.id)) {
+            originalPositions.set(sec.id, { ...sec.position });
+          }
+        }
         this.dragMode = {
           type: "section",
-          sectionId: section.id,
-          origPos: { ...section.position },
+          primarySectionId: section.id,
+          sectionIds,
+          originalPositions,
           delta: { x: 0, y: 0 },
         };
         return;
@@ -251,19 +269,15 @@ export class SelectTool extends BaseTool {
     }
 
     if (this.dragMode.type === "section") {
-      const { sectionId, origPos } = this.dragMode;
-      const section = venue.sections.find((sec) => sec.id === sectionId);
-      if (!section) return;
-      const nextX = origPos.x + dx;
-      const nextY = origPos.y + dy;
       if (this.dragMode.delta.x === dx && this.dragMode.delta.y === dy) {
         return;
       }
       this.dragMode = {
         type: "section",
-        sectionId,
-        origPos,
-        delta: { x: nextX - origPos.x, y: nextY - origPos.y },
+        primarySectionId: this.dragMode.primarySectionId,
+        sectionIds: this.dragMode.sectionIds,
+        originalPositions: this.dragMode.originalPositions,
+        delta: { x: dx, y: dy },
       };
       return;
     }
@@ -297,16 +311,33 @@ export class SelectTool extends BaseTool {
       const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 12);
       const seatHit = this.pickNearestSeatHit(hits, { x: e.worldX, y: e.worldY });
       const sectionHit = hits.find((h) => h.type === "section");
+      const isMulti = e.ctrlKey || e.shiftKey || e.metaKey;
+
       if (seatHit?.seatId) {
         this.resizeTargetSectionId = seatHit.sectionId;
-        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        if (isMulti) {
           store.getState().toggleSeat(seatHit.seatId);
+          // When adding seats, always target the current section if none targeted
+          if (store.getState().selectedSectionIds.size === 0) {
+            store.getState().selectSection(seatHit.sectionId);
+          }
         } else {
           store.getState().setSelection([seatHit.seatId]);
+          store.getState().selectSection(seatHit.sectionId);
         }
-      } else if (this.sectionResizeEnabled && sectionHit?.sectionId) {
-        this.resizeTargetSectionId = sectionHit.sectionId;
-      } else if (!e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      } else if (sectionHit?.sectionId) {
+        if (this.sectionResizeEnabled) {
+          this.resizeTargetSectionId = sectionHit.sectionId;
+        } else {
+          if (isMulti) {
+            store.getState().toggleSection(sectionHit.sectionId);
+          } else {
+            // Selecting a section directly clears seat selection to show Section Config panel
+            store.getState().clearSelection();
+            store.getState().selectSection(sectionHit.sectionId);
+          }
+        }
+      } else if (!isMulti) {
         if (this.sectionResizeEnabled) {
           this.resizeTargetSectionId = null;
         }
@@ -449,20 +480,30 @@ export class SelectTool extends BaseTool {
     }
 
     if (this.dragMode.type === "section") {
-      const { sectionId, origPos, delta } = this.dragMode;
-      const finalPos = { x: origPos.x + delta.x, y: origPos.y + delta.y };
-      if (finalPos.x === origPos.x && finalPos.y === origPos.y) return;
+      const { sectionIds, originalPositions, delta } = this.dragMode;
+      if (delta.x === 0 && delta.y === 0) return;
+
+      const sectionIdSet = new Set(sectionIds);
+      const finalPositions = new Map<string, Vec2>();
+      for (const [sectionId, origPos] of originalPositions.entries()) {
+        finalPositions.set(sectionId, {
+          x: origPos.x + delta.x,
+          y: origPos.y + delta.y,
+        });
+      }
 
       this.history.execute({
-        description: `Move section`,
+        description: `Move ${sectionIds.length} section(s)`,
         execute: () => {
           const v = store.getState().venue;
           if (!v) return;
           store.getState().setVenue({
             ...v,
-            sections: v.sections.map((s) =>
-              s.id === sectionId ? { ...s, position: finalPos } : s,
-            ),
+            sections: v.sections.map((section) => {
+              if (!sectionIdSet.has(section.id)) return section;
+              const finalPos = finalPositions.get(section.id);
+              return finalPos ? { ...section, position: finalPos } : section;
+            }),
           });
         },
         undo: () => {
@@ -470,9 +511,11 @@ export class SelectTool extends BaseTool {
           if (!v) return;
           store.getState().setVenue({
             ...v,
-            sections: v.sections.map((s) =>
-              s.id === sectionId ? { ...s, position: origPos } : s,
-            ),
+            sections: v.sections.map((section) => {
+              if (!sectionIdSet.has(section.id)) return section;
+              const origPos = originalPositions.get(section.id);
+              return origPos ? { ...section, position: origPos } : section;
+            }),
           });
         },
       });
@@ -563,12 +606,10 @@ export class SelectTool extends BaseTool {
     const drag = this.dragMode;
     if (!venue) return null;
     if (drag.type === "section") {
-      const section = venue.sections.find((s) => s.id === drag.sectionId);
-      if (!section || section.outline.length < 3) return null;
-      const pos = {
-        x: drag.origPos.x + drag.delta.x,
-        y: drag.origPos.y + drag.delta.y,
-      };
+      const section = venue.sections.find((s) => s.id === drag.primarySectionId);
+      const originalPos = drag.originalPositions.get(drag.primarySectionId);
+      if (!section || !originalPos || section.outline.length < 3) return null;
+      const pos = { x: originalPos.x + drag.delta.x, y: originalPos.y + drag.delta.y };
       const c = Math.cos(section.rotation);
       const s = Math.sin(section.rotation);
       return section.outline.map((p) => ({
@@ -592,13 +633,14 @@ export class SelectTool extends BaseTool {
   getSectionResizeHandlesPreview(
     venue: { sections: Section[] } | null,
     selectedSeatIds: Set<string>,
+    selectedSectionId: string | null = null,
   ): {
     corners: Vec2[];
     sideMidpoints: Vec2[];
     mergeHint: { position: Vec2; message: string } | null;
   } | null {
     if (!this.sectionResizeEnabled || !venue) return null;
-    const section = this.getEditableSection(venue, selectedSeatIds);
+    const section = this.getEditableSection(venue, selectedSeatIds, selectedSectionId);
     if (!section || section.outline.length < 3) return null;
     const activeOutline =
       (this.dragMode.type === "resize-corner" || this.dragMode.type === "resize-side") &&
@@ -743,7 +785,11 @@ export class SelectTool extends BaseTool {
   private getEditableSection(
     venue: { sections: Section[] },
     selectedSeatIds: Set<string>,
+    selectedSectionId: string | null = null,
   ): Section | null {
+    if (selectedSectionId) {
+      return venue.sections.find((s) => s.id === selectedSectionId) ?? null;
+    }
     if (selectedSeatIds.size > 0) {
       let found: Section | null = null;
       for (const section of venue.sections) {

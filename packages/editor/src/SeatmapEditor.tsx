@@ -185,8 +185,9 @@ function EditorInner({
 }) {
   const { store, viewport, spatialIndex } = useSeatmapContext();
   const venue = useStore(store, (s) => s.venue);
-  const venueUpdateOrigin = useStore(store, (s) => s.venueUpdateOrigin);
   const selectedSeatIds = useStore(store, (s) => s.selectedSeatIds);
+  const selectedSectionIds = useStore(store, (s) => s.selectedSectionIds);
+  const selectedSectionId = useStore(store, (s) => s.selectedSectionId);
   const [, setViewportVersion] = useState(0);
   const canvasAreaRef = useRef<HTMLDivElement | null>(null);
   const [isBackgroundResizing, setIsBackgroundResizing] = useState(false);
@@ -242,9 +243,6 @@ function EditorInner({
   const lastNonPanToolNameRef = useRef<string>("select");
   const sectionResizeReturnToAddSectionRef = useRef(false);
   const [, setDragPreviewVersion] = useState(0);
-  const onChangeRef = useRef(onChange);
-  const isPointerInteractionRef = useRef(false);
-  const pendingInternalVenueRef = useRef<Venue | null>(null);
 
   const [sectionMode, setSectionMode] = useState<SectionCreationMode>("rectangle");
   const [sectionResizeEnabled, setSectionResizeEnabled] = useState(false);
@@ -348,35 +346,10 @@ function EditorInner({
   }, []);
 
   useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-
-  const flushPendingOnChange = useCallback(() => {
-    const pendingVenue = pendingInternalVenueRef.current;
-    if (!pendingVenue) return;
-    pendingInternalVenueRef.current = null;
-    onChangeRef.current?.(pendingVenue);
-  }, []);
-
-  useEffect(() => {
     if (venue) {
       spatialIndex.buildFromSections(venue.sections);
-      if (venueUpdateOrigin === "internal") {
-        if (isPointerInteractionRef.current) {
-          pendingInternalVenueRef.current = venue;
-        } else {
-          onChangeRef.current?.(venue);
-        }
-      }
     }
-  }, [venue, venueUpdateOrigin, spatialIndex]);
-
-  useEffect(
-    () => () => {
-      pendingInternalVenueRef.current = null;
-    },
-    [],
-  );
+  }, [venue, spatialIndex]);
 
   useEffect(() => {
     const unsub = viewport.subscribe(() => {
@@ -389,12 +362,13 @@ function EditorInner({
     const v = store.getState().venue;
     if (!v) return;
     const json = serializeVenue(v);
+    onChange?.(v);
     if (onSave) {
       onSave(v, json);
       return;
     }
     console.log(v);
-  }, [store, onSave]);
+  }, [store, onChange, onSave]);
 
   const handleLoad = useCallback(() => {
     const input = document.createElement("input");
@@ -862,7 +836,7 @@ function EditorInner({
 
   const renderSectionResizeOverlay = () => {
     if (activeToolName !== "select" || !sectionResizeEnabled || !venue) return null;
-    const resizeOverlay = selectTool.getSectionResizeHandlesPreview(venue, selectedSeatIds);
+    const resizeOverlay = selectTool.getSectionResizeHandlesPreview(venue, selectedSeatIds, selectedSectionId);
     if (!resizeOverlay) return null;
 
     const corners = resizeOverlay.corners.map((p) => viewport.worldToScreen(p.x, p.y));
@@ -1023,12 +997,14 @@ function EditorInner({
   };
 
   const handleSelectSection = useCallback(
-    (sectionId: string) => {
+    (sectionId: string, options?: { multi?: boolean }) => {
       if (!venue) return;
-      const section = venue.sections.find((s) => s.id === sectionId);
-      if (!section) return;
-      const allSeatIds = section.rows.flatMap((r) => r.seats.map((s) => s.id));
-      store.getState().setSelection(allSeatIds);
+      if (options?.multi) {
+        store.getState().toggleSection(sectionId);
+        return;
+      }
+      store.getState().clearSelection();
+      store.getState().selectSection(sectionId);
     },
     [venue, store],
   );
@@ -1712,19 +1688,16 @@ function EditorInner({
 
   const handlePointerRelease = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      isPointerInteractionRef.current = false;
       const toolEvent = toToolPointerEvent(e);
       activeToolRef.current.onPointerUp(toolEvent, viewport, store);
-      flushPendingOnChange();
       bumpDragPreview();
     },
-    [toToolPointerEvent, viewport, store, flushPendingOnChange, bumpDragPreview],
+    [toToolPointerEvent, viewport, store, bumpDragPreview],
   );
 
   const handleCanvasPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.button !== 0) return;
-      isPointerInteractionRef.current = true;
       // Capture so drag operations complete even if pointer leaves the canvas area
       e.currentTarget.setPointerCapture(e.pointerId);
       const toolEvent = toToolPointerEvent(e);
@@ -1820,6 +1793,7 @@ function EditorInner({
           <PropertyPanel
             venue={venue}
             selectedSeatIds={selectedSeatIds}
+            selectedSectionIds={selectedSectionIds}
             history={historyRef.current}
             store={store}
             onUploadBackground={handleUploadBackground}
@@ -1828,24 +1802,33 @@ function EditorInner({
             onBackgroundSizeChange={handleBackgroundSizeChange}
             onBackgroundKeepAspectRatioChange={handleBackgroundKeepAspectRatioChange}
           />
-          <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
-          <LayerPanel
-            venue={venue}
-            selectedSeatIds={selectedSeatIds}
-            onSelectSection={handleSelectSection}
-          />
-          <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
-          <CategoryManager
-            venue={venue}
-            history={historyRef.current}
-            store={store}
-          />
-          <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
-          <StatusManager
-            venue={venue}
-            history={historyRef.current}
-            store={store}
-          />
+          {selectedSeatIds.size === 0 && (
+            <>
+              <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+              <LayerPanel
+                venue={venue}
+                selectedSeatIds={selectedSeatIds}
+                selectedSectionIds={selectedSectionIds}
+                onSelectSection={handleSelectSection}
+              />
+              <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+              <CategoryManager
+                venue={venue}
+                history={historyRef.current}
+                store={store}
+              />
+            </>
+          )}
+          {selectedSeatIds.size === 0 && selectedSectionIds.size === 0 && (
+            <>
+              <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+              <StatusManager
+                venue={venue}
+                history={historyRef.current}
+                store={store}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>
