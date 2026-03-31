@@ -18,6 +18,7 @@ import { StatusManager } from "./panels/StatusManager";
 export interface SeatmapEditorProps {
   venue?: Venue;
   onChange?: (venue: Venue) => void;
+  onSave?: (venue: Venue, serializedVenue: string) => void;
   className?: string;
 }
 
@@ -123,7 +124,13 @@ function PolygonPreviewOverlay({
   );
 }
 
-function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
+function EditorInner({
+  onChange,
+  onSave,
+}: {
+  onChange?: (venue: Venue) => void;
+  onSave?: (venue: Venue, serializedVenue: string) => void;
+}) {
   const { store, viewport, spatialIndex } = useSeatmapContext();
   const venue = useStore(store, (s) => s.venue);
   const selectedSeatIds = useStore(store, (s) => s.selectedSeatIds);
@@ -246,14 +253,12 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
     const v = store.getState().venue;
     if (!v) return;
     const json = serializeVenue(v);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${v.name.replace(/\s+/g, "_").toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [store]);
+    if (onSave) {
+      onSave(v, json);
+      return;
+    }
+    console.log(v);
+  }, [store, onSave]);
 
   const handleLoad = useCallback(() => {
     const input = document.createElement("input");
@@ -1150,11 +1155,11 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
   );
 }
 
-export function SeatmapEditor({ venue, onChange, className }: SeatmapEditorProps) {
+export function SeatmapEditor({ venue, onChange, onSave, className }: SeatmapEditorProps) {
   return (
     <SeatmapProvider venue={venue}>
       <div className={className} style={{ width: "100%", height: "100%" }}>
-        <EditorInner onChange={onChange} />
+        <EditorInner onChange={onChange} onSave={onSave} />
       </div>
     </SeatmapProvider>
   );

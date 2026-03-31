@@ -45,6 +45,11 @@ function VenueAdmin({ venue }) {
     <SeatmapEditor
       venue={venue}
       onChange={(updatedVenue) => saveToBackend(updatedVenue)}
+      onSave={(updatedVenue, schemaJson) => {
+        console.log("Save clicked for", updatedVenue.name);
+        // Persist it however your app needs (API call, file export, etc.)
+        console.log(schemaJson);
+      }}
     />
   );
 }
