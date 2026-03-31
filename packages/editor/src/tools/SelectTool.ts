@@ -77,7 +77,7 @@ export class SelectTool extends BaseTool {
     const venue = store.getState().venue;
     if (!venue) return;
     const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 12);
-    const seatHit = hits.find((h) => h.type === "seat" && h.seatId);
+    const seatHit = this.pickNearestSeatHit(hits, { x: e.worldX, y: e.worldY });
     const sectionHit = hits.find((h) => h.type === "section");
 
     if (this.sectionResizeEnabled) {
@@ -295,7 +295,7 @@ export class SelectTool extends BaseTool {
     } else {
       // Click without drag — select/deselect
       const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 12);
-      const seatHit = hits.find((h) => h.type === "seat" && h.seatId);
+      const seatHit = this.pickNearestSeatHit(hits, { x: e.worldX, y: e.worldY });
       const sectionHit = hits.find((h) => h.type === "section");
       if (seatHit?.seatId) {
         this.resizeTargetSectionId = seatHit.sectionId;
@@ -874,5 +874,29 @@ export class SelectTool extends BaseTool {
       if (a[i].x !== b[i].x || a[i].y !== b[i].y) return false;
     }
     return true;
+  }
+
+  private pickNearestSeatHit(
+    hits: ReturnType<SpatialIndex["queryPoint"]>,
+    point: Vec2,
+  ): (ReturnType<SpatialIndex["queryPoint"]>[number] & { seatId: string }) | undefined {
+    const seatHits = hits.filter((hit): hit is ReturnType<SpatialIndex["queryPoint"]>[number] & { seatId: string } =>
+      hit.type === "seat" && typeof hit.seatId === "string",
+    );
+    if (seatHits.length === 0) return undefined;
+    if (seatHits.length === 1) return seatHits[0];
+
+    let best = seatHits[0];
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const hit of seatHits) {
+      const centerX = (hit.minX + hit.maxX) * 0.5;
+      const centerY = (hit.minY + hit.maxY) * 0.5;
+      const d = Math.hypot(centerX - point.x, centerY - point.y);
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = hit;
+      }
+    }
+    return best;
   }
 }

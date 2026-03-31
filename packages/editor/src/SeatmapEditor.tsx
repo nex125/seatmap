@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Venue } from "@nex125/seatmap-core";
+import type { Venue, Vec2 } from "@nex125/seatmap-core";
 import { CommandHistory, venueAABB, serializeVenue, deserializeVenue, type Viewport } from "@nex125/seatmap-core";
 import { SeatmapProvider, SeatmapCanvas, useSeatmapContext } from "@nex125/seatmap-react";
 import { useStore } from "zustand";
@@ -247,6 +247,8 @@ function EditorInner({
   const [sectionResizeEnabled, setSectionResizeEnabled] = useState(false);
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
+  const [rowOrientationDeg, setRowOrientationDeg] = useState(0);
+  const [rowPreviewPoint, setRowPreviewPoint] = useState<Vec2 | null>(null);
   const handleSeatsPerRowChange = useCallback(
     (n: number) => {
       setSeatsPerRow(n);
@@ -262,6 +264,20 @@ function EditorInner({
     },
     [addRowTool],
   );
+  const handleRowOrientationChange = useCallback(
+    (deg: number) => {
+      const normalized = ((Math.round(deg) % 360) + 360) % 360;
+      setRowOrientationDeg(normalized);
+      addRowTool.rowOrientationDeg = normalized;
+    },
+    [addRowTool],
+  );
+  const handleRotateRowOrientationQuarterTurn = useCallback(
+    () => {
+      handleRowOrientationChange(rowOrientationDeg + 90);
+    },
+    [handleRowOrientationChange, rowOrientationDeg],
+  );
   const handleSectionModeChange = useCallback(
     (mode: SectionCreationMode) => {
       setSectionMode(mode);
@@ -276,6 +292,12 @@ function EditorInner({
   useEffect(() => {
     selectTool.setSectionResizeEnabled(sectionResizeEnabled);
   }, [selectTool, sectionResizeEnabled]);
+
+  useEffect(() => {
+    if (activeToolName !== "add-row") {
+      setRowPreviewPoint(null);
+    }
+  }, [activeToolName]);
 
   const setActiveTool = useCallback(
     (name: string) => {
@@ -908,6 +930,86 @@ function EditorInner({
     );
   };
 
+  const renderRowOrientationOverlay = () => {
+    if (activeToolName !== "add-row" || !rowPreviewPoint || !venue) return null;
+    const preview = addRowTool.getPlacementPreview(rowPreviewPoint.x, rowPreviewPoint.y, venue);
+    if (!preview) return null;
+
+    const origin = viewport.worldToScreen(preview.worldX, preview.worldY);
+    const lineLengthPx = 78;
+    const end = {
+      x: origin.x + Math.cos(preview.worldAngleRad) * lineLengthPx,
+      y: origin.y + Math.sin(preview.worldAngleRad) * lineLengthPx,
+    };
+    const arrowSizePx = 11;
+    const leftWing = {
+      x: end.x - Math.cos(preview.worldAngleRad - Math.PI / 6) * arrowSizePx,
+      y: end.y - Math.sin(preview.worldAngleRad - Math.PI / 6) * arrowSizePx,
+    };
+    const rightWing = {
+      x: end.x - Math.cos(preview.worldAngleRad + Math.PI / 6) * arrowSizePx,
+      y: end.y - Math.sin(preview.worldAngleRad + Math.PI / 6) * arrowSizePx,
+    };
+    // Keep tooltip convention aligned with row orientation input:
+    // 0deg = up, 90deg = right, clockwise positive.
+    const worldAngleDeg = ((((preview.worldAngleRad * 180) / Math.PI) + 90) % 360 + 360) % 360;
+
+    return (
+      <svg
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          zIndex: 17,
+        }}
+      >
+        <line
+          x1={origin.x}
+          y1={origin.y}
+          x2={end.x}
+          y2={end.y}
+          stroke="rgba(255, 213, 122, 0.95)"
+          strokeWidth={3}
+          strokeLinecap="round"
+        />
+        <polygon
+          points={`${end.x},${end.y} ${leftWing.x},${leftWing.y} ${rightWing.x},${rightWing.y}`}
+          fill="rgba(255, 213, 122, 0.95)"
+        />
+        <circle
+          cx={origin.x}
+          cy={origin.y}
+          r={5}
+          fill="rgba(255, 213, 122, 0.28)"
+          stroke="rgba(255, 213, 122, 0.95)"
+          strokeWidth={1.5}
+        />
+        <rect
+          x={origin.x + 10}
+          y={origin.y - 28}
+          width={90}
+          height={20}
+          rx={5}
+          fill="rgba(15, 15, 25, 0.9)"
+          stroke="rgba(255, 213, 122, 0.65)"
+          strokeWidth={1}
+        />
+        <text
+          x={origin.x + 55}
+          y={origin.y - 14}
+          fill="#ffd57a"
+          fontSize={11}
+          fontFamily="system-ui"
+          textAnchor="middle"
+        >
+          {`Row angle ${Math.round(worldAngleDeg)}deg`}
+        </text>
+      </svg>
+    );
+  };
+
   const handleSelectSection = useCallback(
     (sectionId: string) => {
       if (!venue) return;
@@ -1198,6 +1300,16 @@ function EditorInner({
               background: "rgba(42, 42, 74, 0.65)",
             }}
           >
+            <span
+              style={{
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                fontWeight: 600,
+              }}
+            >
+              Row layout
+            </span>
             <label
               style={{
                 color: "#9e9e9e",
@@ -1231,34 +1343,34 @@ function EditorInner({
             </label>
 
             <label
-              style={{
-                color: "#9e9e9e",
-                fontSize: 12,
-                fontFamily: "system-ui",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
+                style={{
+                  color: "#9e9e9e",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
             >
               Rows:
               <input
-                type="number"
-                min={1}
-                max={100}
-                value={rowsCount}
-                onChange={(e) =>
-                  handleRowsCountChange(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
-                }
-                style={{
-                  width: 56,
-                  padding: "3px 6px",
-                  background: "#2a2a4a",
-                  border: "1px solid #3a3a5a",
-                  borderRadius: 4,
-                  color: "#e0e0e0",
-                  fontSize: 13,
-                  fontFamily: "system-ui",
-                }}
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={rowsCount}
+                  onChange={(e) =>
+                      handleRowsCountChange(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
+                  }
+                  style={{
+                    width: 56,
+                    padding: "3px 6px",
+                    background: "#2a2a4a",
+                    border: "1px solid #3a3a5a",
+                    borderRadius: 4,
+                    color: "#e0e0e0",
+                    fontSize: 13,
+                    fontFamily: "system-ui",
+                  }}
               />
             </label>
 
@@ -1271,6 +1383,88 @@ function EditorInner({
               }}
             >
               Total seats to add: {seatsPerRow * Math.max(1, rowsCount)}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 8,
+              padding: "8px 10px",
+              border: "1px solid #3a3a5a",
+              borderRadius: 6,
+              background: "rgba(42, 42, 74, 0.65)",
+            }}
+          >
+            <span
+              style={{
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                fontWeight: 600,
+              }}
+            >
+              Orientation
+            </span>
+
+            <label
+              style={{
+                color: "#9e9e9e",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              Orientation:
+              <input
+                type="number"
+                min={0}
+                max={359}
+                value={rowOrientationDeg}
+                onChange={(e) => handleRowOrientationChange(parseInt(e.target.value, 10) || 0)}
+                style={{
+                  width: 56,
+                  padding: "3px 6px",
+                  background: "#2a2a4a",
+                  border: "1px solid #3a3a5a",
+                  borderRadius: 4,
+                  color: "#e0e0e0",
+                  fontSize: 13,
+                  fontFamily: "system-ui",
+                }}
+              />
+              <span style={{ color: "#9e9e9e" }}>deg</span>
+              <button
+                onClick={handleRotateRowOrientationQuarterTurn}
+                style={{
+                  padding: "3px 6px",
+                  borderRadius: 4,
+                  border: "1px solid #3a3a5a",
+                  background: "#2a2a4a",
+                  color: "#d0d0e0",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+                title="Rotate row direction by 90 degrees"
+              >
+                +90deg
+              </button>
+            </label>
+
+            <div
+              style={{
+                color: "#9e9e9e",
+                fontSize: 11,
+                fontFamily: "system-ui",
+              }}
+            >
+              0deg = up, 90deg = right
             </div>
           </div>
         </div>
@@ -1371,9 +1565,12 @@ function EditorInner({
     (e: React.PointerEvent<HTMLDivElement>) => {
       const toolEvent = toToolPointerEvent(e);
       activeToolRef.current.onPointerMove(toolEvent, viewport, store);
+      if (activeToolName === "add-row") {
+        setRowPreviewPoint({ x: toolEvent.worldX, y: toolEvent.worldY });
+      }
       bumpDragPreview();
     },
-    [toToolPointerEvent, viewport, store, bumpDragPreview],
+    [toToolPointerEvent, viewport, store, activeToolName, bumpDragPreview],
   );
 
   const handleCanvasPointerUp = useCallback(
@@ -1423,6 +1620,7 @@ function EditorInner({
             seatPoints={selectTool.getSeatDragPreview(venue)}
             viewport={viewport}
           />
+          {renderRowOrientationOverlay()}
           {renderSectionResizeOverlay()}
           {renderBackgroundResizeOverlay()}
           {renderActiveToolOptionsOverlay()}

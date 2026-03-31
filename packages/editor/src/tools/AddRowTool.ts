@@ -1,6 +1,6 @@
 import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
 import { generateId, pointInPolygon } from "@nex125/seatmap-core";
-import type { Row, Seat } from "@nex125/seatmap-core";
+import type { Row, Seat, Section, Venue } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
@@ -24,6 +24,19 @@ export class AddRowTool extends BaseTool {
   seatsPerRow = 10;
   rowsCount = 1;
   seatSpacing = 20;
+  rowOrientationDeg = 0;
+
+  getPlacementPreview(
+    worldX: number,
+    worldY: number,
+    venue: Venue | null,
+  ): { worldX: number; worldY: number; worldAngleRad: number } | null {
+    if (!venue) return null;
+    const section = this.findTargetSection(worldX, worldY, venue);
+    if (!section) return null;
+    const worldAngleRad = section.rotation + this.getFacingOrientationRad();
+    return { worldX, worldY, worldAngleRad };
+  }
 
   constructor(
     private history: CommandHistory,
@@ -33,79 +46,67 @@ export class AddRowTool extends BaseTool {
   }
 
   onPointerDown(e: ToolPointerEvent, _viewport: Viewport, store: SeatmapStore): void {
-    const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 50);
-
     const venue = store.getState().venue;
     if (!venue) return;
-
-    const sectionHits = hits.filter((h) => h.type === "section");
-    if (sectionHits.length === 0) return;
-
-    const sectionIds = [...new Set(sectionHits.map((h) => h.sectionId))];
-    let section = sectionIds
-      .map((id) => venue.sections.find((s) => s.id === id))
-      .filter((s): s is NonNullable<typeof s> => Boolean(s))
-      .find((s) => {
-        if (s.outline.length < 3) return true;
-        const cos = Math.cos(-s.rotation);
-        const sin = Math.sin(-s.rotation);
-        const relX = e.worldX - s.position.x;
-        const relY = e.worldY - s.position.y;
-        const local = {
-          x: relX * cos - relY * sin,
-          y: relX * sin + relY * cos,
-        };
-        return pointInPolygon(local, s.outline);
-      });
-
-    if (!section) {
-      section = sectionIds
-        .map((id) => venue.sections.find((s) => s.id === id))
-        .filter((s): s is NonNullable<typeof s> => Boolean(s))
-        .sort(
-          (a, b) =>
-            Math.hypot(e.worldX - a.position.x, e.worldY - a.position.y) -
-            Math.hypot(e.worldX - b.position.x, e.worldY - b.position.y),
-        )[0];
-    }
+    const section = this.findTargetSection(e.worldX, e.worldY, venue);
     if (!section) return;
 
-    // Convert click to section-local coordinates
+    // Convert click to section-local coordinates.
     const cos = Math.cos(-section.rotation);
     const sin = Math.sin(-section.rotation);
     const relX = e.worldX - section.position.x;
     const relY = e.worldY - section.position.y;
-    let targetY = relX * sin + relY * cos;
+    const localX = relX * cos - relY * sin;
+    const localY = relX * sin + relY * cos;
 
-    // Collect existing row Y positions and snap away from them to avoid overlap
-    const existingYs = section.rows
-      .flatMap((r) => r.seats.map((s) => s.position.y))
-      .filter((y, i, arr) => arr.indexOf(y) === i)
+    // Row seats are placed along the row axis, which is perpendicular to the facing direction.
+    const orientationRad = this.getRowAxisRad();
+    const orientationCos = Math.cos(orientationRad);
+    const orientationSin = Math.sin(orientationRad);
+    const toOriented = (point: { x: number; y: number }) => ({
+      u: point.x * orientationCos + point.y * orientationSin,
+      v: -point.x * orientationSin + point.y * orientationCos,
+    });
+    const fromOriented = (u: number, v: number) => ({
+      x: u * orientationCos - v * orientationSin,
+      y: u * orientationSin + v * orientationCos,
+    });
+
+    const clickOriented = toOriented({ x: localX, y: localY });
+    const startU = clickOriented.u;
+    const targetV = clickOriented.v;
+
+    // Collect existing row "depth" positions relative to current orientation and snap away from overlap.
+    const existingVs = section.rows
+      .map((row) => {
+        if (row.seats.length === 0) return null;
+        const projected = row.seats.map((seat) => toOriented(seat.position).v);
+        return projected.reduce((sum, v) => sum + v, 0) / projected.length;
+      })
+      .filter((v): v is number => v !== null)
       .sort((a, b) => a - b);
-
-    for (const ey of existingYs) {
-      if (Math.abs(targetY - ey) < ROW_GAP) {
-        targetY = ey + ROW_GAP;
-      }
-    }
 
     const hasOutline = section.outline.length >= 3;
     const rowsToAdd = Math.max(1, Math.floor(this.rowsCount));
-    const occupiedYs = [...existingYs];
+    const occupiedVs = [...existingVs];
     const newRows: Row[] = [];
 
     for (let rowIndex = 0; rowIndex < rowsToAdd; rowIndex++) {
-      let rowY = targetY + rowIndex * ROW_GAP;
-      while (occupiedYs.some((y) => Math.abs(rowY - y) < ROW_GAP)) {
-        rowY += ROW_GAP;
+      let rowV = targetV + rowIndex * ROW_GAP;
+      if (rowIndex > 0) {
+        while (occupiedVs.some((v) => Math.abs(rowV - v) < ROW_GAP)) {
+          rowV += ROW_GAP;
+        }
       }
-      occupiedYs.push(rowY);
+      occupiedVs.push(rowV);
 
       const seats: Seat[] = [];
-      const startX = -((this.seatsPerRow - 1) * this.seatSpacing) / 2;
       for (let i = 0; i < this.seatsPerRow; i++) {
-        const pos = { x: startX + i * this.seatSpacing, y: rowY };
-        if (hasOutline && !pointInPolygon(pos, section.outline)) continue;
+        const pos = fromOriented(startU + i * this.seatSpacing, rowV);
+        if (hasOutline && !pointInPolygon(pos, section.outline)) {
+          // Keep placement consistent: fill from the first seat (pointer) to the right only.
+          break;
+        }
         seats.push({
           id: generateId("seat"),
           label: `${seats.length + 1}`,
@@ -157,5 +158,46 @@ export class AddRowTool extends BaseTool {
         });
       },
     });
+  }
+
+  private findTargetSection(worldX: number, worldY: number, venue: Venue): Section | null {
+    const hits = this.spatialIndex.queryPoint({ x: worldX, y: worldY }, 50);
+    const sectionHits = hits.filter((h) => h.type === "section");
+    if (sectionHits.length === 0) return null;
+
+    const sectionIds = [...new Set(sectionHits.map((h) => h.sectionId))];
+    const sections = sectionIds
+      .map((id) => venue.sections.find((s) => s.id === id))
+      .filter((s): s is Section => Boolean(s));
+    if (sections.length === 0) return null;
+
+    const containing = sections.find((section) => {
+      if (section.outline.length < 3) return true;
+      const cos = Math.cos(-section.rotation);
+      const sin = Math.sin(-section.rotation);
+      const relX = worldX - section.position.x;
+      const relY = worldY - section.position.y;
+      const local = {
+        x: relX * cos - relY * sin,
+        y: relX * sin + relY * cos,
+      };
+      return pointInPolygon(local, section.outline);
+    });
+    if (containing) return containing;
+
+    return sections.sort(
+      (a, b) =>
+        Math.hypot(worldX - a.position.x, worldY - a.position.y) -
+        Math.hypot(worldX - b.position.x, worldY - b.position.y),
+    )[0] ?? null;
+  }
+
+  private getFacingOrientationRad(): number {
+    // Facing direction: 0deg points up; 90deg points right.
+    return ((this.rowOrientationDeg - 90) * Math.PI) / 180;
+  }
+
+  private getRowAxisRad(): number {
+    return this.getFacingOrientationRad() + Math.PI / 2;
   }
 }
