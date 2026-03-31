@@ -1,5 +1,5 @@
 import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
-import { pointInPolygon } from "@nex125/seatmap-core";
+import { generateId, pointInPolygon } from "@nex125/seatmap-core";
 import type { Vec2 } from "@nex125/seatmap-core";
 import type { Section } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
@@ -16,7 +16,13 @@ function snapToGrid(v: number): number {
 
 type DragMode =
   | { type: "none" }
-  | { type: "seats"; sectionId: string; originals: Map<string, { rowId: string; pos: Vec2 }>; delta: Vec2 }
+  | {
+      type: "seats";
+      sectionId: string;
+      previewSectionId: string;
+      originals: Map<string, { rowId: string; pos: Vec2 }>;
+      delta: Vec2;
+    }
   | {
       type: "section";
       primarySectionId: string;
@@ -42,6 +48,8 @@ type DragMode =
       mergeCandidates: Array<{ fromIndex: number; toIndex: number }>;
     }
   | { type: "rect" };
+
+type VenueState = NonNullable<ReturnType<SeatmapStore["getState"]>["venue"]>;
 
 export class SelectTool extends BaseTool {
   readonly name = "select";
@@ -147,7 +155,13 @@ export class SelectTool extends BaseTool {
       }
 
       if (originals.size > 0) {
-        this.dragMode = { type: "seats", sectionId, originals, delta: { x: 0, y: 0 } };
+        this.dragMode = {
+          type: "seats",
+          sectionId,
+          previewSectionId: sectionId,
+          originals,
+          delta: { x: 0, y: 0 },
+        };
         return;
       }
     }
@@ -247,23 +261,61 @@ export class SelectTool extends BaseTool {
 
     if (this.dragMode.type === "seats") {
       const { sectionId, originals } = this.dragMode;
-      const section = venue.sections.find((s) => s.id === sectionId);
-      if (!section) return;
+      const sourceSection = venue.sections.find((s) => s.id === sectionId);
+      if (!sourceSection) return;
 
-      const c = Math.cos(-section.rotation);
-      const s2 = Math.sin(-section.rotation);
-      const localDx = dx * c - dy * s2;
-      const localDy = dx * s2 + dy * c;
+      const desiredSourceLocalDelta = this.rotateWorldDeltaToSectionLocal(sourceSection.rotation, {
+        x: dx,
+        y: dy,
+      });
+      const pointerWorld = { x: e.worldX, y: e.worldY };
+      const destinationSection = this.findSectionAtWorldPoint(venue, pointerWorld) ?? sourceSection;
 
-      const constrained = this.constrainSeatGroupDelta(section, originals, localDx, localDy);
-      if (this.dragMode.delta.x === constrained.x && this.dragMode.delta.y === constrained.y) {
+      let constrainedSourceLocalDelta = desiredSourceLocalDelta;
+      if (destinationSection.id === sourceSection.id) {
+        constrainedSourceLocalDelta = this.constrainSeatGroupDelta(
+          sourceSection,
+          originals,
+          desiredSourceLocalDelta.x,
+          desiredSourceLocalDelta.y,
+        );
+      } else {
+        const destinationOriginals = this.mapOriginalSeatPositionsToSection(
+          originals,
+          sourceSection,
+          destinationSection,
+        );
+        const worldDelta = this.rotateSectionLocalDeltaToWorld(sourceSection.rotation, desiredSourceLocalDelta);
+        const destinationDesiredDelta = this.rotateWorldDeltaToSectionLocal(destinationSection.rotation, worldDelta);
+        const destinationConstrainedDelta = this.snapSeatGroupDelta(
+          destinationSection,
+          destinationOriginals,
+          destinationDesiredDelta.x,
+          destinationDesiredDelta.y,
+        );
+        const constrainedWorldDelta = this.rotateSectionLocalDeltaToWorld(
+          destinationSection.rotation,
+          destinationConstrainedDelta,
+        );
+        constrainedSourceLocalDelta = this.rotateWorldDeltaToSectionLocal(
+          sourceSection.rotation,
+          constrainedWorldDelta,
+        );
+      }
+
+      if (
+        this.dragMode.delta.x === constrainedSourceLocalDelta.x &&
+        this.dragMode.delta.y === constrainedSourceLocalDelta.y &&
+        this.dragMode.previewSectionId === destinationSection.id
+      ) {
         return;
       }
       this.dragMode = {
         type: "seats",
         sectionId,
+        previewSectionId: destinationSection.id,
         originals,
-        delta: constrained,
+        delta: constrainedSourceLocalDelta,
       };
       return;
     }
@@ -301,7 +353,7 @@ export class SelectTool extends BaseTool {
 
   onPointerUp(e: ToolPointerEvent, _viewport: Viewport, store: SeatmapStore): void {
     if (this.hasDragged) {
-      this.commitDrag(store);
+      this.commitDrag(store, { x: e.worldX, y: e.worldY });
     } else if (this.dragMode.type === "resize-side") {
       this.commitAddPointOnSide(store, this.dragMode, { x: e.worldX, y: e.worldY });
     } else if (this.dragMode.type === "resize-corner") {
@@ -391,90 +443,40 @@ export class SelectTool extends BaseTool {
     });
   }
 
-  private commitDrag(store: SeatmapStore): void {
+  private commitDrag(store: SeatmapStore, dropWorld: Vec2): void {
     const venue = store.getState().venue;
     if (!venue) return;
 
     if (this.dragMode.type === "seats") {
       const { sectionId, originals, delta } = this.dragMode;
-      const section = venue.sections.find((s) => s.id === sectionId);
-      if (!section) return;
+      const sourceSection = venue.sections.find((s) => s.id === sectionId);
+      if (!sourceSection) return;
       if (delta.x === 0 && delta.y === 0) return;
 
-      // Snap movement to grid while preserving section constraints.
-      const snappedDelta = this.snapSeatGroupDelta(section, originals, delta.x, delta.y);
-
-      // Snap final positions to grid on commit
-      const finals = new Map<string, Vec2>();
-      for (const [seatId, orig] of originals.entries()) {
-        finals.set(seatId, {
-          x: orig.pos.x + snappedDelta.x,
-          y: orig.pos.y + snappedDelta.y,
-        });
+      const destinationSection = this.findSectionAtWorldPoint(venue, dropWorld) ?? sourceSection;
+      if (destinationSection.id === sourceSection.id) {
+        this.commitSeatMoveWithinSection(store, venue, sourceSection, originals, delta);
+        return;
       }
 
-      // Apply snapped positions immediately so the user sees the snap
-      store.getState().setVenue({
-        ...venue,
-        sections: venue.sections.map((sec) =>
-          sec.id === sectionId
-            ? {
-                ...sec,
-                rows: sec.rows.map((r) => ({
-                  ...r,
-                  seats: r.seats.map((st) => {
-                    const fp = finals.get(st.id);
-                    return fp ? { ...st, position: fp } : st;
-                  }),
-                })),
-              }
-            : sec,
-        ),
-      });
+      const afterTransfer = this.buildSeatTransferVenue(
+        venue,
+        sourceSection,
+        destinationSection,
+        originals,
+        delta,
+      );
+      if (!afterTransfer) return;
+
+      store.getState().setVenue(afterTransfer);
 
       this.history.execute({
-        description: `Move ${originals.size} seat(s)`,
+        description: `Move ${originals.size} seat(s) to "${destinationSection.label}"`,
         execute: () => {
-          const v = store.getState().venue;
-          if (!v) return;
-          store.getState().setVenue({
-            ...v,
-            sections: v.sections.map((sec) =>
-              sec.id === sectionId
-                ? {
-                    ...sec,
-                    rows: sec.rows.map((r) => ({
-                      ...r,
-                      seats: r.seats.map((st) => {
-                        const fp = finals.get(st.id);
-                        return fp ? { ...st, position: fp } : st;
-                      }),
-                    })),
-                  }
-                : sec,
-            ),
-          });
+          store.getState().setVenue(afterTransfer);
         },
         undo: () => {
-          const v = store.getState().venue;
-          if (!v) return;
-          store.getState().setVenue({
-            ...v,
-            sections: v.sections.map((sec) =>
-              sec.id === sectionId
-                ? {
-                    ...sec,
-                    rows: sec.rows.map((r) => ({
-                      ...r,
-                      seats: r.seats.map((st) => {
-                        const op = originals.get(st.id);
-                        return op ? { ...st, position: op.pos } : st;
-                      }),
-                    })),
-                  }
-                : sec,
-            ),
-          });
+          store.getState().setVenue(venue);
         },
       });
     }
@@ -603,31 +605,43 @@ export class SelectTool extends BaseTool {
   getSectionDragPreview(
     venue: { sections: Array<{ id: string; position: Vec2; rotation: number; outline: Vec2[] }> } | null,
   ): Vec2[] | null {
+    return this.getSectionDragPreviews(venue)[0] ?? null;
+  }
+
+  getSectionDragPreviews(
+    venue: { sections: Array<{ id: string; position: Vec2; rotation: number; outline: Vec2[] }> } | null,
+  ): Vec2[][] {
     const drag = this.dragMode;
-    if (!venue) return null;
+    if (!venue) return [];
     if (drag.type === "section") {
-      const section = venue.sections.find((s) => s.id === drag.primarySectionId);
-      const originalPos = drag.originalPositions.get(drag.primarySectionId);
-      if (!section || !originalPos || section.outline.length < 3) return null;
-      const pos = { x: originalPos.x + drag.delta.x, y: originalPos.y + drag.delta.y };
-      const c = Math.cos(section.rotation);
-      const s = Math.sin(section.rotation);
-      return section.outline.map((p) => ({
-        x: pos.x + p.x * c - p.y * s,
-        y: pos.y + p.x * s + p.y * c,
-      }));
+      return drag.sectionIds
+        .map((sectionId) => {
+          const section = venue.sections.find((s) => s.id === sectionId);
+          const originalPos = drag.originalPositions.get(sectionId);
+          if (!section || !originalPos || section.outline.length < 3) return null;
+          const pos = { x: originalPos.x + drag.delta.x, y: originalPos.y + drag.delta.y };
+          const c = Math.cos(section.rotation);
+          const s = Math.sin(section.rotation);
+          return section.outline.map((p) => ({
+            x: pos.x + p.x * c - p.y * s,
+            y: pos.y + p.x * s + p.y * c,
+          }));
+        })
+        .filter((outline): outline is Vec2[] => Boolean(outline));
     }
     if (drag.type === "resize-corner" || drag.type === "resize-side") {
       const section = venue.sections.find((s) => s.id === drag.sectionId);
-      if (!section || drag.outline.length < 3) return null;
+      if (!section || drag.outline.length < 3) return [];
       const c = Math.cos(section.rotation);
       const s = Math.sin(section.rotation);
-      return drag.outline.map((p) => ({
-        x: section.position.x + p.x * c - p.y * s,
-        y: section.position.y + p.x * s + p.y * c,
-      }));
+      return [
+        drag.outline.map((p) => ({
+          x: section.position.x + p.x * c - p.y * s,
+          y: section.position.y + p.x * s + p.y * c,
+        })),
+      ];
     }
-    return null;
+    return [];
   }
 
   getSectionResizeHandlesPreview(
@@ -685,16 +699,24 @@ export class SelectTool extends BaseTool {
   ): Vec2[] {
     const drag = this.dragMode;
     if (!venue || drag.type !== "seats") return [];
-    const section = venue.sections.find((s) => s.id === drag.sectionId);
-    if (!section) return [];
-    const c = Math.cos(section.rotation);
-    const s = Math.sin(section.rotation);
-    return [...drag.originals.values()].map((orig) => {
-      const localX = orig.pos.x + drag.delta.x;
-      const localY = orig.pos.y + drag.delta.y;
+    const sourceSection = venue.sections.find((s) => s.id === drag.sectionId);
+    const previewSection = venue.sections.find((s) => s.id === drag.previewSectionId) ?? sourceSection;
+    if (!sourceSection || !previewSection) return [];
+
+    const previewOriginals =
+      previewSection.id === sourceSection.id
+        ? drag.originals
+        : this.mapOriginalSeatPositionsToSection(drag.originals, sourceSection, previewSection);
+    const worldDelta = this.rotateSectionLocalDeltaToWorld(sourceSection.rotation, drag.delta);
+    const previewLocalDelta = this.rotateWorldDeltaToSectionLocal(previewSection.rotation, worldDelta);
+    const c = Math.cos(previewSection.rotation);
+    const s = Math.sin(previewSection.rotation);
+    return [...previewOriginals.values()].map((orig) => {
+      const localX = orig.pos.x + previewLocalDelta.x;
+      const localY = orig.pos.y + previewLocalDelta.y;
       return {
-        x: section.position.x + localX * c - localY * s,
-        y: section.position.y + localX * s + localY * c,
+        x: previewSection.position.x + localX * c - localY * s,
+        y: previewSection.position.y + localX * s + localY * c,
       };
     });
   }
@@ -732,6 +754,17 @@ export class SelectTool extends BaseTool {
       return { x: desiredDx, y: desiredDy };
     }
     if (!canPlace(0, 0)) {
+      // When the starting position itself is invalid (for example while previewing
+      // a cross-section transfer), backtrack from the desired movement to find the
+      // nearest valid constrained placement.
+      for (let step = 23; step >= 0; step--) {
+        const ratio = step / 24;
+        const candidateX = desiredDx * ratio;
+        const candidateY = desiredDy * ratio;
+        if (canPlace(candidateX, candidateY)) {
+          return { x: candidateX, y: candidateY };
+        }
+      }
       return { x: desiredDx, y: desiredDy };
     }
 
@@ -743,6 +776,262 @@ export class SelectTool extends BaseTool {
       else hi = mid;
     }
     return { x: desiredDx * lo, y: desiredDy * lo };
+  }
+
+  private commitSeatMoveWithinSection(
+    store: SeatmapStore,
+    venue: VenueState,
+    section: { id: string; outline: Vec2[]; rows: Array<{ seats: Array<{ id: string; position: Vec2 }> }> },
+    originals: Map<string, { rowId: string; pos: Vec2 }>,
+    delta: Vec2,
+  ): void {
+    // Snap movement to grid while preserving section constraints.
+    const snappedDelta = this.snapSeatGroupDelta(section, originals, delta.x, delta.y);
+
+    // Snap final positions to grid on commit.
+    const finals = new Map<string, Vec2>();
+    for (const [seatId, orig] of originals.entries()) {
+      finals.set(seatId, {
+        x: orig.pos.x + snappedDelta.x,
+        y: orig.pos.y + snappedDelta.y,
+      });
+    }
+
+    const afterVenue = {
+      ...venue,
+      sections: venue.sections.map((sec) =>
+        sec.id === section.id
+          ? {
+              ...sec,
+              rows: sec.rows.map((r) => ({
+                ...r,
+                seats: r.seats.map((st) => {
+                  const fp = finals.get(st.id);
+                  return fp ? { ...st, position: fp } : st;
+                }),
+              })),
+            }
+          : sec,
+      ),
+    };
+
+    // Apply snapped positions immediately so the user sees the snap.
+    store.getState().setVenue(afterVenue);
+
+    this.history.execute({
+      description: `Move ${originals.size} seat(s)`,
+      execute: () => {
+        store.getState().setVenue(afterVenue);
+      },
+      undo: () => {
+        store.getState().setVenue(venue);
+      },
+    });
+  }
+
+  private buildSeatTransferVenue(
+    venue: VenueState,
+    sourceSection: Section,
+    destinationSection: Section,
+    originals: Map<string, { rowId: string; pos: Vec2 }>,
+    delta: Vec2,
+  ): VenueState | null {
+    const destinationRows = destinationSection.rows.map((row) => ({
+      ...row,
+      seats: row.seats.map((seat) => ({ ...seat })),
+    }));
+    const sourceRows = sourceSection.rows.map((row) => ({
+      ...row,
+      seats: row.seats.map((seat) => ({ ...seat })),
+    }));
+
+    const movingSeatIds = new Set(originals.keys());
+    const movingSeats = sourceRows
+      .flatMap((row) => row.seats.map((seat) => ({ seat })))
+      .filter((entry) => movingSeatIds.has(entry.seat.id));
+    if (movingSeats.length === 0) return null;
+
+    // Remove moved seats from source section.
+    const nextSourceRows = sourceRows
+      .map((row) => ({
+        ...row,
+        seats: row.seats.filter((seat) => !movingSeatIds.has(seat.id)),
+      }))
+      .filter((row) => row.seats.length > 0);
+
+    const srcC = Math.cos(sourceSection.rotation);
+    const srcS = Math.sin(sourceSection.rotation);
+    const dstInvC = Math.cos(-destinationSection.rotation);
+    const dstInvS = Math.sin(-destinationSection.rotation);
+    const occupancy = destinationRows.flatMap((row) => row.seats.map((seat) => seat.position));
+
+    const placements = movingSeats
+      .map(({ seat }) => {
+        const origin = originals.get(seat.id);
+        if (!origin) return null;
+
+        const sourceLocal = {
+          x: origin.pos.x + delta.x,
+          y: origin.pos.y + delta.y,
+        };
+        const world = {
+          x: sourceSection.position.x + sourceLocal.x * srcC - sourceLocal.y * srcS,
+          y: sourceSection.position.y + sourceLocal.x * srcS + sourceLocal.y * srcC,
+        };
+
+        const dstRelX = world.x - destinationSection.position.x;
+        const dstRelY = world.y - destinationSection.position.y;
+        return {
+          seat,
+          local: {
+            x: snapToGrid(dstRelX * dstInvC - dstRelY * dstInvS),
+            y: snapToGrid(dstRelX * dstInvS + dstRelY * dstInvC),
+          },
+        };
+      })
+      .filter((placement): placement is NonNullable<typeof placement> => Boolean(placement))
+      .sort((a, b) => (a.local.y === b.local.y ? a.local.x - b.local.x : a.local.y - b.local.y));
+
+    if (placements.length === 0) return null;
+    if (
+      destinationSection.outline.length >= 3 &&
+      placements.some((placement) => !pointInPolygon(placement.local, destinationSection.outline))
+    ) {
+      return null;
+    }
+
+    const findBestRowByY = (targetY: number) => {
+      let bestIndex = -1;
+      let bestDist = Number.POSITIVE_INFINITY;
+      for (let i = 0; i < destinationRows.length; i++) {
+        const row = destinationRows[i];
+        if (row.seats.length === 0) continue;
+        const rowY = row.seats[0]!.position.y;
+        const dist = Math.abs(targetY - rowY);
+        if (dist < MIN_SEAT_DISTANCE && dist < bestDist) {
+          bestDist = dist;
+          bestIndex = i;
+        }
+      }
+      return bestIndex;
+    };
+
+    for (const placement of placements) {
+      let targetRowIndex = findBestRowByY(placement.local.y);
+      if (targetRowIndex < 0) {
+        destinationRows.push({
+          id: generateId("row"),
+          label: String.fromCharCode(65 + destinationRows.length),
+          seats: [],
+        });
+        targetRowIndex = destinationRows.length - 1;
+      }
+
+      const row = destinationRows[targetRowIndex]!;
+      const rowY = row.seats.length > 0 ? row.seats[0]!.position.y : placement.local.y;
+      const snappedX = this.findNonOverlappingSeatX(placement.local.x, rowY, occupancy);
+      const finalPos = { x: snappedX, y: rowY };
+
+      if (
+        destinationSection.outline.length >= 3 &&
+        !pointInPolygon(finalPos, destinationSection.outline)
+      ) {
+        return null;
+      }
+
+      row.seats.push({
+        ...placement.seat,
+        position: finalPos,
+        categoryId: destinationSection.categoryId,
+      });
+      occupancy.push(finalPos);
+    }
+
+    return {
+      ...venue,
+      sections: venue.sections.map((section) => {
+        if (section.id === sourceSection.id) {
+          return { ...section, rows: nextSourceRows };
+        }
+        if (section.id === destinationSection.id) {
+          return { ...section, rows: destinationRows };
+        }
+        return section;
+      }),
+    };
+  }
+
+  private findSectionAtWorldPoint(
+    venue: { sections: Section[] },
+    worldPoint: Vec2,
+  ): Section | null {
+    const containingSections = venue.sections.filter((section) => {
+      if (section.outline.length < 3) return true;
+      return pointInPolygon(this.toLocal(section, worldPoint), section.outline);
+    });
+    if (containingSections.length === 0) return null;
+    if (containingSections.length === 1) return containingSections[0]!;
+    return containingSections.sort(
+      (a, b) =>
+        Math.hypot(worldPoint.x - a.position.x, worldPoint.y - a.position.y) -
+        Math.hypot(worldPoint.x - b.position.x, worldPoint.y - b.position.y),
+    )[0]!;
+  }
+
+  private rotateSectionLocalDeltaToWorld(sectionRotation: number, localDelta: Vec2): Vec2 {
+    const c = Math.cos(sectionRotation);
+    const s = Math.sin(sectionRotation);
+    return {
+      x: localDelta.x * c - localDelta.y * s,
+      y: localDelta.x * s + localDelta.y * c,
+    };
+  }
+
+  private rotateWorldDeltaToSectionLocal(sectionRotation: number, worldDelta: Vec2): Vec2 {
+    const c = Math.cos(-sectionRotation);
+    const s = Math.sin(-sectionRotation);
+    return {
+      x: worldDelta.x * c - worldDelta.y * s,
+      y: worldDelta.x * s + worldDelta.y * c,
+    };
+  }
+
+  private mapOriginalSeatPositionsToSection(
+    originals: Map<string, { rowId: string; pos: Vec2 }>,
+    sourceSection: Pick<Section, "position" | "rotation">,
+    destinationSection: Pick<Section, "position" | "rotation">,
+  ): Map<string, { rowId: string; pos: Vec2 }> {
+    const map = new Map<string, { rowId: string; pos: Vec2 }>();
+    const srcC = Math.cos(sourceSection.rotation);
+    const srcS = Math.sin(sourceSection.rotation);
+    const dstInvC = Math.cos(-destinationSection.rotation);
+    const dstInvS = Math.sin(-destinationSection.rotation);
+    for (const [seatId, original] of originals.entries()) {
+      const world = {
+        x: sourceSection.position.x + original.pos.x * srcC - original.pos.y * srcS,
+        y: sourceSection.position.y + original.pos.x * srcS + original.pos.y * srcC,
+      };
+      const relX = world.x - destinationSection.position.x;
+      const relY = world.y - destinationSection.position.y;
+      map.set(seatId, {
+        rowId: original.rowId,
+        pos: {
+          x: relX * dstInvC - relY * dstInvS,
+          y: relX * dstInvS + relY * dstInvC,
+        },
+      });
+    }
+    return map;
+  }
+
+  private findNonOverlappingSeatX(x: number, y: number, existing: Vec2[]): number {
+    let candidate = snapToGrid(x);
+    for (let attempt = 0; attempt < 25; attempt++) {
+      const overlaps = existing.some((p) => Math.hypot(p.x - candidate, p.y - y) < MIN_SEAT_DISTANCE);
+      if (!overlaps) return candidate;
+      candidate += GRID;
+    }
+    return candidate;
   }
 
   private snapSeatGroupDelta(

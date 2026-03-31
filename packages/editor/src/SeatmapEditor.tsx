@@ -127,18 +127,19 @@ function PolygonPreviewOverlay({
 }
 
 function DragPreviewOverlay({
-  sectionOutline,
+  sectionOutlines,
   seatPoints,
   viewport,
 }: {
-  sectionOutline: Array<{ x: number; y: number }> | null;
+  sectionOutlines: Array<Array<{ x: number; y: number }>>;
   seatPoints: Array<{ x: number; y: number }>;
   viewport: Viewport;
 }) {
-  if (!sectionOutline && seatPoints.length === 0) return null;
+  if (sectionOutlines.length === 0 && seatPoints.length === 0) return null;
 
-  const sectionScreenPoints = sectionOutline?.map((p) => viewport.worldToScreen(p.x, p.y)) ?? [];
-  const sectionSvgPoints = sectionScreenPoints.map((p) => `${p.x},${p.y}`).join(" ");
+  const sectionScreenOutlines = sectionOutlines.map((outline) =>
+    outline.map((p) => viewport.worldToScreen(p.x, p.y)),
+  );
   const seatScreenPoints = seatPoints.map((p) => viewport.worldToScreen(p.x, p.y));
 
   return (
@@ -152,15 +153,18 @@ function DragPreviewOverlay({
         zIndex: 14,
       }}
     >
-      {sectionScreenPoints.length >= 3 && (
-        <polygon
-          points={sectionSvgPoints}
-          fill="rgba(110, 190, 255, 0.16)"
-          stroke="rgba(110, 190, 255, 0.95)"
-          strokeWidth={2}
-          strokeDasharray="8 6"
-        />
-      )}
+      {sectionScreenOutlines
+        .filter((outline) => outline.length >= 3)
+        .map((outline, i) => (
+          <polygon
+            key={i}
+            points={outline.map((p) => `${p.x},${p.y}`).join(" ")}
+            fill="rgba(110, 190, 255, 0.16)"
+            stroke="rgba(110, 190, 255, 0.95)"
+            strokeWidth={2}
+            strokeDasharray="8 6"
+          />
+        ))}
       {seatScreenPoints.map((p, i) => (
         <circle
           key={i}
@@ -1771,7 +1775,7 @@ function EditorInner({
             sectionGridMarkerStyle={sectionGridStyle}
           />
           <DragPreviewOverlay
-            sectionOutline={selectTool.getSectionDragPreview(venue)}
+            sectionOutlines={selectTool.getSectionDragPreviews(venue)}
             seatPoints={selectTool.getSeatDragPreview(venue)}
             viewport={viewport}
           />
