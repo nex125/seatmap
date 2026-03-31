@@ -75,7 +75,9 @@ function App() {
     cursor: "pointer",
     fontSize: 14,
     fontFamily: "system-ui",
-    borderBottom: "2px solid transparent",
+    borderBottomWidth: 2,
+    borderBottomStyle: "solid",
+    borderBottomColor: "transparent",
     transition: "all 0.15s",
   };
 

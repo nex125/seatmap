@@ -23,7 +23,9 @@ const tools = [
 
 const btnBase: CSSProperties = {
   padding: "6px 10px",
-  border: "1px solid #3a3a5a",
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "#3a3a5a",
   borderRadius: 6,
   background: "#2a2a4a",
   color: "#e0e0e0",
