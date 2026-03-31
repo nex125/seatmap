@@ -1,12 +1,12 @@
-import { Graphics, RenderTexture, type Renderer } from "pixi.js";
+import { Graphics, type Texture, type Renderer } from "pixi.js";
 
 export interface SeatTextureSet {
-  available: RenderTexture;
-  held: RenderTexture;
-  sold: RenderTexture;
-  blocked: RenderTexture;
-  selected: RenderTexture;
-  hovered: RenderTexture;
+  available: Texture;
+  held: Texture;
+  sold: Texture;
+  blocked: Texture;
+  selected: Texture;
+  hovered: Texture;
 }
 
 const STATUS_COLORS: Record<string, number> = {
@@ -25,7 +25,6 @@ export function createSeatTextures(
   textureResolution?: number,
 ): SeatTextureSet {
   const result: Partial<SeatTextureSet> = {};
-  const diameter = (radius + 4) * 2;
   const resolution = textureResolution ?? (4 * (typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1));
 
   for (const [status, color] of Object.entries(STATUS_COLORS)) {
@@ -39,8 +38,11 @@ export function createSeatTextures(
       g.stroke({ color: 0xffffff, width: 2 });
     }
 
-    const texture = RenderTexture.create({ width: diameter, height: diameter, resolution });
-    renderer.render({ container: g, target: texture });
+    const texture = renderer.textureGenerator.generateTexture({
+      target: g,
+      resolution,
+      antialias: true,
+    });
     g.destroy();
 
     result[status as keyof SeatTextureSet] = texture;
@@ -51,6 +53,6 @@ export function createSeatTextures(
 
 export function destroySeatTextures(textures: SeatTextureSet): void {
   for (const tex of Object.values(textures)) {
-    (tex as RenderTexture).destroy(true);
+    tex.destroy(true);
   }
 }

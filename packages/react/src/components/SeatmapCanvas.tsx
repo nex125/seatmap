@@ -125,7 +125,8 @@ export function SeatmapCanvas({
       const isHovered = hoveredSeatId === seat.id;
       const textureKey = getSeatTexture(seat, isSelected, isHovered);
       const textures = textureCacheRef.current.get(seat.categoryId);
-      const texture = textures[textureKey];
+      const texture = textures?.[textureKey];
+      if (!texture) return;
 
       const sprite = new Sprite(texture);
       sprite.anchor.set(0.5);
@@ -362,6 +363,8 @@ export function SeatmapCanvas({
     for (const table of venue.tables) {
       renderTable(world, table);
     }
+
+    appRef.current?.render();
   }, [venue, viewport, spatialIndex, renderSection, renderGAArea, renderTable]);
 
   // Keep renderRef always pointing to the latest renderScene
@@ -383,6 +386,7 @@ export function SeatmapCanvas({
         antialias: true,
         autoDensity: true,
         resolution: window.devicePixelRatio || 1,
+        autoStart: false,
       })
       .then(() => {
         if (destroyed) {
@@ -416,11 +420,11 @@ export function SeatmapCanvas({
       destroyed = true;
       readyRef.current = false;
       cancelAnimationFrame(rafRef.current);
-      textureCacheRef.current.destroy();
       if (appRef.current) {
         appRef.current.destroy(true, { children: true });
         appRef.current = null;
       }
+      textureCacheRef.current.destroy();
     };
   }, []);
 
@@ -434,6 +438,7 @@ export function SeatmapCanvas({
     if (catJson !== prevCatJsonRef.current) {
       prevCatJsonRef.current = catJson;
       textureCacheRef.current.create(appRef.current.renderer, venue.categories, SEAT_RADIUS);
+      worldRef.current?.removeChildren();
     }
 
     if (prevVenueIdRef.current !== venue.id) {
