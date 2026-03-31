@@ -13,8 +13,8 @@ function snapToGrid(v: number): number {
 
 type DragMode =
   | { type: "none" }
-  | { type: "seats"; sectionId: string; originals: Map<string, { rowId: string; pos: Vec2 }> }
-  | { type: "section"; sectionId: string; origPos: Vec2 }
+  | { type: "seats"; sectionId: string; originals: Map<string, { rowId: string; pos: Vec2 }>; delta: Vec2 }
+  | { type: "section"; sectionId: string; origPos: Vec2; delta: Vec2 }
   | { type: "rect" };
 
 export class SelectTool extends BaseTool {
@@ -67,7 +67,7 @@ export class SelectTool extends BaseTool {
       }
 
       if (originals.size > 0) {
-        this.dragMode = { type: "seats", sectionId, originals };
+        this.dragMode = { type: "seats", sectionId, originals, delta: { x: 0, y: 0 } };
         return;
       }
     }
@@ -80,6 +80,7 @@ export class SelectTool extends BaseTool {
           type: "section",
           sectionId: section.id,
           origPos: { ...section.position },
+          delta: { x: 0, y: 0 },
         };
         return;
       }
@@ -115,40 +116,33 @@ export class SelectTool extends BaseTool {
       const localDy = dx * s2 + dy * c;
 
       const constrained = this.constrainSeatGroupDelta(section, originals, localDx, localDy);
-      store.getState().setVenue({
-        ...venue,
-        sections: venue.sections.map((sec) => {
-          if (sec.id !== sectionId) return sec;
-          return {
-            ...sec,
-            rows: sec.rows.map((r) => ({
-              ...r,
-              seats: r.seats.map((st) => {
-                const orig = originals.get(st.id);
-                if (!orig) return st;
-                const pos = {
-                  x: orig.pos.x + constrained.x,
-                  y: orig.pos.y + constrained.y,
-                };
-                return { ...st, position: pos };
-              }),
-            })),
-          };
-        }),
-      });
+      if (this.dragMode.delta.x === constrained.x && this.dragMode.delta.y === constrained.y) {
+        return;
+      }
+      this.dragMode = {
+        type: "seats",
+        sectionId,
+        originals,
+        delta: constrained,
+      };
       return;
     }
 
     if (this.dragMode.type === "section") {
       const { sectionId, origPos } = this.dragMode;
-      store.getState().setVenue({
-        ...venue,
-        sections: venue.sections.map((sec) =>
-          sec.id === sectionId
-            ? { ...sec, position: { x: origPos.x + dx, y: origPos.y + dy } }
-            : sec,
-        ),
-      });
+      const section = venue.sections.find((sec) => sec.id === sectionId);
+      if (!section) return;
+      const nextX = origPos.x + dx;
+      const nextY = origPos.y + dy;
+      if (this.dragMode.delta.x === dx && this.dragMode.delta.y === dy) {
+        return;
+      }
+      this.dragMode = {
+        type: "section",
+        sectionId,
+        origPos,
+        delta: { x: nextX - origPos.x, y: nextY - origPos.y },
+      };
       return;
     }
 
@@ -195,27 +189,13 @@ export class SelectTool extends BaseTool {
     if (!venue) return;
 
     if (this.dragMode.type === "seats") {
-      const { sectionId, originals } = this.dragMode;
+      const { sectionId, originals, delta } = this.dragMode;
       const section = venue.sections.find((s) => s.id === sectionId);
       if (!section) return;
-
-      let draggedDelta: Vec2 | null = null;
-      for (const row of section.rows) {
-        for (const seat of row.seats) {
-          const orig = originals.get(seat.id);
-          if (!orig) continue;
-          draggedDelta = {
-            x: seat.position.x - orig.pos.x,
-            y: seat.position.y - orig.pos.y,
-          };
-          break;
-        }
-        if (draggedDelta) break;
-      }
-      if (!draggedDelta) return;
+      if (delta.x === 0 && delta.y === 0) return;
 
       // Snap movement to grid while preserving section constraints.
-      const snappedDelta = this.snapSeatGroupDelta(section, originals, draggedDelta.x, draggedDelta.y);
+      const snappedDelta = this.snapSeatGroupDelta(section, originals, delta.x, delta.y);
 
       // Snap final positions to grid on commit
       const finals = new Map<string, Vec2>();
@@ -293,10 +273,9 @@ export class SelectTool extends BaseTool {
     }
 
     if (this.dragMode.type === "section") {
-      const { sectionId, origPos } = this.dragMode;
-      const section = venue.sections.find((s) => s.id === sectionId);
-      if (!section) return;
-      const finalPos = { ...section.position };
+      const { sectionId, origPos, delta } = this.dragMode;
+      const finalPos = { x: origPos.x + delta.x, y: origPos.y + delta.y };
+      if (finalPos.x === origPos.x && finalPos.y === origPos.y) return;
 
       this.history.execute({
         description: `Move section`,
@@ -333,6 +312,44 @@ export class SelectTool extends BaseTool {
 
   onDeactivate(): void {
     this.reset();
+  }
+
+  getSectionDragPreview(
+    venue: { sections: Array<{ id: string; position: Vec2; rotation: number; outline: Vec2[] }> } | null,
+  ): Vec2[] | null {
+    const drag = this.dragMode;
+    if (!venue || drag.type !== "section") return null;
+    const section = venue.sections.find((s) => s.id === drag.sectionId);
+    if (!section || section.outline.length < 3) return null;
+    const pos = {
+      x: drag.origPos.x + drag.delta.x,
+      y: drag.origPos.y + drag.delta.y,
+    };
+    const c = Math.cos(section.rotation);
+    const s = Math.sin(section.rotation);
+    return section.outline.map((p) => ({
+      x: pos.x + p.x * c - p.y * s,
+      y: pos.y + p.x * s + p.y * c,
+    }));
+  }
+
+  getSeatDragPreview(
+    venue: { sections: Array<{ id: string; position: Vec2; rotation: number }> } | null,
+  ): Vec2[] {
+    const drag = this.dragMode;
+    if (!venue || drag.type !== "seats") return [];
+    const section = venue.sections.find((s) => s.id === drag.sectionId);
+    if (!section) return [];
+    const c = Math.cos(section.rotation);
+    const s = Math.sin(section.rotation);
+    return [...drag.originals.values()].map((orig) => {
+      const localX = orig.pos.x + drag.delta.x;
+      const localY = orig.pos.y + drag.delta.y;
+      return {
+        x: section.position.x + localX * c - localY * s,
+        y: section.position.y + localX * s + localY * c,
+      };
+    });
   }
 
   private constrainSeatGroupDelta(

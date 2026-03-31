@@ -5,10 +5,12 @@ import { create } from "zustand";
 
 export interface SeatmapState {
   venue: Venue | null;
+  venueUpdateOrigin: "internal" | "external" | null;
   selectedSeatIds: Set<string>;
   hoveredSeatId: string | null;
 
   setVenue: (venue: Venue) => void;
+  setVenueFromExternal: (venue: Venue) => void;
   selectSeat: (seatId: string) => void;
   deselectSeat: (seatId: string) => void;
   toggleSeat: (seatId: string) => void;
@@ -17,13 +19,34 @@ export interface SeatmapState {
   setHoveredSeat: (seatId: string | null) => void;
 }
 
-export const createSeatmapStore = () =>
-  create<SeatmapState>((set) => ({
+export const createSeatmapStore = () => {
+  let isApplyingVenue = false;
+  const applyVenue = (
+    setState: (
+      partial:
+        | Partial<SeatmapState>
+        | ((state: SeatmapState) => Partial<SeatmapState>),
+    ) => void,
+    venue: Venue,
+    origin: "internal" | "external",
+  ) => {
+    if (isApplyingVenue) return;
+    isApplyingVenue = true;
+    try {
+      setState({ venue: normalizeVenue(venue), venueUpdateOrigin: origin });
+    } finally {
+      isApplyingVenue = false;
+    }
+  };
+
+  return create<SeatmapState>((set) => ({
     venue: null,
+    venueUpdateOrigin: null,
     selectedSeatIds: new Set(),
     hoveredSeatId: null,
 
-    setVenue: (venue) => set({ venue: normalizeVenue(venue) }),
+    setVenue: (venue) => applyVenue(set, venue, "internal"),
+    setVenueFromExternal: (venue) => applyVenue(set, venue, "external"),
 
     selectSeat: (seatId) =>
       set((state) => ({
@@ -52,6 +75,7 @@ export const createSeatmapStore = () =>
 
     setHoveredSeat: (seatId) => set({ hoveredSeatId: seatId }),
   }));
+};
 
 export type SeatmapStore = ReturnType<typeof createSeatmapStore>;
 

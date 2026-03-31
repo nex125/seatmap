@@ -15,7 +15,7 @@ export function SeatmapProvider({ venue, children }: SeatmapProviderProps) {
 
   useEffect(() => {
     if (venue) {
-      storeRef.current.getState().setVenue(venue);
+      storeRef.current.getState().setVenueFromExternal(venue);
       spatialIndexRef.current.buildFromSections(venue.sections);
     }
   }, [venue]);

@@ -124,6 +124,56 @@ function PolygonPreviewOverlay({
   );
 }
 
+function DragPreviewOverlay({
+  sectionOutline,
+  seatPoints,
+  viewport,
+}: {
+  sectionOutline: Array<{ x: number; y: number }> | null;
+  seatPoints: Array<{ x: number; y: number }>;
+  viewport: Viewport;
+}) {
+  if (!sectionOutline && seatPoints.length === 0) return null;
+
+  const sectionScreenPoints = sectionOutline?.map((p) => viewport.worldToScreen(p.x, p.y)) ?? [];
+  const sectionSvgPoints = sectionScreenPoints.map((p) => `${p.x},${p.y}`).join(" ");
+  const seatScreenPoints = seatPoints.map((p) => viewport.worldToScreen(p.x, p.y));
+
+  return (
+    <svg
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        zIndex: 14,
+      }}
+    >
+      {sectionScreenPoints.length >= 3 && (
+        <polygon
+          points={sectionSvgPoints}
+          fill="rgba(110, 190, 255, 0.16)"
+          stroke="rgba(110, 190, 255, 0.95)"
+          strokeWidth={2}
+          strokeDasharray="8 6"
+        />
+      )}
+      {seatScreenPoints.map((p, i) => (
+        <circle
+          key={i}
+          cx={p.x}
+          cy={p.y}
+          r={5}
+          fill="rgba(110, 190, 255, 0.35)"
+          stroke="rgba(110, 190, 255, 0.95)"
+          strokeWidth={1.5}
+        />
+      ))}
+    </svg>
+  );
+}
+
 function EditorInner({
   onChange,
   onSave,
@@ -133,6 +183,7 @@ function EditorInner({
 }) {
   const { store, viewport, spatialIndex } = useSeatmapContext();
   const venue = useStore(store, (s) => s.venue);
+  const venueUpdateOrigin = useStore(store, (s) => s.venueUpdateOrigin);
   const selectedSeatIds = useStore(store, (s) => s.selectedSeatIds);
   const [, setViewportVersion] = useState(0);
   const canvasAreaRef = useRef<HTMLDivElement | null>(null);
@@ -186,6 +237,10 @@ function EditorInner({
 
   const [activeToolName, setActiveToolName] = useState("pan");
   const activeToolRef = useRef<BaseTool>(panTool);
+  const [, setDragPreviewVersion] = useState(0);
+  const onChangeRef = useRef(onChange);
+  const isPointerInteractionRef = useRef(false);
+  const pendingInternalVenueRef = useRef<Venue | null>(null);
 
   const [sectionMode, setSectionMode] = useState<SectionCreationMode>("rectangle");
   const [seatsPerRow, setSeatsPerRow] = useState(10);
@@ -236,11 +291,35 @@ function EditorInner({
   }, []);
 
   useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const flushPendingOnChange = useCallback(() => {
+    const pendingVenue = pendingInternalVenueRef.current;
+    if (!pendingVenue) return;
+    pendingInternalVenueRef.current = null;
+    onChangeRef.current?.(pendingVenue);
+  }, []);
+
+  useEffect(() => {
     if (venue) {
       spatialIndex.buildFromSections(venue.sections);
-      onChange?.(venue);
+      if (venueUpdateOrigin === "internal") {
+        if (isPointerInteractionRef.current) {
+          pendingInternalVenueRef.current = venue;
+        } else {
+          onChangeRef.current?.(venue);
+        }
+      }
     }
-  }, [venue, spatialIndex, onChange]);
+  }, [venue, venueUpdateOrigin, spatialIndex]);
+
+  useEffect(
+    () => () => {
+      pendingInternalVenueRef.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const unsub = viewport.subscribe(() => {
@@ -1010,16 +1089,13 @@ function EditorInner({
   }, [setActiveTool]);
 
   // Tool pointer event adapter for the canvas overlay
-  const handleCanvasPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.button !== 0) return;
-      // Capture so drag operations complete even if pointer leaves the canvas area
-      e.currentTarget.setPointerCapture(e.pointerId);
+  const toToolPointerEvent = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>): ToolPointerEvent => {
       const rect = e.currentTarget.getBoundingClientRect();
       const screenX = e.clientX - rect.left;
       const screenY = e.clientY - rect.top;
       const world = viewport.screenToWorld(screenX, screenY);
-      const toolEvent: ToolPointerEvent = {
+      return {
         worldX: world.x,
         worldY: world.y,
         screenX: e.clientX,
@@ -1029,51 +1105,57 @@ function EditorInner({
         metaKey: e.metaKey,
         button: e.button,
       };
-      activeToolRef.current.onPointerDown(toolEvent, viewport, store);
     },
-    [viewport, store],
+    [viewport],
+  );
+
+  const bumpDragPreview = useCallback(() => {
+    if (activeToolRef.current === selectTool) {
+      setDragPreviewVersion((v) => v + 1);
+    }
+  }, [selectTool]);
+
+  const handlePointerRelease = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      isPointerInteractionRef.current = false;
+      const toolEvent = toToolPointerEvent(e);
+      activeToolRef.current.onPointerUp(toolEvent, viewport, store);
+      flushPendingOnChange();
+      bumpDragPreview();
+    },
+    [toToolPointerEvent, viewport, store, flushPendingOnChange, bumpDragPreview],
+  );
+
+  const handleCanvasPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      isPointerInteractionRef.current = true;
+      // Capture so drag operations complete even if pointer leaves the canvas area
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const toolEvent = toToolPointerEvent(e);
+      activeToolRef.current.onPointerDown(toolEvent, viewport, store);
+      bumpDragPreview();
+    },
+    [toToolPointerEvent, viewport, store, bumpDragPreview],
   );
 
   const handleCanvasPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const screenX = e.clientX - rect.left;
-      const screenY = e.clientY - rect.top;
-      const world = viewport.screenToWorld(screenX, screenY);
-      const toolEvent: ToolPointerEvent = {
-        worldX: world.x,
-        worldY: world.y,
-        screenX: e.clientX,
-        screenY: e.clientY,
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        metaKey: e.metaKey,
-        button: e.button,
-      };
+      const toolEvent = toToolPointerEvent(e);
       activeToolRef.current.onPointerMove(toolEvent, viewport, store);
+      bumpDragPreview();
     },
-    [viewport, store],
+    [toToolPointerEvent, viewport, store, bumpDragPreview],
   );
 
   const handleCanvasPointerUp = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const screenX = e.clientX - rect.left;
-      const screenY = e.clientY - rect.top;
-      const world = viewport.screenToWorld(screenX, screenY);
-      const toolEvent: ToolPointerEvent = {
-        worldX: world.x,
-        worldY: world.y,
-        screenX: e.clientX,
-        screenY: e.clientY,
-        shiftKey: e.shiftKey,
-        ctrlKey: e.ctrlKey,
-        metaKey: e.metaKey,
-        button: e.button,
-      };
-      activeToolRef.current.onPointerUp(toolEvent, viewport, store);
-    },
-    [viewport, store],
+    (e: React.PointerEvent<HTMLDivElement>) => handlePointerRelease(e),
+    [handlePointerRelease],
+  );
+
+  const handleCanvasPointerCancel = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => handlePointerRelease(e),
+    [handlePointerRelease],
   );
 
   const sidebarStyle: React.CSSProperties = {
@@ -1105,8 +1187,14 @@ function EditorInner({
           onPointerDown={handleCanvasPointerDown}
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
+          onPointerCancel={handleCanvasPointerCancel}
         >
           <SeatmapCanvas panOnLeftClick={false} />
+          <DragPreviewOverlay
+            sectionOutline={selectTool.getSectionDragPreview(venue)}
+            seatPoints={selectTool.getSeatDragPreview(venue)}
+            viewport={viewport}
+          />
           {renderBackgroundResizeOverlay()}
           {renderActiveToolOptionsOverlay()}
           {polygonPoints.length > 0 && (
