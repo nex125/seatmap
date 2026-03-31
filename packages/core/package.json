@@ -28,8 +28,8 @@
   "devDependencies": {
     "@types/rbush": "^4.0.0",
     "pixi.js": "^8",
-    "tsup": "^8",
-    "typescript": "^5.7"
+    "tsup": "^8.4.0",
+    "typescript": "~5.9.3"
   },
   "dependencies": {
     "rbush": "^4.0.1"

@@ -1,0 +1,11 @@
+services:
+  seatmap:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    networks:
+      - public
+
+networks:
+  public:
+    driver: bridge
