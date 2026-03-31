@@ -140,10 +140,19 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
   const activeToolRef = useRef<BaseTool>(panTool);
 
   const [seatsPerRow, setSeatsPerRow] = useState(10);
+  const [rowsCount, setRowsCount] = useState(1);
   const handleSeatsPerRowChange = useCallback(
     (n: number) => {
       setSeatsPerRow(n);
       addRowTool.seatsPerRow = n;
+    },
+    [addRowTool],
+  );
+  const handleRowsCountChange = useCallback(
+    (n: number) => {
+      const clamped = Math.max(1, Math.min(100, n));
+      setRowsCount(clamped);
+      addRowTool.rowsCount = clamped;
     },
     [addRowTool],
   );
@@ -308,37 +317,93 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
             Row Tool Options
           </span>
           <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
-          <label
+          <div
             style={{
-              color: "#9e9e9e",
-              fontSize: 12,
-              fontFamily: "system-ui",
               display: "flex",
-              alignItems: "center",
-              gap: 6,
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 8,
+              padding: "8px 10px",
+              border: "1px solid #3a3a5a",
+              borderRadius: 6,
+              background: "rgba(42, 42, 74, 0.65)",
             }}
           >
-            Seats/row:
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={seatsPerRow}
-              onChange={(e) =>
-                handleSeatsPerRowChange(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
-              }
+            <label
               style={{
-                width: 56,
-                padding: "3px 6px",
-                background: "#2a2a4a",
-                border: "1px solid #3a3a5a",
-                borderRadius: 4,
-                color: "#e0e0e0",
-                fontSize: 13,
+                color: "#9e9e9e",
+                fontSize: 12,
                 fontFamily: "system-ui",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
               }}
-            />
-          </label>
+            >
+              Seats/row:
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={seatsPerRow}
+                onChange={(e) =>
+                  handleSeatsPerRowChange(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
+                }
+                style={{
+                  width: 56,
+                  padding: "3px 6px",
+                  background: "#2a2a4a",
+                  border: "1px solid #3a3a5a",
+                  borderRadius: 4,
+                  color: "#e0e0e0",
+                  fontSize: 13,
+                  fontFamily: "system-ui",
+                }}
+              />
+            </label>
+
+            <label
+              style={{
+                color: "#9e9e9e",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              Rows:
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={rowsCount}
+                onChange={(e) =>
+                  handleRowsCountChange(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
+                }
+                style={{
+                  width: 56,
+                  padding: "3px 6px",
+                  background: "#2a2a4a",
+                  border: "1px solid #3a3a5a",
+                  borderRadius: 4,
+                  color: "#e0e0e0",
+                  fontSize: 13,
+                  fontFamily: "system-ui",
+                }}
+              />
+            </label>
+
+            <div
+              style={{
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                fontWeight: 600,
+              }}
+            >
+              Total seats to add: {seatsPerRow * Math.max(1, rowsCount)}
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -6,11 +6,23 @@ import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const ROW_GAP = 22;
 
+function rowLabelFromIndex(index: number): string {
+  let n = index + 1;
+  let label = "";
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    label = String.fromCharCode(65 + rem) + label;
+    n = Math.floor((n - 1) / 26);
+  }
+  return label;
+}
+
 export class AddRowTool extends BaseTool {
   readonly name = "add-row";
   readonly cursor = "cell";
 
   seatsPerRow = 10;
+  rowsCount = 1;
   seatSpacing = 20;
 
   constructor(
@@ -78,40 +90,57 @@ export class AddRowTool extends BaseTool {
     }
 
     const hasOutline = section.outline.length >= 3;
-    const allSeats: Seat[] = [];
-    const startX = -((this.seatsPerRow - 1) * this.seatSpacing) / 2;
-    for (let i = 0; i < this.seatsPerRow; i++) {
-      const pos = { x: startX + i * this.seatSpacing, y: targetY };
-      if (hasOutline && !pointInPolygon(pos, section.outline)) continue;
-      allSeats.push({
-        id: generateId("seat"),
-        label: `${allSeats.length + 1}`,
-        position: pos,
-        status: "available",
-        categoryId: section.categoryId,
+    const rowsToAdd = Math.max(1, Math.floor(this.rowsCount));
+    const occupiedYs = [...existingYs];
+    const newRows: Row[] = [];
+
+    for (let rowIndex = 0; rowIndex < rowsToAdd; rowIndex++) {
+      let rowY = targetY + rowIndex * ROW_GAP;
+      while (occupiedYs.some((y) => Math.abs(rowY - y) < ROW_GAP)) {
+        rowY += ROW_GAP;
+      }
+      occupiedYs.push(rowY);
+
+      const seats: Seat[] = [];
+      const startX = -((this.seatsPerRow - 1) * this.seatSpacing) / 2;
+      for (let i = 0; i < this.seatsPerRow; i++) {
+        const pos = { x: startX + i * this.seatSpacing, y: rowY };
+        if (hasOutline && !pointInPolygon(pos, section.outline)) continue;
+        seats.push({
+          id: generateId("seat"),
+          label: `${seats.length + 1}`,
+          position: pos,
+          status: "available",
+          categoryId: section.categoryId,
+        });
+      }
+
+      if (seats.length === 0) continue;
+
+      newRows.push({
+        id: generateId("row"),
+        label: rowLabelFromIndex(section.rows.length + newRows.length),
+        seats,
       });
     }
-    const seats = allSeats;
-    if (seats.length === 0) return;
 
-    const rowLabel = String.fromCharCode(65 + section.rows.length);
-    const newRow: Row = {
-      id: generateId("row"),
-      label: rowLabel,
-      seats,
-    };
+    if (newRows.length === 0) return;
 
     const sectionId = section.id;
+    const rowIds = newRows.map((r) => r.id);
 
     this.history.execute({
-      description: `Add row ${rowLabel} to "${section.label}"`,
+      description:
+        newRows.length === 1
+          ? `Add row ${newRows[0].label} to "${section.label}"`
+          : `Add ${newRows.length} rows to "${section.label}"`,
       execute: () => {
         const v = store.getState().venue;
         if (!v) return;
         store.getState().setVenue({
           ...v,
           sections: v.sections.map((s) =>
-            s.id === sectionId ? { ...s, rows: [...s.rows, newRow] } : s,
+            s.id === sectionId ? { ...s, rows: [...s.rows, ...newRows] } : s,
           ),
         });
       },
@@ -122,7 +151,7 @@ export class AddRowTool extends BaseTool {
           ...v,
           sections: v.sections.map((s) =>
             s.id === sectionId
-              ? { ...s, rows: s.rows.filter((r) => r.id !== newRow.id) }
+              ? { ...s, rows: s.rows.filter((r) => !rowIds.includes(r.id)) }
               : s,
           ),
         });
