@@ -5,7 +5,7 @@ import { SeatmapProvider, SeatmapCanvas, useSeatmapContext } from "@nex125/seatm
 import { useStore } from "zustand";
 import { PanTool } from "./tools/PanTool";
 import { SelectTool } from "./tools/SelectTool";
-import { AddSectionTool } from "./tools/AddSectionTool";
+import { AddSectionTool, type SectionCreationMode } from "./tools/AddSectionTool";
 import { AddRowTool } from "./tools/AddRowTool";
 import { AddSeatTool } from "./tools/AddSeatTool";
 import type { BaseTool, ToolPointerEvent } from "./tools/BaseTool";
@@ -23,10 +23,12 @@ export interface SeatmapEditorProps {
 function PolygonPreviewOverlay({
   points,
   closeable,
+  mode,
   viewport,
 }: {
   points: Array<{ x: number; y: number }>;
   closeable: boolean;
+  mode: SectionCreationMode;
   viewport: Viewport;
 }) {
   if (points.length === 0) return null;
@@ -56,7 +58,7 @@ function PolygonPreviewOverlay({
           strokeDasharray="6 4"
         />
       )}
-      {screenPoints.length >= 3 && (
+      {mode === "polygon" && screenPoints.length >= 3 && (
         <line
           x1={last.x} y1={last.y} x2={first.x} y2={first.y}
           stroke={closeable ? "rgba(100, 255, 100, 0.8)" : "rgba(100, 180, 255, 0.3)"}
@@ -64,7 +66,7 @@ function PolygonPreviewOverlay({
           strokeDasharray="4 4"
         />
       )}
-      {screenPoints.map((p, i) => (
+      {mode === "polygon" && screenPoints.map((p, i) => (
         <circle
           key={i}
           cx={p.x}
@@ -73,7 +75,7 @@ function PolygonPreviewOverlay({
           fill={i === 0 && closeable ? "rgba(100, 255, 100, 0.8)" : "rgba(100, 180, 255, 0.8)"}
         />
       ))}
-      {points.length >= 2 && (
+      {mode === "polygon" && points.length >= 2 && (
         <text
           x={(first.x + last.x) / 2}
           y={(first.y + last.y) / 2 - 10}
@@ -139,6 +141,7 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
   const [activeToolName, setActiveToolName] = useState("pan");
   const activeToolRef = useRef<BaseTool>(panTool);
 
+  const [sectionMode, setSectionMode] = useState<SectionCreationMode>("rectangle");
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
   const handleSeatsPerRowChange = useCallback(
@@ -156,6 +159,16 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
     },
     [addRowTool],
   );
+  const handleSectionModeChange = useCallback(
+    (mode: SectionCreationMode) => {
+      setSectionMode(mode);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    addSectionTool.setMode(sectionMode);
+  }, [addSectionTool, sectionMode]);
 
   const setActiveTool = useCallback(
     (name: string) => {
@@ -279,6 +292,108 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
   );
 
   const renderActiveToolOptionsOverlay = () => {
+    if (activeToolName === "add-section") {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            right: 12,
+            zIndex: 20,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px 12px",
+              border: "1px solid #3a3a5a",
+              borderRadius: 8,
+              background: "rgba(21, 21, 40, 0.92)",
+              backdropFilter: "blur(2px)",
+              pointerEvents: "auto",
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerMove={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+          >
+            <span
+              style={{
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                fontWeight: 600,
+                letterSpacing: 0.2,
+              }}
+            >
+              Tool Options
+            </span>
+            <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "8px 10px",
+                border: "1px solid #3a3a5a",
+                borderRadius: 6,
+                background: "rgba(42, 42, 74, 0.65)",
+              }}
+            >
+              <span
+                style={{
+                  color: "#c7c7df",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+              >
+                Section shape
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={() => handleSectionModeChange("rectangle")}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #3a3a5a",
+                    background: sectionMode === "rectangle" ? "#4a4a7a" : "#2a2a4a",
+                    color: sectionMode === "rectangle" ? "#ffffff" : "#d0d0e0",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: "system-ui",
+                    fontWeight: 600,
+                  }}
+                >
+                  Rectangle
+                </button>
+                <button
+                  onClick={() => handleSectionModeChange("polygon")}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #3a3a5a",
+                    background: sectionMode === "polygon" ? "#4a4a7a" : "#2a2a4a",
+                    color: sectionMode === "polygon" ? "#ffffff" : "#d0d0e0",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: "system-ui",
+                    fontWeight: 600,
+                  }}
+                >
+                  Polygon
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (activeToolName !== "add-row") return null;
 
     return (
@@ -304,6 +419,9 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
             backdropFilter: "blur(2px)",
             pointerEvents: "auto",
           }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerMove={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
         >
           <span
             style={{
@@ -314,7 +432,7 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
               letterSpacing: 0.2,
             }}
           >
-            Row Tool Options
+            Tool Options
           </span>
           <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
           <div
@@ -549,6 +667,7 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
             <PolygonPreviewOverlay
               points={polygonPoints}
               closeable={polygonCloseable}
+              mode={sectionMode}
               viewport={viewport}
             />
           )}
