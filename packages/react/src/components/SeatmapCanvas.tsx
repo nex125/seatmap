@@ -5,12 +5,12 @@ import {
   LODLevel,
   venueAABB,
   CategoryTextureCache,
+  AVAILABLE_STATUS_ID,
 } from "@nex125/seatmap-core";
 import type {
   Section,
   Seat,
   PricingCategory,
-  SeatTextureSet,
   AABB,
   GeneralAdmissionArea,
   Table,
@@ -78,7 +78,7 @@ export function SeatmapCanvas({
   );
 
   const getSeatTexture = useCallback(
-    (seat: Seat, isSelected: boolean, isHovered: boolean): keyof SeatTextureSet => {
+    (seat: Seat, isSelected: boolean, isHovered: boolean): string => {
       if (isSelected) return "selected";
       if (isHovered) return "hovered";
       return seat.status;
@@ -125,21 +125,21 @@ export function SeatmapCanvas({
       const isHovered = hoveredSeatId === seat.id;
       const textureKey = getSeatTexture(seat, isSelected, isHovered);
       const textures = textureCacheRef.current.get(seat.categoryId);
-      const texture = textures?.[textureKey];
+      const texture = textures?.[textureKey] ?? textures?.[AVAILABLE_STATUS_ID];
       if (!texture) return;
 
       const sprite = new Sprite(texture);
       sprite.anchor.set(0.5);
       sprite.position.set(seat.position.x, seat.position.y);
       sprite.eventMode = "static";
-      sprite.cursor = seat.status === "available" ? "pointer" : "default";
+      sprite.cursor = seat.status === AVAILABLE_STATUS_ID ? "pointer" : "default";
 
       if (panOnLeftClick) {
         // Viewer mode: sprite handles mouse clicks directly.
         // Touch taps are handled at the container level via spatial index.
         sprite.on("pointerdown", (ev) => {
           if (ev.pointerType === "touch") return;
-          if (seat.status === "available") {
+          if (seat.status === AVAILABLE_STATUS_ID) {
             store.getState().toggleSeat(seat.id);
             onSeatClick?.(seat.id, sectionId);
             scheduleRender();
@@ -407,7 +407,12 @@ export function SeatmapCanvas({
 
         const currentVenue = store.getState().venue;
         if (currentVenue) {
-          textureCacheRef.current.create(app.renderer, currentVenue.categories, SEAT_RADIUS);
+          textureCacheRef.current.create(
+            app.renderer,
+            currentVenue.categories,
+            currentVenue.seatStatuses,
+            SEAT_RADIUS,
+          );
           viewport.fitBounds(venueAABB(currentVenue));
         }
 
@@ -434,10 +439,15 @@ export function SeatmapCanvas({
   useEffect(() => {
     if (!venue || !appRef.current || !readyRef.current) return;
 
-    const catJson = JSON.stringify(venue.categories);
+    const catJson = JSON.stringify({ categories: venue.categories, statuses: venue.seatStatuses });
     if (catJson !== prevCatJsonRef.current) {
       prevCatJsonRef.current = catJson;
-      textureCacheRef.current.create(appRef.current.renderer, venue.categories, SEAT_RADIUS);
+      textureCacheRef.current.create(
+        appRef.current.renderer,
+        venue.categories,
+        venue.seatStatuses,
+        SEAT_RADIUS,
+      );
       worldRef.current?.removeChildren();
     }
 
@@ -693,7 +703,7 @@ export function SeatmapCanvas({
           for (const sec of v.sections) {
             for (const row of sec.rows) {
               const seat = row.seats.find((s) => s.id === closest.seatId);
-              if (seat && seat.status === "available") {
+              if (seat && seat.status === AVAILABLE_STATUS_ID) {
                 store.getState().toggleSeat(seat.id);
                 // Show tooltip on tap (since there's no hover on touch)
                 store.getState().setHoveredSeat(seat.id);

@@ -15,7 +15,13 @@ export interface AABB {
   maxY: number;
 }
 
-export type SeatStatus = "available" | "held" | "sold" | "blocked";
+export type SeatStatus = string;
+
+export interface SeatStatusDefinition {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export interface PricingCategory {
   id: string;
@@ -74,4 +80,5 @@ export interface Venue {
   gaAreas: GeneralAdmissionArea[];
   tables: Table[];
   categories: PricingCategory[];
+  seatStatuses: SeatStatusDefinition[];
 }

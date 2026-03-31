@@ -13,6 +13,7 @@ import { Toolbar } from "./panels/Toolbar";
 import { PropertyPanel } from "./panels/PropertyPanel";
 import { CategoryManager } from "./panels/CategoryManager";
 import { LayerPanel } from "./panels/LayerPanel";
+import { StatusManager } from "./panels/StatusManager";
 
 export interface SeatmapEditorProps {
   venue?: Venue;
@@ -691,6 +692,12 @@ function EditorInner({ onChange }: { onChange?: (venue: Venue) => void }) {
           />
           <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
           <CategoryManager
+            venue={venue}
+            history={historyRef.current}
+            store={store}
+          />
+          <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+          <StatusManager
             venue={venue}
             history={historyRef.current}
             store={store}

@@ -1,4 +1,24 @@
-import type { AABB, Section, Seat, Vec2, Venue } from "./types";
+import type { AABB, Section, Seat, SeatStatusDefinition, Vec2, Venue } from "./types";
+
+export const AVAILABLE_STATUS_ID = "available";
+
+export const DEFAULT_SEAT_STATUSES: SeatStatusDefinition[] = [
+  { id: AVAILABLE_STATUS_ID, name: "Available", color: "#4caf50" },
+  { id: "locked", name: "Locked", color: "#f44336" },
+  { id: "booked", name: "Booked", color: "#9e9e9e" },
+];
+
+const LEGACY_STATUS_MAP: Record<string, string> = {
+  held: "locked",
+  blocked: "locked",
+  sold: "booked",
+};
+
+function normalizeStatusId(rawStatus: string, allowedStatuses: Set<string>): string {
+  const mapped = LEGACY_STATUS_MAP[rawStatus] ?? rawStatus;
+  if (allowedStatuses.has(mapped)) return mapped;
+  return AVAILABLE_STATUS_ID;
+}
 
 export function seatWorldPosition(section: Section, seat: Seat): Vec2 {
   const cos = Math.cos(section.rotation);
@@ -110,6 +130,41 @@ export function clampToPolygon(point: Vec2, polygon: Vec2[], margin = 5): Vec2 {
   }
 
   return { x: bestX, y: bestY };
+}
+
+export function normalizeVenue(venue: Venue): Venue {
+  const seatStatuses =
+    venue.seatStatuses && venue.seatStatuses.length > 0
+      ? venue.seatStatuses
+      : DEFAULT_SEAT_STATUSES;
+  const clonedStatuses = seatStatuses.map((status) => ({ ...status }));
+  const allowedStatuses = new Set(clonedStatuses.map((status) => status.id));
+
+  const sections = venue.sections.map((section) => ({
+    ...section,
+    rows: section.rows.map((row) => ({
+      ...row,
+      seats: row.seats.map((seat) => ({
+        ...seat,
+        status: normalizeStatusId(seat.status, allowedStatuses),
+      })),
+    })),
+  }));
+
+  const tables = venue.tables.map((table) => ({
+    ...table,
+    seats: table.seats.map((seat) => ({
+      ...seat,
+      status: normalizeStatusId(seat.status, allowedStatuses),
+    })),
+  }));
+
+  return {
+    ...venue,
+    seatStatuses: clonedStatuses,
+    sections,
+    tables,
+  };
 }
 
 let _nextId = 1;

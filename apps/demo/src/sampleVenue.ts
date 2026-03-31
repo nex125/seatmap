@@ -16,7 +16,7 @@ function createRow(
       id: `${rowId}-s${i + 1}`,
       label: `${i + 1}`,
       position: { x: startX + i * spacing, y: yOffset },
-      status: Math.random() > 0.15 ? "available" : "sold",
+      status: Math.random() > 0.15 ? "available" : "booked",
       categoryId,
     });
   }
@@ -62,6 +62,11 @@ export const sampleVenue: Venue = {
     { id: "cat-premium", name: "Premium", color: "#ff9800" },
     { id: "cat-standard", name: "Standard", color: "#4caf50" },
     { id: "cat-economy", name: "Economy", color: "#2196f3" },
+  ],
+  seatStatuses: [
+    { id: "available", name: "Available", color: "#4caf50" },
+    { id: "locked", name: "Locked", color: "#f44336" },
+    { id: "booked", name: "Booked", color: "#9e9e9e" },
   ],
   sections: [
     createSection("sec-center", "Center Orchestra", 600, 500, 0, "cat-vip", 8, 20),

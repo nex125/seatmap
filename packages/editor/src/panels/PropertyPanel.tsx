@@ -1,6 +1,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
-import type { Venue, Section, PricingCategory, CommandHistory, Row } from "@nex125/seatmap-core";
+import type { Venue, Section, PricingCategory, CommandHistory, Row, Seat } from "@nex125/seatmap-core";
 import { generateId } from "@nex125/seatmap-core";
+import { AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 
 export interface PropertyPanelProps {
@@ -362,6 +363,38 @@ export function PropertyPanel({
     });
   };
 
+  const updateSelectedSeatStatus = (statusId: string) => {
+    if (selectedSeatIds.size === 0) return;
+    const v = freshVenue(store);
+    if (!v) return;
+
+    const previousVenue = v;
+    const nextVenue: Venue = {
+      ...v,
+      sections: v.sections.map((section) => ({
+        ...section,
+        rows: section.rows.map((row) => ({
+          ...row,
+          seats: row.seats.map((seat) =>
+            selectedSeatIds.has(seat.id) ? { ...seat, status: statusId } : seat,
+          ),
+        })),
+      })),
+      tables: v.tables.map((table) => ({
+        ...table,
+        seats: table.seats.map((seat) =>
+          selectedSeatIds.has(seat.id) ? { ...seat, status: statusId } : seat,
+        ),
+      })),
+    };
+
+    history.execute({
+      description: `Set ${selectedSeatIds.size} seat(s) status`,
+      execute: () => setVenue(store, nextVenue),
+      undo: () => setVenue(store, previousVenue),
+    });
+  };
+
   if (!venue) {
     return (
       <div style={{ padding: 16, color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui", ...style }}>
@@ -369,6 +402,25 @@ export function PropertyPanel({
       </div>
     );
   }
+
+  const selectedSeatsEverywhere: Seat[] = [];
+  for (const section of venue.sections) {
+    for (const row of section.rows) {
+      for (const seat of row.seats) {
+        if (selectedSeatIds.has(seat.id)) selectedSeatsEverywhere.push(seat);
+      }
+    }
+  }
+  for (const table of venue.tables) {
+    for (const seat of table.seats) {
+      if (selectedSeatIds.has(seat.id)) selectedSeatsEverywhere.push(seat);
+    }
+  }
+
+  const selectedSeatStatusIds = new Set(selectedSeatsEverywhere.map((seat) => seat.status));
+  const isMixedSeatStatus = selectedSeatStatusIds.size > 1;
+  const selectedSeatStatusId =
+    selectedSeatStatusIds.size > 0 ? [...selectedSeatStatusIds][0] : AVAILABLE_STATUS_ID;
 
   if (!selectedSection) {
     return (
@@ -378,6 +430,25 @@ export function PropertyPanel({
             ? "Select seats to edit section properties"
             : `${selectedSeatIds.size} seat(s) selected`}
         </div>
+        {selectedSeatsEverywhere.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={labelStyle}>Seat Status</div>
+            <select
+              style={selectStyle}
+              value={isMixedSeatStatus ? "__mixed__" : selectedSeatStatusId}
+              onChange={(e) => updateSelectedSeatStatus(e.target.value)}
+            >
+              {isMixedSeatStatus && (
+                <option value="__mixed__" disabled>
+                  Mixed
+                </option>
+              )}
+              {venue.seatStatuses.map((status) => (
+                <option key={status.id} value={status.id}>{status.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div style={labelStyle}>Venue</div>
         <div style={{ color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>{venue.name}</div>
         <div style={{ ...labelStyle, marginTop: 12 }}>Sections: {venue.sections.length}</div>
@@ -478,6 +549,26 @@ export function PropertyPanel({
           ))}
         </select>
       </div>
+
+      {selectedSeatsEverywhere.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={labelStyle}>Seat Status</div>
+          <select
+            style={selectStyle}
+            value={isMixedSeatStatus ? "__mixed__" : selectedSeatStatusId}
+            onChange={(e) => updateSelectedSeatStatus(e.target.value)}
+          >
+            {isMixedSeatStatus && (
+              <option value="__mixed__" disabled>
+                Mixed
+              </option>
+            )}
+            {venue.seatStatuses.map((status) => (
+              <option key={status.id} value={status.id}>{status.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

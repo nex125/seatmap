@@ -40,7 +40,7 @@ export function generateLargeVenue(targetSeatCount: number): Venue {
           id: `s${seatCounter}`,
           label: `${s + 1}`,
           position: { x: startX + s * 20, y: r * 22 },
-          status: Math.random() > 0.1 ? "available" : "sold",
+          status: Math.random() > 0.1 ? "available" : "booked",
           categoryId: CATEGORIES[catIdx].id,
         });
         seatCounter++;
@@ -77,6 +77,11 @@ export function generateLargeVenue(targetSeatCount: number): Venue {
     name: `Stadium (${totalSeats.toLocaleString()} seats)`,
     bounds: { width: cols * (sectionWidth + 30), height: Math.ceil(numSections / cols) * (sectionHeight + 30) },
     categories: CATEGORIES,
+    seatStatuses: [
+      { id: "available", name: "Available", color: "#4caf50" },
+      { id: "locked", name: "Locked", color: "#f44336" },
+      { id: "booked", name: "Booked", color: "#9e9e9e" },
+    ],
     sections,
     gaAreas: [],
     tables: [],

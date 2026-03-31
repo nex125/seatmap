@@ -1,25 +1,24 @@
 import { Graphics, type Texture, type Renderer } from "pixi.js";
+import type { SeatStatusDefinition } from "../models";
 
 export interface SeatTextureSet {
-  available: Texture;
-  held: Texture;
-  sold: Texture;
-  blocked: Texture;
+  [statusId: string]: Texture;
   selected: Texture;
   hovered: Texture;
 }
 
-const STATUS_COLORS: Record<string, number> = {
-  available: 0x4caf50,
-  held: 0xff9800,
-  sold: 0x9e9e9e,
-  blocked: 0xf44336,
+const UI_TEXTURE_COLORS: Record<string, number> = {
   selected: 0x2196f3,
   hovered: 0x64b5f6,
 };
 
+function parseHexColor(color: string): number {
+  return parseInt(color.replace("#", ""), 16);
+}
+
 export function createSeatTextures(
   renderer: Renderer,
+  seatStatuses: SeatStatusDefinition[],
   radius = 7,
   categoryColor?: number,
   textureResolution?: number,
@@ -27,13 +26,30 @@ export function createSeatTextures(
   const result: Partial<SeatTextureSet> = {};
   const resolution = textureResolution ?? (4 * (typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1));
 
-  for (const [status, color] of Object.entries(STATUS_COLORS)) {
+  for (const status of seatStatuses) {
     const g = new Graphics();
-    const fillColor = status === "available" && categoryColor != null ? categoryColor : color;
+    const fillColor = status.id === "available" && categoryColor != null
+      ? categoryColor
+      : parseHexColor(status.color);
     g.circle(radius + 4, radius + 4, radius);
     g.fill({ color: fillColor });
 
-    if (status === "selected") {
+    const texture = renderer.textureGenerator.generateTexture({
+      target: g,
+      resolution,
+      antialias: true,
+    });
+    g.destroy();
+
+    result[status.id] = texture;
+  }
+
+  for (const [statusId, color] of Object.entries(UI_TEXTURE_COLORS)) {
+    const g = new Graphics();
+    g.circle(radius + 4, radius + 4, radius);
+    g.fill({ color });
+
+    if (statusId === "selected") {
       g.circle(radius + 4, radius + 4, radius + 2);
       g.stroke({ color: 0xffffff, width: 2 });
     }
@@ -45,7 +61,7 @@ export function createSeatTextures(
     });
     g.destroy();
 
-    result[status as keyof SeatTextureSet] = texture;
+    result[statusId] = texture;
   }
 
   return result as SeatTextureSet;

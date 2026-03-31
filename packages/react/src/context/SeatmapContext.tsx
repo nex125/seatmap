@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import type { Venue } from "@nex125/seatmap-core";
-import { Viewport, SpatialIndex } from "@nex125/seatmap-core";
+import { Viewport, SpatialIndex, normalizeVenue } from "@nex125/seatmap-core";
 import { create } from "zustand";
 
 export interface SeatmapState {
@@ -23,7 +23,7 @@ export const createSeatmapStore = () =>
     selectedSeatIds: new Set(),
     hoveredSeatId: null,
 
-    setVenue: (venue) => set({ venue }),
+    setVenue: (venue) => set({ venue: normalizeVenue(venue) }),
 
     selectSeat: (seatId) =>
       set((state) => ({

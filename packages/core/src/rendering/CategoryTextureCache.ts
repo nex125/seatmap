@@ -1,4 +1,5 @@
 import type { Renderer } from "pixi.js";
+import type { SeatStatusDefinition } from "../models";
 import {
   createSeatTextures,
   destroySeatTextures,
@@ -9,13 +10,18 @@ export class CategoryTextureCache {
   private cache = new Map<string, SeatTextureSet>();
   private defaultTextures: SeatTextureSet | null = null;
 
-  create(renderer: Renderer, categories: { id: string; color: string }[], seatRadius = 7): void {
+  create(
+    renderer: Renderer,
+    categories: { id: string; color: string }[],
+    seatStatuses: SeatStatusDefinition[],
+    seatRadius = 7,
+  ): void {
     this.destroy();
-    this.defaultTextures = createSeatTextures(renderer, seatRadius);
+    this.defaultTextures = createSeatTextures(renderer, seatStatuses, seatRadius);
 
     for (const cat of categories) {
       const color = parseInt(cat.color.replace("#", ""), 16);
-      this.cache.set(cat.id, createSeatTextures(renderer, seatRadius, color));
+      this.cache.set(cat.id, createSeatTextures(renderer, seatStatuses, seatRadius, color));
     }
   }
 

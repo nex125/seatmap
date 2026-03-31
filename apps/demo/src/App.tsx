@@ -17,6 +17,11 @@ const emptyVenue: Venue = {
     { id: "cat-default", name: "Standard", color: "#4caf50" },
     { id: "cat-vip", name: "VIP", color: "#e91e63" },
   ],
+  seatStatuses: [
+    { id: "available", name: "Available", color: "#4caf50" },
+    { id: "locked", name: "Locked", color: "#f44336" },
+    { id: "booked", name: "Booked", color: "#9e9e9e" },
+  ],
   sections: [],
   gaAreas: [],
   tables: [],

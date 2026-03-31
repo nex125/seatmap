@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Seat, Section, Row } from "@nex125/seatmap-core";
-import { seatWorldPosition } from "@nex125/seatmap-core";
+import { seatWorldPosition, AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import { useSeatmapContext } from "../context/SeatmapContext";
 import { useStore } from "zustand";
 
@@ -8,6 +8,7 @@ export interface TooltipData {
   seat: Seat;
   row: Row;
   section: Section;
+  statusName?: string;
   screenX: number;
   screenY: number;
 }
@@ -18,6 +19,7 @@ export interface TooltipOverlayProps {
 }
 
 function DefaultTooltip({ data }: { data: TooltipData }) {
+  const statusLabel = data.statusName;
   return (
     <div
       style={{
@@ -39,7 +41,7 @@ function DefaultTooltip({ data }: { data: TooltipData }) {
         Row {data.row.label}, Seat {data.seat.label}
       </div>
       <div style={{ color: "#9e9e9e", fontSize: 12, marginTop: 2 }}>
-        {data.seat.status === "available" ? "Available" : data.seat.status}
+        {statusLabel ?? (data.seat.status === AVAILABLE_STATUS_ID ? "Available" : data.seat.status)}
       </div>
     </div>
   );
@@ -64,10 +66,12 @@ export function TooltipOverlay({ renderTooltip, style }: TooltipOverlayProps) {
         if (seat) {
           const worldPos = seatWorldPosition(section, seat);
           const screenPos = viewport.worldToScreen(worldPos.x, worldPos.y);
+          const statusName = venue.seatStatuses.find((status) => status.id === seat.status)?.name;
           setTooltipData({
             seat,
             row,
             section,
+            statusName,
             screenX: screenPos.x,
             screenY: screenPos.y,
           });

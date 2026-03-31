@@ -3,6 +3,7 @@ export type {
   Bounds,
   AABB,
   SeatStatus,
+  SeatStatusDefinition,
   PricingCategory,
   Seat,
   Row,
