@@ -237,12 +237,14 @@ function EditorInner({
 
   const [activeToolName, setActiveToolName] = useState("pan");
   const activeToolRef = useRef<BaseTool>(panTool);
+  const sectionResizeReturnToAddSectionRef = useRef(false);
   const [, setDragPreviewVersion] = useState(0);
   const onChangeRef = useRef(onChange);
   const isPointerInteractionRef = useRef(false);
   const pendingInternalVenueRef = useRef<Venue | null>(null);
 
   const [sectionMode, setSectionMode] = useState<SectionCreationMode>("rectangle");
+  const [sectionResizeEnabled, setSectionResizeEnabled] = useState(false);
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
   const handleSeatsPerRowChange = useCallback(
@@ -271,6 +273,10 @@ function EditorInner({
     addSectionTool.setMode(sectionMode);
   }, [addSectionTool, sectionMode]);
 
+  useEffect(() => {
+    selectTool.setSectionResizeEnabled(sectionResizeEnabled);
+  }, [selectTool, sectionResizeEnabled]);
+
   const setActiveTool = useCallback(
     (name: string) => {
       activeToolRef.current.onDeactivate();
@@ -280,6 +286,23 @@ function EditorInner({
       setActiveToolName(name);
     },
     [toolMap, selectTool, viewport, store],
+  );
+  const handleToggleSectionResize = useCallback(
+    (fromAddSection = false) => {
+      if (!sectionResizeEnabled) {
+        sectionResizeReturnToAddSectionRef.current = fromAddSection;
+        setSectionResizeEnabled(true);
+        setActiveTool("select");
+        return;
+      }
+      setSectionResizeEnabled(false);
+      const shouldReturnToAddSection = sectionResizeReturnToAddSectionRef.current;
+      sectionResizeReturnToAddSectionRef.current = false;
+      if (shouldReturnToAddSection) {
+        setActiveTool("add-section");
+      }
+    },
+    [sectionResizeEnabled, setActiveTool],
   );
 
   useEffect(() => {
@@ -803,6 +826,88 @@ function EditorInner({
     );
   };
 
+  const renderSectionResizeOverlay = () => {
+    if (activeToolName !== "select" || !sectionResizeEnabled || !venue) return null;
+    const resizeOverlay = selectTool.getSectionResizeHandlesPreview(venue, selectedSeatIds);
+    if (!resizeOverlay) return null;
+
+    const corners = resizeOverlay.corners.map((p) => viewport.worldToScreen(p.x, p.y));
+    const sideMidpoints = resizeOverlay.sideMidpoints.map((p) => viewport.worldToScreen(p.x, p.y));
+    const outlinePoints = corners.map((p) => `${p.x},${p.y}`).join(" ");
+    const hint = resizeOverlay.mergeHint
+      ? viewport.worldToScreen(resizeOverlay.mergeHint.position.x, resizeOverlay.mergeHint.position.y)
+      : null;
+
+    return (
+      <svg
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          zIndex: 16,
+        }}
+      >
+        <polygon
+          points={outlinePoints}
+          fill="rgba(255, 193, 110, 0.08)"
+          stroke="rgba(255, 193, 110, 0.9)"
+          strokeWidth={1.5}
+          strokeDasharray="7 4"
+        />
+        {sideMidpoints.map((p, i) => (
+          <rect
+            key={`side-${i}`}
+            x={p.x - 5}
+            y={p.y - 5}
+            width={10}
+            height={10}
+            rx={2}
+            fill="rgba(255, 193, 110, 0.9)"
+            stroke="rgba(45, 36, 20, 0.95)"
+            strokeWidth={1}
+          />
+        ))}
+        {corners.map((p, i) => (
+          <circle
+            key={`corner-${i}`}
+            cx={p.x}
+            cy={p.y}
+            r={5}
+            fill="#ffd38a"
+            stroke="rgba(45, 36, 20, 0.95)"
+            strokeWidth={1.2}
+          />
+        ))}
+        {hint && (
+          <>
+            <rect
+              x={hint.x - 88}
+              y={hint.y - 32}
+              width={176}
+              height={20}
+              rx={6}
+              fill="rgba(15, 15, 25, 0.9)"
+              stroke="rgba(255, 193, 110, 0.65)"
+              strokeWidth={1}
+            />
+            <text
+              x={hint.x}
+              y={hint.y - 18}
+              fill="#ffd38a"
+              fontSize={11}
+              fontFamily="system-ui"
+              textAnchor="middle"
+            >
+              {resizeOverlay.mergeHint?.message}
+            </text>
+          </>
+        )}
+      </svg>
+    );
+  };
+
   const handleSelectSection = useCallback(
     (sectionId: string) => {
       if (!venue) return;
@@ -911,6 +1016,129 @@ function EditorInner({
                   Polygon
                 </button>
               </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "8px 10px",
+                border: "1px solid #3a3a5a",
+                borderRadius: 6,
+                background: "rgba(42, 42, 74, 0.65)",
+              }}
+            >
+              <span
+                style={{
+                  color: "#c7c7df",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+              >
+                Section resize
+              </span>
+              <button
+                onClick={() => handleToggleSectionResize(true)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                  border: "1px solid #3a3a5a",
+                  background: sectionResizeEnabled ? "#8a6a32" : "#2a2a4a",
+                  color: sectionResizeEnabled ? "#fff3d8" : "#d0d0e0",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+                title="Enable section corner/side resizing"
+              >
+                {sectionResizeEnabled ? "Resize On" : "Resize Off"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeToolName === "select") {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            right: 12,
+            zIndex: 20,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px 12px",
+              border: "1px solid #3a3a5a",
+              borderRadius: 8,
+              background: "rgba(21, 21, 40, 0.92)",
+              backdropFilter: "blur(2px)",
+              pointerEvents: "auto",
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerMove={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+          >
+            <span
+              style={{
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                fontWeight: 600,
+              }}
+            >
+              Tool Options
+            </span>
+            <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "8px 10px",
+                border: "1px solid #3a3a5a",
+                borderRadius: 6,
+                background: "rgba(42, 42, 74, 0.65)",
+              }}
+            >
+              <span
+                style={{
+                  color: "#c7c7df",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+              >
+                Section resize
+              </span>
+              <button
+                onClick={() => handleToggleSectionResize(false)}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                  border: "1px solid #3a3a5a",
+                  background: sectionResizeEnabled ? "#8a6a32" : "#2a2a4a",
+                  color: sectionResizeEnabled ? "#fff3d8" : "#d0d0e0",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+              >
+                {sectionResizeEnabled ? "Resize On" : "Resize Off"}
+              </button>
             </div>
           </div>
         </div>
@@ -1195,6 +1423,7 @@ function EditorInner({
             seatPoints={selectTool.getSeatDragPreview(venue)}
             viewport={viewport}
           />
+          {renderSectionResizeOverlay()}
           {renderBackgroundResizeOverlay()}
           {renderActiveToolOptionsOverlay()}
           {polygonPoints.length > 0 && (
