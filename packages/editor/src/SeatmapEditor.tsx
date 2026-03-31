@@ -239,6 +239,7 @@ function EditorInner({
 
   const [activeToolName, setActiveToolName] = useState("pan");
   const activeToolRef = useRef<BaseTool>(panTool);
+  const lastNonPanToolNameRef = useRef<string>("select");
   const sectionResizeReturnToAddSectionRef = useRef(false);
   const [, setDragPreviewVersion] = useState(0);
   const onChangeRef = useRef(onChange);
@@ -309,6 +310,9 @@ function EditorInner({
 
   const setActiveTool = useCallback(
     (name: string) => {
+      if (name !== "pan") {
+        lastNonPanToolNameRef.current = name;
+      }
       activeToolRef.current.onDeactivate();
       const tool = toolMap[name] ?? selectTool;
       tool.onActivate(viewport, store);
@@ -1662,13 +1666,13 @@ function EditorInner({
       if (e.key === "a" || e.key === "5") setActiveTool("add-seat");
       if (e.key === " ") {
         e.preventDefault();
-        setActiveTool("pan");
       }
     };
     const upHandler = (e: KeyboardEvent) => {
       if (isTyping()) return;
       if (e.key === " ") {
-        setActiveTool("select");
+        e.preventDefault();
+        setActiveTool(activeToolName === "pan" ? lastNonPanToolNameRef.current : "pan");
       }
     };
     window.addEventListener("keydown", handler);
@@ -1677,7 +1681,7 @@ function EditorInner({
       window.removeEventListener("keydown", handler);
       window.removeEventListener("keyup", upHandler);
     };
-  }, [setActiveTool]);
+  }, [setActiveTool, activeToolName]);
 
   // Tool pointer event adapter for the canvas overlay
   const toToolPointerEvent = useCallback(
