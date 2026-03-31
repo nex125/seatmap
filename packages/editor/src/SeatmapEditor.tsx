@@ -52,6 +52,8 @@ function getBackgroundRectInWorld(venue: Venue) {
 }
 
 type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+type CanvasGridStyle = "solid" | "dashed" | "dotted";
+type SectionGridStyle = "dots" | "cross";
 
 function PolygonPreviewOverlay({
   points,
@@ -245,6 +247,12 @@ function EditorInner({
 
   const [sectionMode, setSectionMode] = useState<SectionCreationMode>("rectangle");
   const [sectionResizeEnabled, setSectionResizeEnabled] = useState(false);
+  const [gridEnabled, setGridEnabled] = useState(false);
+  const [isGridOptionsOpen, setIsGridOptionsOpen] = useState(false);
+  const [showCanvasGrid, setShowCanvasGrid] = useState(false);
+  const [canvasGridStyle, setCanvasGridStyle] = useState<CanvasGridStyle>("solid");
+  const [showSectionGrid, setShowSectionGrid] = useState(true);
+  const [sectionGridStyle, setSectionGridStyle] = useState<SectionGridStyle>("dots");
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
   const [rowOrientationDeg, setRowOrientationDeg] = useState(0);
@@ -1022,6 +1030,120 @@ function EditorInner({
   );
 
   const renderActiveToolOptionsOverlay = () => {
+    const switchTrackBase: React.CSSProperties = {
+      width: 34,
+      height: 20,
+      borderRadius: 999,
+      border: "1px solid #4a4a6a",
+      padding: 2,
+      display: "inline-flex",
+      alignItems: "center",
+      transition: "all 0.12s ease",
+    };
+    const switchThumbBase: React.CSSProperties = {
+      width: 14,
+      height: 14,
+      borderRadius: "50%",
+      background: "#e0e0e0",
+      transition: "transform 0.12s ease",
+    };
+    const renderSwitch = (label: string, checked: boolean, onToggle: () => void) => (
+      <label
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          color: "#d0d0e0",
+          fontSize: 12,
+          fontFamily: "system-ui",
+          userSelect: "none",
+        }}
+      >
+        <span>{label}</span>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          onClick={onToggle}
+          style={{
+            ...switchTrackBase,
+            background: checked ? "#2d6a3d" : "#2a2a4a",
+            borderColor: checked ? "#57b26f" : "#4a4a6a",
+            cursor: "pointer",
+          }}
+        >
+          <span
+            style={{
+              ...switchThumbBase,
+              transform: checked ? "translateX(14px)" : "translateX(0)",
+            }}
+          />
+        </button>
+      </label>
+    );
+    const selectStyle: React.CSSProperties = {
+      padding: "4px 8px",
+      background: "#2a2a4a",
+      border: "1px solid #3a3a5a",
+      borderRadius: 4,
+      color: "#e0e0e0",
+      fontSize: 12,
+      fontFamily: "system-ui",
+      cursor: "pointer",
+    };
+    const renderGridOptionsCard = () => (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 8,
+          padding: "8px 10px",
+          border: "1px solid #3a3a5a",
+          borderRadius: 6,
+          background: "rgba(42, 42, 74, 0.65)",
+        }}
+      >
+        <span
+          style={{
+            color: "#c7c7df",
+            fontSize: 12,
+            fontFamily: "system-ui",
+            fontWeight: 600,
+          }}
+        >
+          Grid options
+        </span>
+        {renderSwitch("Grid", gridEnabled, () => setGridEnabled((v) => !v))}
+        <div style={{ width: "100%", height: 1, background: "#3a3a5a" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {renderSwitch("Canvas grid", showCanvasGrid, () => setShowCanvasGrid((v) => !v))}
+          <select
+            value={canvasGridStyle}
+            onChange={(e) => setCanvasGridStyle(e.target.value as CanvasGridStyle)}
+            style={selectStyle}
+            disabled={!gridEnabled || !showCanvasGrid}
+          >
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+          </select>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {renderSwitch("Section grid", showSectionGrid, () => setShowSectionGrid((v) => !v))}
+          <select
+            value={sectionGridStyle}
+            onChange={(e) => setSectionGridStyle(e.target.value as SectionGridStyle)}
+            style={selectStyle}
+            disabled={!gridEnabled || !showSectionGrid}
+          >
+            <option value="dots">Dots</option>
+            <option value="cross">Cross</option>
+          </select>
+        </div>
+      </div>
+    );
+
     if (activeToolName === "add-section") {
       return (
         <div
@@ -1159,6 +1281,7 @@ function EditorInner({
                 {sectionResizeEnabled ? "Resize On" : "Resize Off"}
               </button>
             </div>
+            {isGridOptionsOpen && renderGridOptionsCard()}
           </div>
         </div>
       );
@@ -1242,12 +1365,57 @@ function EditorInner({
                 {sectionResizeEnabled ? "Resize On" : "Resize Off"}
               </button>
             </div>
+            {isGridOptionsOpen && renderGridOptionsCard()}
           </div>
         </div>
       );
     }
 
-    if (activeToolName !== "add-row") return null;
+    if (activeToolName !== "add-row") {
+      if (!isGridOptionsOpen) return null;
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            right: 12,
+            zIndex: 20,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px 12px",
+              border: "1px solid #3a3a5a",
+              borderRadius: 8,
+              background: "rgba(21, 21, 40, 0.92)",
+              backdropFilter: "blur(2px)",
+              pointerEvents: "auto",
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerMove={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+          >
+            <span
+              style={{
+                color: "#c7c7df",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                fontWeight: 600,
+              }}
+            >
+              Tool Options
+            </span>
+            <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+            {renderGridOptionsCard()}
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div
@@ -1467,6 +1635,7 @@ function EditorInner({
               0deg = up, 90deg = right
             </div>
           </div>
+          {isGridOptionsOpen && renderGridOptionsCard()}
         </div>
       </div>
     );
@@ -1596,6 +1765,9 @@ function EditorInner({
       <Toolbar
         activeTool={activeToolName}
         onToolChange={setActiveTool}
+        gridEnabled={gridEnabled}
+        isGridOptionsOpen={isGridOptionsOpen}
+        onToggleGridOptions={() => setIsGridOptionsOpen((current) => !current)}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={() => historyRef.current.undo()}
@@ -1614,7 +1786,13 @@ function EditorInner({
           onPointerUp={handleCanvasPointerUp}
           onPointerCancel={handleCanvasPointerCancel}
         >
-          <SeatmapCanvas panOnLeftClick={false} />
+          <SeatmapCanvas
+            panOnLeftClick={false}
+            showGridLines={gridEnabled && showCanvasGrid}
+            showSectionGridDots={gridEnabled && showSectionGrid}
+            canvasGridLineStyle={canvasGridStyle}
+            sectionGridMarkerStyle={sectionGridStyle}
+          />
           <DragPreviewOverlay
             sectionOutline={selectTool.getSectionDragPreview(venue)}
             seatPoints={selectTool.getSeatDragPreview(venue)}

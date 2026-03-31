@@ -3,6 +3,9 @@ import type { CSSProperties } from "react";
 export interface ToolbarProps {
   activeTool: string;
   onToolChange: (tool: string) => void;
+  gridEnabled: boolean;
+  isGridOptionsOpen: boolean;
+  onToggleGridOptions: () => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -46,6 +49,9 @@ const activeBtnStyle: CSSProperties = {
 export function Toolbar({
   activeTool,
   onToolChange,
+  gridEnabled,
+  isGridOptionsOpen,
+  onToggleGridOptions,
   canUndo,
   canRedo,
   onUndo,
@@ -98,6 +104,17 @@ export function Toolbar({
 
         <button onClick={onFitView} style={btnBase} title="Fit to view">
           ⊞ Fit
+        </button>
+        <button
+          onClick={onToggleGridOptions}
+          style={{
+            ...(isGridOptionsOpen ? activeBtnStyle : btnBase),
+            borderColor: gridEnabled ? "#57b26f" : (isGridOptionsOpen ? activeBtnStyle.borderColor : btnBase.borderColor),
+            boxShadow: gridEnabled ? "0 0 0 1px #57b26f inset" : "none",
+          }}
+          title="Show grid options"
+        >
+          # Grid
         </button>
 
         <div style={{ width: 1, height: 24, background: "#3a3a5a", margin: "0 6px" }} />

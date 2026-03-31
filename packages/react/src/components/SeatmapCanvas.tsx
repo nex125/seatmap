@@ -6,6 +6,7 @@ import {
   venueAABB,
   CategoryTextureCache,
   AVAILABLE_STATUS_ID,
+  pointInPolygon,
 } from "@nex125/seatmap-core";
 import type {
   Section,
@@ -19,6 +20,12 @@ import { useSeatmapContext } from "../context/SeatmapContext";
 import { useStore } from "zustand";
 
 const SEAT_RADIUS = 7;
+const SNAP_GRID_STEP = 20;
+const MAJOR_GRID_EVERY = 5;
+const SECTION_DOT_ALPHA = 0.4;
+const SECTION_DOT_RADIUS = 1.4;
+const MAX_SECTION_DOTS = 12000;
+const SECTION_CROSS_SIZE = 2.6;
 
 export interface SeatmapCanvasProps {
   width?: number;
@@ -26,6 +33,16 @@ export interface SeatmapCanvasProps {
   className?: string;
   /** When true, left-click drag pans the map (viewer mode). Default: true. */
   panOnLeftClick?: boolean;
+  /** When true, render a positioning grid inside venue bounds. Default: false. */
+  showGrid?: boolean;
+  /** When true, render global snap grid lines. Default: false. */
+  showGridLines?: boolean;
+  /** When true, render section-local snap dots beneath section content. Default: false. */
+  showSectionGridDots?: boolean;
+  /** Style for canvas grid line rendering. Default: "solid". */
+  canvasGridLineStyle?: "solid" | "dashed" | "dotted";
+  /** Style for section snap markers. Default: "dots". */
+  sectionGridMarkerStyle?: "dots" | "cross";
   onSeatClick?: (seatId: string, sectionId: string) => void;
   onSeatHover?: (seatId: string | null, sectionId: string | null) => void;
 }
@@ -35,6 +52,11 @@ export function SeatmapCanvas({
   height: propHeight,
   className,
   panOnLeftClick = true,
+  showGrid = false,
+  showGridLines,
+  showSectionGridDots,
+  canvasGridLineStyle = "solid",
+  sectionGridMarkerStyle = "dots",
   onSeatClick,
   onSeatHover,
 }: SeatmapCanvasProps) {
@@ -63,6 +85,8 @@ export function SeatmapCanvas({
   const touchTapRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
   const { store, viewport, spatialIndex } = useSeatmapContext();
+  const isGridLinesVisible = showGridLines ?? showGrid;
+  const isSectionDotsVisible = showSectionGridDots ?? showGrid;
   const venue = useStore(store, (s) => s.venue);
   const selectedSeatIds = useStore(store, (s) => s.selectedSeatIds);
   const hoveredSeatId = useStore(store, (s) => s.hoveredSeatId);
@@ -223,6 +247,59 @@ export function SeatmapCanvas({
       sectionContainer.label = `section-${section.id}`;
 
       const catColor = getCategoryColor(section.categoryId);
+      if (isSectionDotsVisible && lod !== LODLevel.Overview) {
+        const dotLayer = new Graphics();
+        const sourcePoints = section.outline.length > 2
+          ? section.outline
+          : section.rows.flatMap((row) => row.seats.map((seat) => seat.position));
+
+        if (sourcePoints.length > 0) {
+          const xs = sourcePoints.map((p) => p.x);
+          const ys = sourcePoints.map((p) => p.y);
+          const minX = Math.min(...xs);
+          const maxX = Math.max(...xs);
+          const minY = Math.min(...ys);
+          const maxY = Math.max(...ys);
+          const hasOutline = section.outline.length > 2;
+
+          let step = SNAP_GRID_STEP;
+          while (
+            ((Math.floor((maxX - minX) / step) + 1) * (Math.floor((maxY - minY) / step) + 1)) > MAX_SECTION_DOTS &&
+            step < SNAP_GRID_STEP * 8
+          ) {
+            step *= 2;
+          }
+
+          const startX = Math.ceil(minX / step) * step;
+          const endX = Math.floor(maxX / step) * step;
+          const startY = Math.ceil(minY / step) * step;
+          const endY = Math.floor(maxY / step) * step;
+
+          for (let y = startY; y <= endY; y += step) {
+            for (let x = startX; x <= endX; x += step) {
+              if (hasOutline && !pointInPolygon({ x, y }, section.outline)) continue;
+              if (sectionGridMarkerStyle === "cross") {
+                dotLayer.moveTo(x - SECTION_CROSS_SIZE, y);
+                dotLayer.lineTo(x + SECTION_CROSS_SIZE, y);
+                dotLayer.moveTo(x, y - SECTION_CROSS_SIZE);
+                dotLayer.lineTo(x, y + SECTION_CROSS_SIZE);
+              } else {
+                dotLayer.circle(x, y, SECTION_DOT_RADIUS);
+              }
+            }
+          }
+          if (sectionGridMarkerStyle === "cross") {
+            dotLayer.stroke({
+              color: 0xc8c8f4,
+              alpha: SECTION_DOT_ALPHA,
+              width: 0.8,
+            });
+          } else {
+            dotLayer.fill({ color: 0xc8c8f4, alpha: SECTION_DOT_ALPHA });
+          }
+          sectionContainer.addChild(dotLayer);
+        }
+      }
 
       if (lod === LODLevel.Overview) {
         const g = new Graphics();
@@ -305,7 +382,16 @@ export function SeatmapCanvas({
       sectionContainer.rotation = section.rotation;
       parent.addChild(sectionContainer);
     },
-    [getCategoryColor, selectedSeatIds, hoveredSeatId, getSeatTexture, zoomToSection, renderSeat],
+    [
+      getCategoryColor,
+      selectedSeatIds,
+      hoveredSeatId,
+      getSeatTexture,
+      zoomToSection,
+      renderSeat,
+      isSectionDotsVisible,
+      sectionGridMarkerStyle,
+    ],
   );
 
   const renderScene = useCallback(() => {
@@ -351,6 +437,80 @@ export function SeatmapCanvas({
       world.addChild(bgSprite);
     }
 
+    if (isGridLinesVisible) {
+      const gridStep = SNAP_GRID_STEP;
+      const strokeWidthMinor = 1 / Math.max(zoom, 0.0001);
+      const strokeWidthMajor = 1.4 / Math.max(zoom, 0.0001);
+      const minorGrid = new Graphics();
+      const majorGrid = new Graphics();
+      const width = venue.bounds.width;
+      const height = venue.bounds.height;
+      const epsilon = gridStep * 0.0001;
+
+      const drawStyledLine = (
+        g: Graphics,
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number,
+      ) => {
+        if (canvasGridLineStyle === "solid") {
+          g.moveTo(x1, y1);
+          g.lineTo(x2, y2);
+          return;
+        }
+
+        const vertical = x1 === x2;
+        const start = vertical ? Math.min(y1, y2) : Math.min(x1, x2);
+        const end = vertical ? Math.max(y1, y2) : Math.max(x1, x2);
+
+        if (canvasGridLineStyle === "dashed") {
+          const dash = 8;
+          const gap = 6;
+          for (let p = start; p < end; p += dash + gap) {
+            const segEnd = Math.min(p + dash, end);
+            if (vertical) {
+              g.moveTo(x1, p);
+              g.lineTo(x1, segEnd);
+            } else {
+              g.moveTo(p, y1);
+              g.lineTo(segEnd, y1);
+            }
+          }
+          return;
+        }
+
+        const dotGap = 8;
+        const dotRadius = 0.7 / Math.max(zoom, 0.0001);
+        for (let p = start; p <= end; p += dotGap) {
+          if (vertical) g.circle(x1, p, dotRadius);
+          else g.circle(p, y1, dotRadius);
+        }
+      };
+
+      for (let x = 0; x <= width + epsilon; x += gridStep) {
+        const index = Math.round(x / gridStep);
+        const target = index % MAJOR_GRID_EVERY === 0 ? majorGrid : minorGrid;
+        drawStyledLine(target, x, 0, x, height);
+      }
+
+      for (let y = 0; y <= height + epsilon; y += gridStep) {
+        const index = Math.round(y / gridStep);
+        const target = index % MAJOR_GRID_EVERY === 0 ? majorGrid : minorGrid;
+        drawStyledLine(target, 0, y, width, y);
+      }
+
+      if (canvasGridLineStyle === "dotted") {
+        minorGrid.fill({ color: 0x6b6ba0, alpha: 0.2 });
+        majorGrid.fill({ color: 0x9c9cd8, alpha: 0.35 });
+      } else {
+        minorGrid.stroke({ color: 0x6b6ba0, width: strokeWidthMinor, alpha: 0.2 });
+        majorGrid.stroke({ color: 0x9c9cd8, width: strokeWidthMajor, alpha: 0.35 });
+      }
+      world.addChild(minorGrid);
+      world.addChild(majorGrid);
+    }
+
     const visibleAABB = viewport.getVisibleAABB();
     const visibleItems = spatialIndex.queryViewport(visibleAABB);
     const visibleSectionIds = new Set(visibleItems.map((item) => item.sectionId));
@@ -369,7 +529,17 @@ export function SeatmapCanvas({
     }
 
     appRef.current?.render();
-  }, [venue, viewport, spatialIndex, renderSection, renderGAArea, renderTable]);
+  }, [
+    venue,
+    viewport,
+    spatialIndex,
+    renderSection,
+    renderGAArea,
+    renderTable,
+    isGridLinesVisible,
+    canvasGridLineStyle,
+    sectionGridMarkerStyle,
+  ]);
 
   // Keep renderRef always pointing to the latest renderScene
   renderRef.current = renderScene;
@@ -501,6 +671,11 @@ export function SeatmapCanvas({
   useEffect(() => {
     scheduleRender();
   }, [venue, selectedSeatIds, hoveredSeatId, scheduleRender]);
+
+  // Ensure grid visibility toggles immediately without waiting for other updates.
+  useEffect(() => {
+    scheduleRender();
+  }, [isGridLinesVisible, isSectionDotsVisible, canvasGridLineStyle, sectionGridMarkerStyle, scheduleRender]);
 
   // Wheel zoom — native DOM listener with { passive: false }
   useEffect(() => {

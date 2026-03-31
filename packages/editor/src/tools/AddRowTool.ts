@@ -4,7 +4,12 @@ import type { Row, Seat, Section, Venue } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
-const ROW_GAP = 22;
+const GRID = 20;
+const ROW_GAP = GRID;
+
+function snapToGrid(v: number): number {
+  return Math.round(v / GRID) * GRID;
+}
 
 function rowLabelFromIndex(index: number): string {
   let n = index + 1;
@@ -73,8 +78,10 @@ export class AddRowTool extends BaseTool {
     });
 
     const clickOriented = toOriented({ x: localX, y: localY });
-    const startU = clickOriented.u;
-    const targetV = clickOriented.v;
+    // Align row placement to the section snap grid so add-seat and drag snapping
+    // use the same lattice inside this section.
+    const startU = snapToGrid(clickOriented.u);
+    const targetV = snapToGrid(clickOriented.v);
 
     // Collect existing row "depth" positions relative to current orientation and snap away from overlap.
     const existingVs = section.rows
