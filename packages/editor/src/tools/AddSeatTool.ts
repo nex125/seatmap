@@ -104,7 +104,7 @@ export class AddSeatTool extends BaseTool {
       const finalX = this.findNonOverlapping(lx, snappedY, existingInRow);
 
       const newSeat: Seat = {
-        id: generateId("seat"),
+        id: generateId(),
         label: `${bestRow.seats.length + 1}`,
         position: { x: finalX, y: snappedY },
         status: "available",
@@ -141,13 +141,13 @@ export class AddSeatTool extends BaseTool {
     } else {
       const rowLabel = String.fromCharCode(65 + section.rows.length);
       const newSeat: Seat = {
-        id: generateId("seat"),
+        id: generateId(),
         label: "1",
         position: { x: lx, y: ly },
         status: "available",
         categoryId: section.categoryId,
       };
-      const newRow: Row = { id: generateId("row"), label: rowLabel, seats: [newSeat] };
+      const newRow: Row = { id: generateId(), label: rowLabel, seats: [newSeat] };
 
       this.history.execute({
         description: `Add seat in new row ${rowLabel}`,

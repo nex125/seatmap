@@ -920,7 +920,7 @@ export class SelectTool extends BaseTool {
       let targetRowIndex = findBestRowByY(placement.local.y);
       if (targetRowIndex < 0) {
         destinationRows.push({
-          id: generateId("row"),
+          id: generateId(),
           label: String.fromCharCode(65 + destinationRows.length),
           seats: [],
         });

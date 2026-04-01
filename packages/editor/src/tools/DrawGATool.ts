@@ -36,7 +36,7 @@ export class DrawGATool extends BaseTool {
     if (!venue) return;
 
     const area: GeneralAdmissionArea = {
-      id: generateId("ga"),
+      id: generateId(),
       label: `GA ${Date.now().toString(36).slice(-3).toUpperCase()}`,
       shape: [...this.points],
       capacity: this.capacity,

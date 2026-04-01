@@ -105,7 +105,7 @@ export class AddSectionTool extends BaseTool {
     }));
 
     const newSection: Section = {
-      id: generateId("sec"),
+      id: generateId(),
       label: `Section ${Date.now().toString(36).slice(-3).toUpperCase()}`,
       position: { x: cx, y: cy },
       rotation: 0,

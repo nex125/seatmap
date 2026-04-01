@@ -32,6 +32,7 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "rbush": "^4.0.1"
+    "rbush": "^4.0.1",
+    "uuid": "^13.0.0"
   }
 }

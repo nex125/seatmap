@@ -395,7 +395,7 @@ export function PropertyPanel({
 
     let targetRow: Row | undefined = sec.rows[sec.rows.length - 1];
     const newSeat = {
-      id: generateId("seat"),
+      id: generateId(),
       label: targetRow ? `${targetRow.seats.length + 1}` : "1",
       position: {
         x: targetRow ? (targetRow.seats.length > 0 ? targetRow.seats[targetRow.seats.length - 1].position.x + 20 : 0) : 0,
@@ -406,7 +406,7 @@ export function PropertyPanel({
     };
 
     if (!targetRow) {
-      const newRow: Row = { id: generateId("row"), label: "A", seats: [newSeat] };
+      const newRow: Row = { id: generateId(), label: "A", seats: [newSeat] };
       history.execute({
         description: `Add seat to new row`,
         execute: () => {

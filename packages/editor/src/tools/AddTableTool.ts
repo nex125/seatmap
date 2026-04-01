@@ -24,7 +24,7 @@ export class AddTableTool extends BaseTool {
     for (let i = 0; i < this.seatsPerTable; i++) {
       const angle = (Math.PI * 2 * i) / this.seatsPerTable - Math.PI / 2;
       seats.push({
-        id: generateId("seat"),
+        id: generateId(),
         label: `${i + 1}`,
         position: {
           x: Math.cos(angle) * this.tableRadius,
@@ -36,7 +36,7 @@ export class AddTableTool extends BaseTool {
     }
 
     const table: Table = {
-      id: generateId("tbl"),
+      id: generateId(),
       label: `Table ${Date.now().toString(36).slice(-3).toUpperCase()}`,
       position: { x: e.worldX, y: e.worldY },
       shape: this.shape,

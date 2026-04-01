@@ -1,3 +1,4 @@
+import { v7 as uuidv7 } from "uuid";
 import type { AABB, Section, Seat, SeatStatusDefinition, Vec2, Venue } from "./types";
 
 export const AVAILABLE_STATUS_ID = "available";
@@ -167,7 +168,7 @@ export function normalizeVenue(venue: Venue): Venue {
   };
 }
 
-let _nextId = 1;
 export function generateId(prefix = ""): string {
-  return `${prefix}${prefix ? "-" : ""}${Date.now().toString(36)}-${(_nextId++).toString(36)}`;
+  const id = uuidv7();
+  return prefix ? `${prefix}-${id}` : id;
 }

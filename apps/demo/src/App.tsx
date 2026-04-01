@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Venue } from "@nex125/seatmap-core";
-import { deserializeVenue } from "@nex125/seatmap-core";
+import { deserializeVenue, generateId } from "@nex125/seatmap-core";
 import { SeatmapViewer } from "@nex125/seatmap-viewer";
 import { SeatmapEditor } from "@nex125/seatmap-editor";
 import { sampleVenue } from "./sampleVenue";
@@ -10,7 +10,7 @@ type Tab = "viewer" | "editor";
 type VenueSize = "sample" | "5k" | "25k" | "50k" | "custom";
 
 const emptyVenue: Venue = {
-  id: "new-venue",
+  id: generateId(),
   name: "New Venue",
   bounds: { width: 1200, height: 900 },
   categories: [

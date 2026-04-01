@@ -64,7 +64,7 @@ export function CategoryManager({
   const addCategory = () => {
     if (!newName.trim()) return;
     const cat: PricingCategory = {
-      id: generateId("cat"),
+      id: generateId(),
       name: newName.trim(),
       color: newColor,
     };

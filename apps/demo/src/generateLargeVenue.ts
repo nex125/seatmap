@@ -1,3 +1,4 @@
+import { generateId } from "@nex125/seatmap-core";
 import type { Venue, Section, Row, Seat, PricingCategory } from "@nex125/seatmap-core";
 
 const CATEGORIES: PricingCategory[] = [
@@ -37,7 +38,7 @@ export function generateLargeVenue(targetSeatCount: number): Venue {
       const startX = -((seatsPerRow - 1) * 20) / 2;
       for (let s = 0; s < seatsPerRow && seatCounter < targetSeatCount; s++) {
         seats.push({
-          id: `s${seatCounter}`,
+          id: generateId(),
           label: `${s + 1}`,
           position: { x: startX + s * 20, y: r * 22 },
           status: Math.random() > 0.1 ? "available" : "booked",
@@ -47,14 +48,14 @@ export function generateLargeVenue(targetSeatCount: number): Venue {
       }
 
       rows.push({
-        id: `sec${i}-r${r}`,
+        id: generateId(),
         label: String.fromCharCode(65 + r),
         seats,
       });
     }
 
     sections.push({
-      id: `sec-${i}`,
+      id: generateId(),
       label: `Section ${i + 1}`,
       position: {
         x: col * (sectionWidth + 30) + sectionWidth / 2,
@@ -73,7 +74,7 @@ export function generateLargeVenue(targetSeatCount: number): Venue {
   );
 
   return {
-    id: "large-venue",
+    id: generateId(),
     name: `Stadium (${totalSeats.toLocaleString()} seats)`,
     bounds: { width: cols * (sectionWidth + 30), height: Math.ceil(numSections / cols) * (sectionHeight + 30) },
     categories: CATEGORIES,

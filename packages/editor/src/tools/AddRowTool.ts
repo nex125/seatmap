@@ -115,7 +115,7 @@ export class AddRowTool extends BaseTool {
           break;
         }
         seats.push({
-          id: generateId("seat"),
+          id: generateId(),
           label: `${seats.length + 1}`,
           position: pos,
           status: "available",
@@ -126,7 +126,7 @@ export class AddRowTool extends BaseTool {
       if (seats.length === 0) continue;
 
       newRows.push({
-        id: generateId("row"),
+        id: generateId(),
         label: rowLabelFromIndex(section.rows.length + newRows.length),
         seats,
       });
