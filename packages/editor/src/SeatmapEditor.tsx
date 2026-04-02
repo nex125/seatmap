@@ -19,6 +19,7 @@ export interface SeatmapEditorProps {
   venue?: Venue;
   onChange?: (venue: Venue) => void;
   onSave?: (venue: Venue, serializedVenue: string) => void;
+  fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   className?: string;
 }
 
@@ -183,9 +184,11 @@ function DragPreviewOverlay({
 function EditorInner({
   onChange,
   onSave,
+  fetchCategoryPrices,
 }: {
   onChange?: (venue: Venue) => void;
   onSave?: (venue: Venue, serializedVenue: string) => void;
+  fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
 }) {
   const { store, viewport, spatialIndex } = useSeatmapContext();
   const venue = useStore(store, (s) => s.venue);
@@ -1820,6 +1823,7 @@ function EditorInner({
                 venue={venue}
                 history={historyRef.current}
                 store={store}
+                fetchCategoryPrices={fetchCategoryPrices}
               />
             </>
           )}
@@ -1839,11 +1843,11 @@ function EditorInner({
   );
 }
 
-export function SeatmapEditor({ venue, onChange, onSave, className }: SeatmapEditorProps) {
+export function SeatmapEditor({ venue, onChange, onSave, fetchCategoryPrices, className }: SeatmapEditorProps) {
   return (
     <SeatmapProvider venue={venue}>
       <div className={className} style={{ width: "100%", height: "100%" }}>
-        <EditorInner onChange={onChange} onSave={onSave} />
+        <EditorInner onChange={onChange} onSave={onSave} fetchCategoryPrices={fetchCategoryPrices} />
       </div>
     </SeatmapProvider>
   );

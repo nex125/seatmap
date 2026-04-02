@@ -27,6 +27,9 @@ export interface PricingCategory {
   id: string;
   name: string;
   color: string;
+  backendPrice?: number;
+  isPriceOverridden?: boolean;
+  overriddenPrice?: number;
 }
 
 export interface Seat {

@@ -67,6 +67,13 @@ function App() {
     input.click();
   }, []);
 
+  const fetchCategoryPrices = useCallback(async (categoryIds: string[]) => {
+    // Keep demo behavior aligned with real state: backend is not implemented yet.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    void categoryIds;
+    throw new Error("Backend returned error.");
+  }, []);
+
   const tabBtnBase: React.CSSProperties = {
     padding: "8px 20px",
     border: "none",
@@ -177,6 +184,7 @@ function App() {
         ) : (
           <SeatmapEditor
             venue={emptyVenue}
+            fetchCategoryPrices={fetchCategoryPrices}
             onChange={(v) => {
               console.log("Venue:", v.sections.length, "sections");
             }}

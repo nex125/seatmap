@@ -140,6 +140,17 @@ export function normalizeVenue(venue: Venue): Venue {
       : DEFAULT_SEAT_STATUSES;
   const clonedStatuses = seatStatuses.map((status) => ({ ...status }));
   const allowedStatuses = new Set(clonedStatuses.map((status) => status.id));
+  const categories = venue.categories.map((category) => {
+    const hasBackendPrice = Number.isFinite(category.backendPrice);
+    const hasOverriddenPrice = Number.isFinite(category.overriddenPrice);
+    return {
+      ...category,
+      backendPrice: hasBackendPrice ? category.backendPrice : undefined,
+      overriddenPrice: hasOverriddenPrice ? category.overriddenPrice : undefined,
+      isPriceOverridden:
+        Boolean(category.isPriceOverridden) && hasOverriddenPrice,
+    };
+  });
 
   const sections = venue.sections.map((section) => ({
     ...section,
@@ -162,6 +173,7 @@ export function normalizeVenue(venue: Venue): Venue {
 
   return {
     ...venue,
+    categories,
     seatStatuses: clonedStatuses,
     sections,
     tables,
