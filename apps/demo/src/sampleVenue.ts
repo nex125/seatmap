@@ -59,10 +59,10 @@ export const sampleVenue: Venue = {
   name: "Demo Arena",
   bounds: { width: 1200, height: 900 },
   categories: [
-    { id: "cat-vip", name: "VIP", color: "#e91e63" },
-    { id: "cat-premium", name: "Premium", color: "#ff9800" },
-    { id: "cat-standard", name: "Standard", color: "#4caf50" },
-    { id: "cat-economy", name: "Economy", color: "#2196f3" },
+    { id: "cat-vip", name: "VIP", color: "#e91e63", backendPrice: 299 },
+    { id: "cat-premium", name: "Premium", color: "#ff9800", backendPrice: 179 },
+    { id: "cat-standard", name: "Standard", color: "#4caf50", backendPrice: 99 },
+    { id: "cat-economy", name: "Economy", color: "#2196f3", backendPrice: 59 },
   ],
   seatStatuses: [
     { id: "available", name: "Available", color: "#4caf50" },

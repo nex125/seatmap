@@ -2,11 +2,11 @@ import { generateId } from "@nex125/seatmap-core";
 import type { Venue, Section, Row, Seat, PricingCategory } from "@nex125/seatmap-core";
 
 const CATEGORIES: PricingCategory[] = [
-  { id: "cat-vip", name: "VIP", color: "#e91e63" },
-  { id: "cat-premium", name: "Premium", color: "#ff9800" },
-  { id: "cat-standard", name: "Standard", color: "#4caf50" },
-  { id: "cat-economy", name: "Economy", color: "#2196f3" },
-  { id: "cat-upper", name: "Upper Deck", color: "#9c27b0" },
+  { id: "cat-vip", name: "VIP", color: "#e91e63", backendPrice: 249 },
+  { id: "cat-premium", name: "Premium", color: "#ff9800", backendPrice: 159 },
+  { id: "cat-standard", name: "Standard", color: "#4caf50", backendPrice: 89 },
+  { id: "cat-economy", name: "Economy", color: "#2196f3", backendPrice: 49 },
+  { id: "cat-upper", name: "Upper Deck", color: "#9c27b0", backendPrice: 35 },
 ];
 
 /**

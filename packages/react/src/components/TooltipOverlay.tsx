@@ -9,6 +9,7 @@ export interface TooltipData {
   row: Row;
   section: Section;
   statusName?: string;
+  price?: number;
   screenX: number;
   screenY: number;
 }
@@ -20,6 +21,10 @@ export interface TooltipOverlayProps {
 
 function DefaultTooltip({ data }: { data: TooltipData }) {
   const statusLabel = data.statusName;
+  const priceLabel =
+    typeof data.price === "number"
+      ? `$${data.price.toFixed(2)}`
+      : "Price unavailable";
   return (
     <div
       style={{
@@ -42,6 +47,9 @@ function DefaultTooltip({ data }: { data: TooltipData }) {
       </div>
       <div style={{ color: "#9e9e9e", fontSize: 12, marginTop: 2 }}>
         {statusLabel ?? (data.seat.status === AVAILABLE_STATUS_ID ? "Available" : data.seat.status)}
+      </div>
+      <div style={{ color: "#9e9e9e", fontSize: 12, marginTop: 2 }}>
+        Price: {priceLabel}
       </div>
     </div>
   );
@@ -67,11 +75,22 @@ export function TooltipOverlay({ renderTooltip, style }: TooltipOverlayProps) {
           const worldPos = seatWorldPosition(section, seat);
           const screenPos = viewport.worldToScreen(worldPos.x, worldPos.y);
           const statusName = venue.seatStatuses.find((status) => status.id === seat.status)?.name;
+          const category = venue.categories.find((item) => item.id === seat.categoryId);
+          const hasOverridePrice =
+            Boolean(category?.isPriceOverridden) &&
+            typeof category?.overriddenPrice === "number";
+          const hasBackendPrice = typeof category?.backendPrice === "number";
+          const price = hasOverridePrice
+            ? category?.overriddenPrice
+            : hasBackendPrice
+              ? category?.backendPrice
+              : undefined;
           setTooltipData({
             seat,
             row,
             section,
             statusName,
+            price,
             screenX: screenPos.x,
             screenY: screenPos.y,
           });

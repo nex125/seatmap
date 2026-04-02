@@ -14,8 +14,8 @@ const emptyVenue: Venue = {
   name: "New Venue",
   bounds: { width: 1200, height: 900 },
   categories: [
-    { id: "cat-default", name: "Standard", color: "#4caf50" },
-    { id: "cat-vip", name: "VIP", color: "#e91e63" },
+    { id: "cat-default", name: "Standard", color: "#4caf50", backendPrice: 99 },
+    { id: "cat-vip", name: "VIP", color: "#e91e63", backendPrice: 199 },
   ],
   seatStatuses: [
     { id: "available", name: "Available", color: "#4caf50" },
