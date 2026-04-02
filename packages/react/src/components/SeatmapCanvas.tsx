@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { Application, Container, Graphics, Sprite, Texture, Assets } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Texture, Assets, Text } from "pixi.js";
 import {
   getLODLevel,
   LODLevel,
@@ -27,6 +27,54 @@ const SECTION_DOT_RADIUS = 1.4;
 const MAX_SECTION_DOTS = 12000;
 const SECTION_CROSS_SIZE = 2.6;
 
+function getSectionLabelPosition(section: Section): { x: number; y: number } | null {
+  const points = section.outline.length > 2
+    ? section.outline
+    : section.rows.flatMap((row) => row.seats.map((seat) => seat.position));
+  if (points.length === 0) return null;
+
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return {
+    x: (Math.min(...xs) + Math.max(...xs)) / 2,
+    y: (Math.min(...ys) + Math.max(...ys)) / 2,
+  };
+}
+
+function getSectionLocalBounds(section: Section): { minX: number; minY: number; maxX: number; maxY: number } | null {
+  const points = section.outline.length > 2
+    ? section.outline
+    : section.rows.flatMap((row) => row.seats.map((seat) => seat.position));
+  if (points.length === 0) return null;
+
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys),
+  };
+}
+
+function sectionLocalToWorld(section: Section, local: { x: number; y: number }): { x: number; y: number } {
+  const cos = Math.cos(section.rotation);
+  const sin = Math.sin(section.rotation);
+  return {
+    x: section.position.x + local.x * cos - local.y * sin,
+    y: section.position.y + local.x * sin + local.y * cos,
+  };
+}
+
+function isWorldPointVisible(point: { x: number; y: number }, visibleAABB: AABB, margin = 0): boolean {
+  return (
+    point.x >= visibleAABB.minX - margin &&
+    point.x <= visibleAABB.maxX + margin &&
+    point.y >= visibleAABB.minY - margin &&
+    point.y <= visibleAABB.maxY + margin
+  );
+}
+
 export interface SeatmapCanvasProps {
   width?: number;
   height?: number;
@@ -43,6 +91,10 @@ export interface SeatmapCanvasProps {
   canvasGridLineStyle?: "solid" | "dashed" | "dotted";
   /** Style for section snap markers. Default: "dots". */
   sectionGridMarkerStyle?: "dots" | "cross";
+  /** When true, render section labels. Default: false. */
+  showSectionLabels?: boolean;
+  /** When false, disables seat hover state updates and tooltip triggers. Default: true. */
+  enableSeatHover?: boolean;
   onSeatClick?: (seatId: string, sectionId: string) => void;
   onSeatHover?: (seatId: string | null, sectionId: string | null) => void;
 }
@@ -57,6 +109,8 @@ export function SeatmapCanvas({
   showSectionGridDots,
   canvasGridLineStyle = "solid",
   sectionGridMarkerStyle = "dots",
+  showSectionLabels = false,
+  enableSeatHover = true,
   onSeatClick,
   onSeatHover,
 }: SeatmapCanvasProps) {
@@ -75,6 +129,7 @@ export function SeatmapCanvas({
   // Background image texture cache
   const bgTextureRef = useRef<Texture | null>(null);
   const bgUrlRef = useRef<string>("");
+  const labelTextCacheRef = useRef<Map<string, Text>>(new Map());
 
   // Touch tracking
   const touchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -174,25 +229,28 @@ export function SeatmapCanvas({
       // Editor mode (panOnLeftClick=false): clicks handled by the tool system,
       // sprite events are disabled to avoid conflicts with drag operations.
 
-      sprite.on("pointerenter", (ev) => {
-        if (ev.pointerType === "touch") return;
-        store.getState().setHoveredSeat(seat.id);
-        onSeatHover?.(seat.id, sectionId);
-        scheduleRender();
-      });
+      if (enableSeatHover) {
+        sprite.on("pointerenter", (ev) => {
+          if (ev.pointerType === "touch") return;
+          if (isPanningRef.current) return;
+          if (store.getState().hoveredSeatId === seat.id) return;
+          store.getState().setHoveredSeat(seat.id);
+          onSeatHover?.(seat.id, sectionId);
+        });
 
-      sprite.on("pointerleave", (ev) => {
-        if (ev.pointerType === "touch") return;
-        if (store.getState().hoveredSeatId === seat.id) {
-          store.getState().setHoveredSeat(null);
-          onSeatHover?.(null, null);
-          scheduleRender();
-        }
-      });
+        sprite.on("pointerleave", (ev) => {
+          if (ev.pointerType === "touch") return;
+          if (isPanningRef.current) return;
+          if (store.getState().hoveredSeatId === seat.id) {
+            store.getState().setHoveredSeat(null);
+            onSeatHover?.(null, null);
+          }
+        });
+      }
 
       parent.addChild(sprite);
     },
-    [selectedSeatIds, hoveredSeatId, store, onSeatClick, onSeatHover, getSeatTexture, scheduleRender, panOnLeftClick],
+    [selectedSeatIds, hoveredSeatId, store, onSeatClick, onSeatHover, getSeatTexture, scheduleRender, panOnLeftClick, enableSeatHover],
   );
 
   const renderGAArea = useCallback(
@@ -243,7 +301,7 @@ export function SeatmapCanvas({
   );
 
   const renderSection = useCallback(
-    (parent: Container, section: Section, lod: LODLevel, _visibleAABB: AABB) => {
+    (parent: Container, section: Section, lod: LODLevel, zoom: number, visibleAABB: AABB) => {
       const sectionContainer = new Container();
       sectionContainer.label = `section-${section.id}`;
 
@@ -379,6 +437,45 @@ export function SeatmapCanvas({
         }
       }
 
+      if (showSectionLabels && lod !== LODLevel.Detail) {
+        const bounds = getSectionLocalBounds(section);
+        const localWidth = bounds ? bounds.maxX - bounds.minX : 0;
+        const localHeight = bounds ? bounds.maxY - bounds.minY : 0;
+        const pixelWidth = localWidth * zoom;
+        const pixelHeight = localHeight * zoom;
+        const canShowOverviewLabel = lod !== LODLevel.Overview || (pixelWidth >= 80 && pixelHeight >= 36);
+        const labelPos = getSectionLabelPosition(section);
+        const sectionLabelWorld = labelPos ? sectionLocalToWorld(section, labelPos) : null;
+        const sectionLabelVisible = sectionLabelWorld
+          ? isWorldPointVisible(sectionLabelWorld, visibleAABB, 30 / Math.max(zoom, 0.0001))
+          : false;
+        if (canShowOverviewLabel && sectionLabelVisible && labelPos && section.label.trim().length > 0) {
+          const sectionLabelKey = `section:${section.id}:${lod}:${section.label}`;
+          let sectionLabel = labelTextCacheRef.current.get(sectionLabelKey);
+          if (!sectionLabel) {
+            const textResolution = 1;
+            sectionLabel = new Text({
+              text: section.label,
+              resolution: textResolution,
+              style: {
+                fill: 0xffffff,
+                fontSize: lod === LODLevel.Overview ? 68 : 60,
+                fontWeight: "700",
+                stroke: { color: 0x111126, width: 6 },
+                padding: 6,
+              },
+            });
+            sectionLabel.eventMode = "none";
+            labelTextCacheRef.current.set(sectionLabelKey, sectionLabel);
+          }
+          sectionLabel.anchor.set(0.5);
+          sectionLabel.position.set(labelPos.x, labelPos.y);
+          sectionLabel.rotation = -section.rotation;
+          sectionLabel.alpha = lod === LODLevel.Overview ? 1 : 0.95;
+          sectionContainer.addChild(sectionLabel);
+        }
+      }
+
       sectionContainer.position.set(section.position.x, section.position.y);
       sectionContainer.rotation = section.rotation;
 
@@ -412,6 +509,7 @@ export function SeatmapCanvas({
       renderSeat,
       isSectionDotsVisible,
       sectionGridMarkerStyle,
+      showSectionLabels,
       selectedSectionIds,
     ],
   );
@@ -539,7 +637,7 @@ export function SeatmapCanvas({
 
     for (const section of venue.sections) {
       if (!visibleSectionIds.has(section.id)) continue;
-      renderSection(world, section, lod, visibleAABB);
+      renderSection(world, section, lod, zoom, visibleAABB);
     }
 
     for (const ga of venue.gaAreas) {
@@ -626,6 +724,7 @@ export function SeatmapCanvas({
         appRef.current.destroy(true, { children: true });
         appRef.current = null;
       }
+      labelTextCacheRef.current.clear();
       textureCacheRef.current.destroy();
     };
   }, []);
@@ -650,6 +749,7 @@ export function SeatmapCanvas({
 
     if (prevVenueIdRef.current !== venue.id) {
       prevVenueIdRef.current = venue.id;
+      labelTextCacheRef.current.clear();
       viewport.fitBounds(venueAABB(venue));
     }
   }, [venue]);
@@ -695,6 +795,13 @@ export function SeatmapCanvas({
     scheduleRender();
   }, [venue, selectedSeatIds, selectedSectionIds, hoveredSeatId, scheduleRender]);
 
+  // Hard-off path for labels: drop all label caches immediately.
+  useEffect(() => {
+    if (showSectionLabels) return;
+    labelTextCacheRef.current.clear();
+    scheduleRender();
+  }, [showSectionLabels, scheduleRender]);
+
   // Ensure grid visibility toggles immediately without waiting for other updates.
   useEffect(() => {
     scheduleRender();
@@ -736,11 +843,15 @@ export function SeatmapCanvas({
         (e.button === 0 && panOnLeftClick);
       if (shouldPan) {
         isPanningRef.current = true;
+        if (enableSeatHover && store.getState().hoveredSeatId) {
+          store.getState().setHoveredSeat(null);
+          onSeatHover?.(null, null);
+        }
         lastPointerRef.current = { x: e.clientX, y: e.clientY };
-        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [panOnLeftClick],
+    [panOnLeftClick, store, onSeatHover, enableSeatHover],
   );
 
   const handlePointerMove = useCallback(
@@ -807,7 +918,7 @@ export function SeatmapCanvas({
         if (dist > 10) {
           touchTapRef.current = null;
           // Dismiss tooltip when starting a pan/pinch
-          if (store.getState().hoveredSeatId) {
+          if (enableSeatHover && store.getState().hoveredSeatId) {
             store.getState().setHoveredSeat(null);
             onSeatHover?.(null, null);
             scheduleRender();
@@ -852,7 +963,7 @@ export function SeatmapCanvas({
         lastPinchCenterRef.current = center;
       }
     },
-    [viewport, store, onSeatHover, scheduleRender],
+    [viewport, store, onSeatHover, scheduleRender, enableSeatHover],
   );
 
   const handleTouchEnd = useCallback(
@@ -908,9 +1019,13 @@ export function SeatmapCanvas({
               if (seat && seat.status === AVAILABLE_STATUS_ID) {
                 store.getState().toggleSeat(seat.id);
                 // Show tooltip on tap (since there's no hover on touch)
-                store.getState().setHoveredSeat(seat.id);
+                if (enableSeatHover) {
+                  store.getState().setHoveredSeat(seat.id);
+                }
                 onSeatClick?.(seat.id, closest.sectionId);
-                onSeatHover?.(seat.id, closest.sectionId);
+                if (enableSeatHover) {
+                  onSeatHover?.(seat.id, closest.sectionId);
+                }
                 scheduleRender();
                 return;
               }
@@ -918,7 +1033,7 @@ export function SeatmapCanvas({
           }
         } else {
           // Tapped empty space — dismiss tooltip
-          if (store.getState().hoveredSeatId) {
+          if (enableSeatHover && store.getState().hoveredSeatId) {
             store.getState().setHoveredSeat(null);
             onSeatHover?.(null, null);
             scheduleRender();
@@ -927,7 +1042,7 @@ export function SeatmapCanvas({
       }
       touchTapRef.current = null;
     },
-    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender],
+    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover],
   );
 
   return (

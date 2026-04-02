@@ -13,6 +13,7 @@ export interface SeatmapViewerProps {
   onSelectionChange?: (seatIds: string[]) => void;
   onStatusUpdate?: (seatId: string, status: SeatStatus) => void;
   renderTooltip?: (data: TooltipData) => React.ReactNode;
+  showLabels?: boolean;
   className?: string;
 }
 
@@ -70,6 +71,7 @@ export function SeatmapViewer({
   onSeatClick,
   onSeatHover,
   renderTooltip,
+  showLabels = true,
   className,
 }: SeatmapViewerProps) {
   const showStatuses = venue.seatStatuses.length > 0;
@@ -81,6 +83,8 @@ export function SeatmapViewer({
         <SeatmapCanvas
           onSeatClick={onSeatClick}
           onSeatHover={onSeatHover}
+          showSectionLabels={showLabels}
+          enableSeatHover={showLabels}
         />
         {(showStatuses || showCategories) && (
           <aside aria-label="Seatmap legend" style={legendContainerStyle}>
@@ -115,7 +119,7 @@ export function SeatmapViewer({
             )}
           </aside>
         )}
-        <TooltipOverlay renderTooltip={renderTooltip} />
+        {showLabels && <TooltipOverlay renderTooltip={renderTooltip} />}
       </div>
     </SeatmapProvider>
   );
