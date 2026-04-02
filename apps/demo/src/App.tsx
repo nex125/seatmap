@@ -173,12 +173,9 @@ function App() {
           <SeatmapViewer
             key={venueSize === "custom" ? `custom-${customVenue?.id}` : venueSize}
             venue={viewerVenue}
-            onSeatClick={(seatId) => {
-              setSelectedSeats((prev) =>
-                prev.includes(seatId)
-                  ? prev.filter((id) => id !== seatId)
-                  : [...prev, seatId],
-              );
+            onSelectionChange={setSelectedSeats}
+            onCartEvent={(event) => {
+              console.log("Cart Proceed click event:", event.type, event.payload);
             }}
           />
         ) : (
