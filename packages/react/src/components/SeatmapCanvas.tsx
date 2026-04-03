@@ -526,13 +526,6 @@ export function SeatmapCanvas({
     world.position.set(viewport.x * zoom, viewport.y * zoom);
     world.scale.set(zoom);
 
-    // Draw venue bounds so even an empty canvas shows the working area
-    const boundsG = new Graphics();
-    boundsG.rect(0, 0, venue.bounds.width, venue.bounds.height);
-    boundsG.fill({ color: 0x1e1e3a, alpha: 0.3 });
-    boundsG.stroke({ color: 0x4a4a7a, width: 2 });
-    world.addChild(boundsG);
-
     // Render background image if loaded (configurable size and position)
     if (bgTextureRef.current && bgTextureRef.current !== Texture.EMPTY) {
       const tex = bgTextureRef.current;
