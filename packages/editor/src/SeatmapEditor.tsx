@@ -55,6 +55,7 @@ function getBackgroundRectInWorld(venue: Venue) {
 type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
 type CanvasGridStyle = "solid" | "dashed" | "dotted";
 type SectionGridStyle = "dots" | "cross";
+type RowDirectionArrowMode = "row-direction" | "viewer-direction";
 
 function PolygonPreviewOverlay({
   points,
@@ -262,6 +263,7 @@ function EditorInner({
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
   const [rowOrientationDeg, setRowOrientationDeg] = useState(0);
+  const [rowDirectionArrowMode, setRowDirectionArrowMode] = useState<RowDirectionArrowMode>("row-direction");
   const [rowPreviewPoint, setRowPreviewPoint] = useState<Vec2 | null>(null);
   const handleSeatsPerRowChange = useCallback(
     (n: number) => {
@@ -929,24 +931,27 @@ function EditorInner({
     const preview = addRowTool.getPlacementPreview(rowPreviewPoint.x, rowPreviewPoint.y, venue);
     if (!preview) return null;
 
+    const displayAngleRad =
+      rowDirectionArrowMode === "row-direction"
+        ? preview.worldAngleRad + Math.PI / 2
+        : preview.worldAngleRad;
     const origin = viewport.worldToScreen(preview.worldX, preview.worldY);
     const lineLengthPx = 78;
     const end = {
-      x: origin.x + Math.cos(preview.worldAngleRad) * lineLengthPx,
-      y: origin.y + Math.sin(preview.worldAngleRad) * lineLengthPx,
+      x: origin.x + Math.cos(displayAngleRad) * lineLengthPx,
+      y: origin.y + Math.sin(displayAngleRad) * lineLengthPx,
     };
     const arrowSizePx = 11;
     const leftWing = {
-      x: end.x - Math.cos(preview.worldAngleRad - Math.PI / 6) * arrowSizePx,
-      y: end.y - Math.sin(preview.worldAngleRad - Math.PI / 6) * arrowSizePx,
+      x: end.x - Math.cos(displayAngleRad - Math.PI / 6) * arrowSizePx,
+      y: end.y - Math.sin(displayAngleRad - Math.PI / 6) * arrowSizePx,
     };
     const rightWing = {
-      x: end.x - Math.cos(preview.worldAngleRad + Math.PI / 6) * arrowSizePx,
-      y: end.y - Math.sin(preview.worldAngleRad + Math.PI / 6) * arrowSizePx,
+      x: end.x - Math.cos(displayAngleRad + Math.PI / 6) * arrowSizePx,
+      y: end.y - Math.sin(displayAngleRad + Math.PI / 6) * arrowSizePx,
     };
-    // Keep tooltip convention aligned with row orientation input:
-    // 0deg = up, 90deg = right, clockwise positive.
-    const worldAngleDeg = ((((preview.worldAngleRad * 180) / Math.PI) + 90) % 360 + 360) % 360;
+    const displayAngleDeg = ((((displayAngleRad * 180) / Math.PI) + 90) % 360 + 360) % 360;
+    const orientationLabel = rowDirectionArrowMode === "row-direction" ? "Row direction" : "Viewer direction";
 
     return (
       <svg
@@ -998,7 +1003,7 @@ function EditorInner({
           fontFamily="system-ui"
           textAnchor="middle"
         >
-          {`Row angle ${Math.round(worldAngleDeg)}deg`}
+          {`${orientationLabel} ${Math.round(displayAngleDeg)}deg`}
         </text>
       </svg>
     );
@@ -1604,6 +1609,72 @@ function EditorInner({
               Orientation
             </span>
 
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                  color: rowDirectionArrowMode === "viewer-direction" ? "#8ec5ff" : "#8f8fa8",
+                }}
+              >
+                Viewer direction
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={rowDirectionArrowMode === "row-direction"}
+                onClick={() =>
+                  setRowDirectionArrowMode((mode) =>
+                    mode === "row-direction" ? "viewer-direction" : "row-direction",
+                  )
+                }
+                style={{
+                  width: 46,
+                  height: 24,
+                  padding: 2,
+                  borderRadius: 999,
+                  border: "1px solid #3a3a5a",
+                  background: rowDirectionArrowMode === "row-direction" ? "#2f7d45" : "#2f5f9f",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  transition: "background 120ms ease",
+                }}
+                title="Toggle arrow orientation mode"
+              >
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    background: "#f3f5ff",
+                    transform:
+                      rowDirectionArrowMode === "row-direction"
+                        ? "translateX(22px)"
+                        : "translateX(0)",
+                    transition: "transform 120ms ease",
+                  }}
+                />
+              </button>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                  color: rowDirectionArrowMode === "row-direction" ? "#89d9a2" : "#8f8fa8",
+                }}
+              >
+                Row direction
+              </span>
+            </div>
+
             <label
               style={{
                 color: "#9e9e9e",
@@ -1659,7 +1730,9 @@ function EditorInner({
                 fontFamily: "system-ui",
               }}
             >
-              0deg = up, 90deg = right
+              {rowDirectionArrowMode === "row-direction"
+                ? "Arrow: row direction (viewer +90deg)"
+                : "Arrow: viewer direction (0deg = up, 90deg = right)"}
             </div>
           </div>
           {isGridOptionsOpen && renderGridOptionsCard()}
