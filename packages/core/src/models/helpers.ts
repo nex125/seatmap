@@ -13,6 +13,20 @@ export function isDancefloorSection(section: Section): boolean {
   return section.kind === DANCEFLOOR_SECTION_KIND;
 }
 
+function getSectionSeatCount(section: Section): number {
+  return section.rows.reduce((count, row) => count + row.seats.length, 0);
+}
+
+/**
+ * Area-seat sections should use the whole outline for rendering/hit testing.
+ * This includes explicit dancefloors and legacy single-seat outlined sections.
+ */
+export function isAreaSeatSection(section: Section): boolean {
+  if (isDancefloorSection(section)) return true;
+  if (isStageSection(section)) return false;
+  return section.outline.length >= 3 && getSectionSeatCount(section) === 1;
+}
+
 export const DEFAULT_SEAT_STATUSES: SeatStatusDefinition[] = [
   { id: AVAILABLE_STATUS_ID, name: "Available", color: "#4caf50" },
   { id: "locked", name: "Locked", color: "#f44336" },

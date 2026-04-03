@@ -1,7 +1,6 @@
 import RBush from "rbush";
 import type { AABB, Section, Vec2 } from "../models/types";
-import { DANCEFLOOR_SECTION_KIND } from "../models/helpers";
-import { seatWorldPosition, sectionAABB } from "../models/helpers";
+import { isAreaSeatSection, seatWorldPosition, sectionAABB } from "../models/helpers";
 
 export interface SpatialItem extends AABB {
   type: "section" | "seat";
@@ -28,7 +27,7 @@ export class SpatialIndex {
         for (const seat of row.seats) {
           const wp = seatWorldPosition(section, seat);
           const dancefloorBounds =
-            section.kind === DANCEFLOOR_SECTION_KIND
+            isAreaSeatSection(section)
               ? getSectionOutlineWorldBounds(section)
               : null;
           const r = 8;

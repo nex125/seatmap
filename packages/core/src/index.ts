@@ -9,6 +9,7 @@ export {
   normalizeVenue,
   isStageSection,
   isDancefloorSection,
+  isAreaSeatSection,
   STAGE_SECTION_KIND,
   DANCEFLOOR_SECTION_KIND,
   DEFAULT_SEAT_STATUSES,

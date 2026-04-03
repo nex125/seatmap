@@ -134,7 +134,7 @@ function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>Venue:</label>
             <select value={venueSize} onChange={(e) => setVenueSize(e.target.value as VenueSize)} style={selectStyle}>
-              <option value="sample">Demo Arena (~700 seats)</option>
+              <option value="sample">Small Hall (stage + dancefloor)</option>
               <option value="5k">Large (5,000 seats)</option>
               <option value="25k">Arena (25,000 seats)</option>
               <option value="50k">Stadium (50,000 seats)</option>

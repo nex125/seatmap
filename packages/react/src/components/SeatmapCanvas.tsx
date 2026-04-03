@@ -6,7 +6,7 @@ import {
   venueAABB,
   CategoryTextureCache,
   AVAILABLE_STATUS_ID,
-  isDancefloorSection,
+  isAreaSeatSection,
   isStageSection,
   pointInPolygon,
 } from "@nex125/seatmap-core";
@@ -255,6 +255,74 @@ export function SeatmapCanvas({
     [selectedSeatIds, hoveredSeatId, store, onSeatClick, onSeatHover, getSeatTexture, scheduleRender, panOnLeftClick, enableSeatHover],
   );
 
+  const renderDancefloorSeatArea = useCallback(
+    (parent: Container, section: Section, seat: Seat) => {
+      const isSelected = selectedSeatIds.has(seat.id);
+      const isHovered = hoveredSeatId === seat.id;
+      const sectionColor = getCategoryColor(seat.categoryId || section.categoryId);
+      const fillAlpha = isSelected ? 0.5 : isHovered ? 0.4 : 0.26;
+      const strokeColor = isSelected ? 0x4dabf7 : sectionColor;
+      const strokeWidth = isSelected ? 3 : 2;
+
+      const area = new Graphics();
+      if (section.outline.length >= 3) {
+        area.poly(section.outline.flatMap((point) => [point.x, point.y]));
+      } else {
+        const bounds = getSectionLocalBounds(section);
+        if (!bounds) return;
+        area.rect(bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
+      }
+      area.fill({ color: sectionColor, alpha: fillAlpha });
+      area.stroke({ color: strokeColor, width: strokeWidth, alpha: 0.95 });
+
+      if (panOnLeftClick) {
+        area.eventMode = "static";
+        area.cursor = seat.status === AVAILABLE_STATUS_ID ? "pointer" : "default";
+        area.on("pointerdown", (ev) => {
+          if (ev.pointerType === "touch") return;
+          if (seat.status === AVAILABLE_STATUS_ID) {
+            store.getState().toggleSeat(seat.id);
+            onSeatClick?.(seat.id, section.id);
+            scheduleRender();
+          }
+        });
+      } else {
+        area.eventMode = "none";
+      }
+
+      if (enableSeatHover) {
+        area.on("pointerenter", (ev) => {
+          if (ev.pointerType === "touch") return;
+          if (isPanningRef.current) return;
+          if (store.getState().hoveredSeatId === seat.id) return;
+          store.getState().setHoveredSeat(seat.id);
+          onSeatHover?.(seat.id, section.id);
+        });
+        area.on("pointerleave", (ev) => {
+          if (ev.pointerType === "touch") return;
+          if (isPanningRef.current) return;
+          if (store.getState().hoveredSeatId === seat.id) {
+            store.getState().setHoveredSeat(null);
+            onSeatHover?.(null, null);
+          }
+        });
+      }
+
+      parent.addChild(area);
+    },
+    [
+      selectedSeatIds,
+      hoveredSeatId,
+      getCategoryColor,
+      panOnLeftClick,
+      store,
+      onSeatClick,
+      scheduleRender,
+      enableSeatHover,
+      onSeatHover,
+    ],
+  );
+
   const renderGAArea = useCallback(
     (parent: Container, ga: GeneralAdmissionArea) => {
       if (ga.shape.length < 3) return;
@@ -432,14 +500,21 @@ export function SeatmapCanvas({
           bg.stroke({ color: catColor, width: 1.5, alpha: 0.5 });
           sectionContainer.addChild(bg);
         }
-        for (const row of section.rows) {
-          for (const seat of row.seats) {
-            renderSeat(sectionContainer, seat, section.id);
+        if (isAreaSeatSection(section)) {
+          const areaSeat = section.rows.flatMap((row) => row.seats)[0];
+          if (areaSeat) {
+            renderDancefloorSeatArea(sectionContainer, section, areaSeat);
+          }
+        } else {
+          for (const row of section.rows) {
+            for (const seat of row.seats) {
+              renderSeat(sectionContainer, seat, section.id);
+            }
           }
         }
       }
 
-      const shouldShowFixedAreaLabel = isStageSection(section) || isDancefloorSection(section);
+      const shouldShowFixedAreaLabel = isStageSection(section) || isAreaSeatSection(section);
       if ((showSectionLabels && lod !== LODLevel.Detail) || shouldShowFixedAreaLabel) {
         const bounds = getSectionLocalBounds(section);
         const localWidth = bounds ? bounds.maxX - bounds.minX : 0;
@@ -511,6 +586,7 @@ export function SeatmapCanvas({
       getCategoryColor,
       zoomToSection,
       renderSeat,
+      renderDancefloorSeatArea,
       isSectionDotsVisible,
       sectionGridMarkerStyle,
       showSectionLabels,
