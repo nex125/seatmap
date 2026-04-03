@@ -16,7 +16,8 @@ const LEGACY_STATUS_MAP: Record<string, string> = {
 };
 
 function normalizeStatusId(rawStatus: string, allowedStatuses: Set<string>): string {
-  const mapped = LEGACY_STATUS_MAP[rawStatus] ?? rawStatus;
+  const lower = rawStatus.toLowerCase();
+  const mapped = LEGACY_STATUS_MAP[lower] ?? lower;
   if (allowedStatuses.has(mapped)) return mapped;
   return AVAILABLE_STATUS_ID;
 }

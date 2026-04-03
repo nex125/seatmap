@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   treeshake: true,
-  external: ["react", "react-dom"],
+  external: ["react", "react-dom", "pixi.js", "@pixi/react", "@nex125/seatmap-core", "zustand"],
 });
