@@ -1,6 +1,6 @@
 import type { Viewport } from "@nex125/seatmap-core";
 import { generateId } from "@nex125/seatmap-core";
-import type { CommandHistory, Section, Vec2 } from "@nex125/seatmap-core";
+import type { CommandHistory, Section, SectionKind, Vec2 } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
@@ -13,6 +13,7 @@ export class AddSectionTool extends BaseTool {
   readonly cursor = "crosshair";
 
   mode: SectionCreationMode = "rectangle";
+  sectionKind: SectionKind = "section";
   points: Vec2[] = [];
   onPointsChange?: (points: Vec2[], closeable: boolean) => void;
 
@@ -29,6 +30,13 @@ export class AddSectionTool extends BaseTool {
 
   setMode(mode: SectionCreationMode): void {
     this.mode = mode;
+    this.points = [];
+    this.notifyChange();
+  }
+
+  setSectionKind(sectionKind: SectionKind): void {
+    if (this.sectionKind === sectionKind) return;
+    this.sectionKind = sectionKind;
     this.points = [];
     this.notifyChange();
   }
@@ -106,10 +114,14 @@ export class AddSectionTool extends BaseTool {
 
     const newSection: Section = {
       id: generateId(),
-      label: `Section ${Date.now().toString(36).slice(-3).toUpperCase()}`,
+      label:
+        this.sectionKind === "stage"
+          ? "Stage"
+          : `Section ${Date.now().toString(36).slice(-3).toUpperCase()}`,
+      kind: this.sectionKind,
       position: { x: cx, y: cy },
       rotation: 0,
-      categoryId: this.categoryId,
+      categoryId: this.sectionKind === "stage" ? "" : this.categoryId,
       rows: [],
       outline,
     };

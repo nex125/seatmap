@@ -7,6 +7,7 @@ export type {
   PricingCategory,
   Seat,
   Row,
+  SectionKind,
   Section,
   GeneralAdmissionArea,
   Table,

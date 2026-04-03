@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import type { Venue, PricingCategory, CommandHistory } from "@nex125/seatmap-core";
-import { generateId } from "@nex125/seatmap-core";
+import { generateId, isStageSection } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 
 export interface CategoryManagerProps {
@@ -27,7 +27,11 @@ function replaceCategoryInVenue(venue: Venue, categoryId: string, replacementCat
     ...venue,
     sections: venue.sections.map((section) => ({
       ...section,
-      categoryId: section.categoryId === categoryId ? replacementCategoryId : section.categoryId,
+      categoryId: isStageSection(section)
+        ? ""
+        : section.categoryId === categoryId
+          ? replacementCategoryId
+          : section.categoryId,
       rows: section.rows.map((row) => ({
         ...row,
         seats: row.seats.map((seat) =>

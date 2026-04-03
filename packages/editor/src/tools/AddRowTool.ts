@@ -1,5 +1,5 @@
 import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
-import { generateId, pointInPolygon } from "@nex125/seatmap-core";
+import { generateId, isStageSection, pointInPolygon } from "@nex125/seatmap-core";
 import type { Row, Seat, Section, Venue } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
@@ -175,7 +175,8 @@ export class AddRowTool extends BaseTool {
     const sectionIds = [...new Set(sectionHits.map((h) => h.sectionId))];
     const sections = sectionIds
       .map((id) => venue.sections.find((s) => s.id === id))
-      .filter((s): s is Section => Boolean(s));
+      .filter((s): s is Section => Boolean(s))
+      .filter((section) => !isStageSection(section));
     if (sections.length === 0) return null;
 
     const containing = sections.find((section) => {

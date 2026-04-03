@@ -2,6 +2,11 @@ import { v7 as uuidv7 } from "uuid";
 import type { AABB, Section, Seat, SeatStatusDefinition, Vec2, Venue } from "./types";
 
 export const AVAILABLE_STATUS_ID = "available";
+export const STAGE_SECTION_KIND = "stage";
+
+export function isStageSection(section: Section): boolean {
+  return section.kind === STAGE_SECTION_KIND;
+}
 
 export const DEFAULT_SEAT_STATUSES: SeatStatusDefinition[] = [
   { id: AVAILABLE_STATUS_ID, name: "Available", color: "#4caf50" },
@@ -153,8 +158,10 @@ export function normalizeVenue(venue: Venue): Venue {
     };
   });
 
-  const sections = venue.sections.map((section) => ({
+  const sections: Section[] = venue.sections.map((section): Section => ({
     ...section,
+    kind: section.kind === STAGE_SECTION_KIND ? "stage" : "section",
+    categoryId: section.kind === STAGE_SECTION_KIND ? "" : section.categoryId,
     rows: section.rows.map((row) => ({
       ...row,
       seats: row.seats.map((seat) => ({

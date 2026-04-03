@@ -1,6 +1,6 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import type { Venue, Section, PricingCategory, CommandHistory, Row, Seat } from "@nex125/seatmap-core";
-import { generateId } from "@nex125/seatmap-core";
+import { generateId, isStageSection } from "@nex125/seatmap-core";
 import { AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 
@@ -148,7 +148,9 @@ export function PropertyPanel({
   const updateSectionCategory = (sectionId: string, categoryId: string) => {
     const v = freshVenue(store);
     if (!v) return;
-    const oldCatId = v.sections.find((s) => s.id === sectionId)?.categoryId ?? "";
+    const targetSection = v.sections.find((s) => s.id === sectionId);
+    if (!targetSection || isStageSection(targetSection)) return;
+    const oldCatId = targetSection.categoryId;
 
     history.execute({
       description: `Change section category`,
@@ -235,7 +237,12 @@ export function PropertyPanel({
     if (sectionIds.length === 0) return;
     const v = freshVenue(store);
     if (!v) return;
-    const targetIds = new Set(sectionIds);
+    const targetIds = new Set(
+      v.sections
+        .filter((section) => sectionIds.includes(section.id) && !isStageSection(section))
+        .map((section) => section.id),
+    );
+    if (targetIds.size === 0) return;
     const previousCategoryBySectionId = new Map(
       v.sections
         .filter((section) => targetIds.has(section.id))
@@ -243,7 +250,7 @@ export function PropertyPanel({
     );
 
     history.execute({
-      description: `Change category for ${sectionIds.length} section(s)`,
+      description: `Change category for ${targetIds.size} section(s)`,
       execute: () => {
         const cur = freshVenue(store);
         if (!cur) return;
@@ -406,7 +413,7 @@ export function PropertyPanel({
     const v = freshVenue(store);
     if (!v) return;
     const sec = v.sections.find((s) => s.id === sectionId);
-    if (!sec) return;
+    if (!sec || isStageSection(sec)) return;
 
     let targetRow: Row | undefined = sec.rows[sec.rows.length - 1];
     const newSeat = {
@@ -547,11 +554,18 @@ export function PropertyPanel({
   const selectedSeatStatusId =
     selectedSeatStatusIds.size > 0 ? [...selectedSeatStatusIds][0] : AVAILABLE_STATUS_ID;
   const hasMultipleSelectedSections = selectedSections.length > 1;
+  const selectedNonStageSections = selectedSections.filter((section) => !isStageSection(section));
+  const hasSelectedStage = selectedSections.some((section) => isStageSection(section));
   const selectedSectionIdsList = selectedSections.map((section) => section.id);
   const selectedSectionLabels = new Set(selectedSections.map((section) => section.label));
-  const selectedSectionCategoryIds = new Set(selectedSections.map((section) => section.categoryId));
+  const selectedSectionCategoryIds = new Set(selectedNonStageSections.map((section) => section.categoryId));
   const sharedLabelValue = selectedSectionLabels.size === 1 ? selectedSections[0]?.label ?? "" : "";
-  const sharedCategoryValue = selectedSectionCategoryIds.size === 1 ? selectedSections[0]?.categoryId ?? "" : "__mixed__";
+  const sharedCategoryValue =
+    selectedNonStageSections.length === 0
+      ? ""
+      : selectedSectionCategoryIds.size === 1
+        ? selectedNonStageSections[0]?.categoryId ?? ""
+        : "__mixed__";
 
   return (
     <div style={{ padding: 16, ...style }}>
@@ -639,7 +653,7 @@ export function PropertyPanel({
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
-              Section Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
+              Section / Stage Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
             </div>
             <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
               Delete Selected
@@ -663,7 +677,11 @@ export function PropertyPanel({
                   style={selectStyle}
                   value={sharedCategoryValue}
                   onChange={(e) => updateSelectedSectionsCategory(selectedSectionIdsList, e.target.value)}
+                  disabled={selectedNonStageSections.length === 0}
                 >
+                  {selectedNonStageSections.length === 0 && (
+                    <option value="" disabled>Not applicable for stage</option>
+                  )}
                   {sharedCategoryValue === "__mixed__" && (
                     <option value="__mixed__" disabled>Mixed</option>
                   )}
@@ -671,6 +689,11 @@ export function PropertyPanel({
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+                {hasSelectedStage && (
+                  <div style={{ ...labelStyle, marginTop: 4 }}>
+                    Stage selection is excluded from category changes.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -700,56 +723,83 @@ export function PropertyPanel({
                       style={selectStyle}
                       value={selectedSection.categoryId}
                       onChange={(e) => updateSectionCategory(selectedSection.id, e.target.value)}
+                      disabled={isStageSection(selectedSection)}
                     >
+                      {isStageSection(selectedSection) && (
+                        <option value="" disabled>Not applicable for stage</option>
+                      )}
                       {venue.categories.map((cat: PricingCategory) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
+                    {isStageSection(selectedSection) && (
+                      <div style={{ ...labelStyle, marginTop: 4 }}>
+                        Stage does not use pricing category.
+                      </div>
+                    )}
                   </div>
                 </>
               )}
 
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={labelStyle}>
-                    Rows ({selectedSection.rows.length}) &middot;{" "}
-                    {selectedSection.rows.reduce((t, r) => t + r.seats.length, 0)} seats
-                  </div>
-                  <button onClick={() => addSingleSeat(selectedSection.id)} style={btnSmall} title="Add a single seat to the last row">
-                    + Seat
-                  </button>
+              {isStageSection(selectedSection) ? (
+                <div
+                  style={{
+                    marginBottom: 10,
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    background: "#2a2a4a",
+                    color: "#9e9e9e",
+                    fontSize: 12,
+                    fontFamily: "system-ui",
+                  }}
+                >
+                  Stage areas do not support rows or seats.
                 </div>
-              </div>
-
-              <div style={{ maxHeight: 220, overflowY: "auto" }}>
-                {selectedSection.rows.map((row) => (
-                  <div
-                    key={row.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "3px 6px",
-                      borderRadius: 4,
-                      marginBottom: 2,
-                      background: "#2a2a4a",
-                      fontSize: 12,
-                      fontFamily: "system-ui",
-                      color: "#e0e0e0",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, minWidth: 24 }}>Row {row.label}</span>
-                    <span style={{ flex: 1, color: "#9e9e9e" }}>{row.seats.length} seats</span>
-                    <button
-                      onClick={() => deleteRow(selectedSection.id, row.id)}
-                      style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
-                      title={`Delete row ${row.label}`}
-                    >
-                      ✕
-                    </button>
+              ) : (
+                <>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={labelStyle}>
+                        Rows ({selectedSection.rows.length}) &middot;{" "}
+                        {selectedSection.rows.reduce((t, r) => t + r.seats.length, 0)} seats
+                      </div>
+                      <button onClick={() => addSingleSeat(selectedSection.id)} style={btnSmall} title="Add a single seat to the last row">
+                        + Seat
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <div style={{ maxHeight: 220, overflowY: "auto" }}>
+                    {selectedSection.rows.map((row) => (
+                      <div
+                        key={row.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "3px 6px",
+                          borderRadius: 4,
+                          marginBottom: 2,
+                          background: "#2a2a4a",
+                          fontSize: 12,
+                          fontFamily: "system-ui",
+                          color: "#e0e0e0",
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, minWidth: 24 }}>Row {row.label}</span>
+                        <span style={{ flex: 1, color: "#9e9e9e" }}>{row.seats.length} seats</span>
+                        <button
+                          onClick={() => deleteRow(selectedSection.id, row.id)}
+                          style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
+                          title={`Delete row ${row.label}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import {
   venueAABB,
   CategoryTextureCache,
   AVAILABLE_STATUS_ID,
+  isStageSection,
   pointInPolygon,
 } from "@nex125/seatmap-core";
 import type {
@@ -437,19 +438,21 @@ export function SeatmapCanvas({
         }
       }
 
-      if (showSectionLabels && lod !== LODLevel.Detail) {
+      const shouldShowStageLabel = isStageSection(section);
+      if ((showSectionLabels && lod !== LODLevel.Detail) || shouldShowStageLabel) {
         const bounds = getSectionLocalBounds(section);
         const localWidth = bounds ? bounds.maxX - bounds.minX : 0;
         const localHeight = bounds ? bounds.maxY - bounds.minY : 0;
         const pixelWidth = localWidth * zoom;
         const pixelHeight = localHeight * zoom;
-        const canShowOverviewLabel = lod !== LODLevel.Overview || (pixelWidth >= 80 && pixelHeight >= 36);
+        const canShowOverviewLabel =
+          shouldShowStageLabel || lod !== LODLevel.Overview || (pixelWidth >= 80 && pixelHeight >= 36);
         const labelPos = getSectionLabelPosition(section);
         const sectionLabelWorld = labelPos ? sectionLocalToWorld(section, labelPos) : null;
         const sectionLabelVisible = sectionLabelWorld
           ? isWorldPointVisible(sectionLabelWorld, visibleAABB, 30 / Math.max(zoom, 0.0001))
           : false;
-        if (canShowOverviewLabel && sectionLabelVisible && labelPos && section.label.trim().length > 0) {
+        if ((shouldShowStageLabel || (canShowOverviewLabel && sectionLabelVisible)) && labelPos && section.label.trim().length > 0) {
           const sectionLabelKey = `section:${section.id}:${lod}:${section.label}`;
           let sectionLabel = labelTextCacheRef.current.get(sectionLabelKey);
           if (!sectionLabel) {

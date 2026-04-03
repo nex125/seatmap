@@ -7,6 +7,8 @@ export {
   pointInPolygon,
   clampToPolygon,
   normalizeVenue,
+  isStageSection,
+  STAGE_SECTION_KIND,
   DEFAULT_SEAT_STATUSES,
   AVAILABLE_STATUS_ID,
 } from "./models/helpers";

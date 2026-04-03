@@ -46,9 +46,12 @@ export interface Row {
   seats: Seat[];
 }
 
+export type SectionKind = "section" | "stage";
+
 export interface Section {
   id: string;
   label: string;
+  kind?: SectionKind;
   position: Vec2;
   rotation: number;
   categoryId: string;
