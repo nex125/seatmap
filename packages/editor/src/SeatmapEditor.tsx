@@ -737,6 +737,7 @@ function EditorInner({
 
   const renderBackgroundResizeOverlay = () => {
     if (!venue?.backgroundImage) return null;
+    if (activeToolName !== "select") return null;
 
     const rectWorld = getBackgroundRectInWorld(venue);
     const topLeft = viewport.worldToScreen(rectWorld.x, rectWorld.y);
