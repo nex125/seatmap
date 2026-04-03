@@ -1017,6 +1017,45 @@ function EditorInner({
     [venue, store],
   );
 
+  const handleDeleteSelectedObjects = useCallback(() => {
+    const state = store.getState();
+    const currentVenue = state.venue;
+    if (!currentVenue) return;
+
+    const selectedSeatIdSet = new Set(state.selectedSeatIds);
+    const selectedSectionIdSet = new Set(state.selectedSectionIds);
+    if (selectedSeatIdSet.size === 0 && selectedSectionIdSet.size === 0) return;
+
+    const previousVenue = currentVenue;
+    const nextVenue: Venue = {
+      ...currentVenue,
+      sections: currentVenue.sections
+        .filter((section) => !selectedSectionIdSet.has(section.id))
+        .map((section) => ({
+          ...section,
+          rows: section.rows.map((row) => ({
+            ...row,
+            seats: row.seats.filter((seat) => !selectedSeatIdSet.has(seat.id)),
+          })),
+        })),
+      tables: currentVenue.tables.map((table) => ({
+        ...table,
+        seats: table.seats.filter((seat) => !selectedSeatIdSet.has(seat.id)),
+      })),
+    };
+
+    historyRef.current.execute({
+      description: "Delete selected objects",
+      execute: () => {
+        store.getState().setVenue(nextVenue);
+        store.getState().clearSelection();
+      },
+      undo: () => {
+        store.getState().setVenue(previousVenue);
+      },
+    });
+  }, [store]);
+
   const renderActiveToolOptionsOverlay = () => {
     const switchTrackBase: React.CSSProperties = {
       width: 34,
@@ -1632,8 +1671,15 @@ function EditorInner({
   // Keyboard shortcuts — skip when user is typing in an input field
   useEffect(() => {
     const isTyping = () => {
-      const tag = document.activeElement?.tagName;
-      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (!activeElement) return false;
+      const tag = activeElement.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        activeElement.isContentEditable
+      );
     };
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
@@ -1643,6 +1689,11 @@ function EditorInner({
         return;
       }
       if (isTyping()) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        handleDeleteSelectedObjects();
+        return;
+      }
       if (e.key === "v" || e.key === "1") setActiveTool("select");
       if (e.key === "h" || e.key === "2") setActiveTool("pan");
       if (e.key === "s" || e.key === "3") setActiveTool("add-section");
@@ -1665,7 +1716,7 @@ function EditorInner({
       window.removeEventListener("keydown", handler);
       window.removeEventListener("keyup", upHandler);
     };
-  }, [setActiveTool, activeToolName]);
+  }, [setActiveTool, activeToolName, handleDeleteSelectedObjects]);
 
   // Tool pointer event adapter for the canvas overlay
   const toToolPointerEvent = useCallback(

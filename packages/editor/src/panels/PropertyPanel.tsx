@@ -284,28 +284,6 @@ export function PropertyPanel({
     });
   };
 
-  const deleteSection = (sectionId: string) => {
-    const v = freshVenue(store);
-    if (!v) return;
-    const removed = v.sections.find((s) => s.id === sectionId);
-    if (!removed) return;
-
-    history.execute({
-      description: `Delete section "${removed.label}"`,
-      execute: () => {
-        const cur = freshVenue(store);
-        if (!cur) return;
-        setVenue(store, { ...cur, sections: cur.sections.filter((s) => s.id !== sectionId) });
-        store.getState().clearSelection();
-      },
-      undo: () => {
-        const cur = freshVenue(store);
-        if (!cur) return;
-        setVenue(store, { ...cur, sections: [...cur.sections, removed] });
-      },
-    });
-  };
-
   const deleteRow = (sectionId: string, rowId: string) => {
     const v = freshVenue(store);
     if (!v) return;
@@ -383,6 +361,43 @@ export function PropertyPanel({
               : s,
           ),
         });
+      },
+    });
+  };
+
+  const deleteSelectedObjects = () => {
+    if (selectedSeatIds.size === 0 && selectedSectionIds.size === 0) return;
+    const v = freshVenue(store);
+    if (!v) return;
+
+    const selectedSectionIdSet = new Set(selectedSectionIds);
+    const selectedSeatIdSet = new Set(selectedSeatIds);
+    const previousVenue = v;
+    const nextVenue: Venue = {
+      ...v,
+      sections: v.sections
+        .filter((section) => !selectedSectionIdSet.has(section.id))
+        .map((section) => ({
+          ...section,
+          rows: section.rows.map((row) => ({
+            ...row,
+            seats: row.seats.filter((seat) => !selectedSeatIdSet.has(seat.id)),
+          })),
+        })),
+      tables: v.tables.map((table) => ({
+        ...table,
+        seats: table.seats.filter((seat) => !selectedSeatIdSet.has(seat.id)),
+      })),
+    };
+
+    history.execute({
+      description: "Delete selected objects",
+      execute: () => {
+        setVenue(store, nextVenue);
+        store.getState().clearSelection();
+      },
+      undo: () => {
+        setVenue(store, previousVenue);
       },
     });
   };
@@ -542,8 +557,13 @@ export function PropertyPanel({
     <div style={{ padding: 16, ...style }}>
       {selectedSeatIds.size > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
-            Seat Config ({selectedSeatIds.size} selected)
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
+              Seat Config ({selectedSeatIds.size} selected)
+            </div>
+            <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
+              Delete Selected
+            </button>
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -621,6 +641,9 @@ export function PropertyPanel({
             <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
               Section Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
             </div>
+            <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
+              Delete Selected
+            </button>
           </div>
 
           {hasMultipleSelectedSections && (
@@ -658,9 +681,6 @@ export function PropertyPanel({
                 <div style={{ color: "#c7c7df", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
                   ID: {selectedSection.id}
                 </div>
-                <button onClick={() => deleteSection(selectedSection.id)} style={btnDanger} title="Delete section">
-                  Delete
-                </button>
               </div>
 
               {!hasMultipleSelectedSections && (
