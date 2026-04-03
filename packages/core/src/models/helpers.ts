@@ -3,9 +3,14 @@ import type { AABB, Section, Seat, SeatStatusDefinition, Vec2, Venue } from "./t
 
 export const AVAILABLE_STATUS_ID = "available";
 export const STAGE_SECTION_KIND = "stage";
+export const DANCEFLOOR_SECTION_KIND = "dancefloor";
 
 export function isStageSection(section: Section): boolean {
   return section.kind === STAGE_SECTION_KIND;
+}
+
+export function isDancefloorSection(section: Section): boolean {
+  return section.kind === DANCEFLOOR_SECTION_KIND;
 }
 
 export const DEFAULT_SEAT_STATUSES: SeatStatusDefinition[] = [
@@ -160,7 +165,12 @@ export function normalizeVenue(venue: Venue): Venue {
 
   const sections: Section[] = venue.sections.map((section): Section => ({
     ...section,
-    kind: section.kind === STAGE_SECTION_KIND ? "stage" : "section",
+    kind:
+      section.kind === STAGE_SECTION_KIND
+        ? "stage"
+        : section.kind === DANCEFLOOR_SECTION_KIND
+          ? "dancefloor"
+          : "section",
     categoryId: section.kind === STAGE_SECTION_KIND ? "" : section.categoryId,
     rows: section.rows.map((row) => ({
       ...row,

@@ -1,5 +1,6 @@
 import RBush from "rbush";
 import type { AABB, Section, Vec2 } from "../models/types";
+import { DANCEFLOOR_SECTION_KIND } from "../models/helpers";
 import { seatWorldPosition, sectionAABB } from "../models/helpers";
 
 export interface SpatialItem extends AABB {
@@ -26,12 +27,16 @@ export class SpatialIndex {
       for (const row of section.rows) {
         for (const seat of row.seats) {
           const wp = seatWorldPosition(section, seat);
+          const dancefloorBounds =
+            section.kind === DANCEFLOOR_SECTION_KIND
+              ? getSectionOutlineWorldBounds(section)
+              : null;
           const r = 8;
           this.items.push({
-            minX: wp.x - r,
-            minY: wp.y - r,
-            maxX: wp.x + r,
-            maxY: wp.y + r,
+            minX: dancefloorBounds?.minX ?? wp.x - r,
+            minY: dancefloorBounds?.minY ?? wp.y - r,
+            maxX: dancefloorBounds?.maxX ?? wp.x + r,
+            maxY: dancefloorBounds?.maxY ?? wp.y + r,
             type: "seat",
             sectionId: section.id,
             seatId: seat.id,
@@ -60,4 +65,20 @@ export class SpatialIndex {
   queryRect(rect: AABB): SpatialItem[] {
     return this.tree.search(rect);
   }
+}
+
+function getSectionOutlineWorldBounds(section: Section): AABB | null {
+  if (section.outline.length < 3) return null;
+  const c = Math.cos(section.rotation);
+  const s = Math.sin(section.rotation);
+  const worldPoints = section.outline.map((point) => ({
+    x: section.position.x + point.x * c - point.y * s,
+    y: section.position.y + point.x * s + point.y * c,
+  }));
+  return {
+    minX: Math.min(...worldPoints.map((point) => point.x)),
+    minY: Math.min(...worldPoints.map((point) => point.y)),
+    maxX: Math.max(...worldPoints.map((point) => point.x)),
+    maxY: Math.max(...worldPoints.map((point) => point.y)),
+  };
 }

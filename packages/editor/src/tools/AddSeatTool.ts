@@ -1,5 +1,5 @@
 import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
-import { generateId, isStageSection, pointInPolygon } from "@nex125/seatmap-core";
+import { generateId, isDancefloorSection, isStageSection, pointInPolygon } from "@nex125/seatmap-core";
 import type { Seat, Row } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
@@ -35,7 +35,7 @@ export class AddSeatTool extends BaseTool {
     let section = sectionIds
       .map((id) => venue.sections.find((s) => s.id === id))
       .filter((s): s is NonNullable<typeof s> => Boolean(s))
-      .filter((s) => !isStageSection(s))
+      .filter((s) => !isStageSection(s) && !isDancefloorSection(s))
       .find((s) => {
         if (s.outline.length < 3) return true;
         const c = Math.cos(-s.rotation);
@@ -53,7 +53,7 @@ export class AddSeatTool extends BaseTool {
       section = sectionIds
         .map((id) => venue.sections.find((s) => s.id === id))
         .filter((s): s is NonNullable<typeof s> => Boolean(s))
-        .filter((s) => !isStageSection(s))
+        .filter((s) => !isStageSection(s) && !isDancefloorSection(s))
         .sort(
           (a, b) =>
             Math.hypot(e.worldX - a.position.x, e.worldY - a.position.y) -

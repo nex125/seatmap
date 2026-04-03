@@ -1,6 +1,6 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import type { Venue, Section, PricingCategory, CommandHistory, Row, Seat } from "@nex125/seatmap-core";
-import { generateId, isStageSection } from "@nex125/seatmap-core";
+import { generateId, isDancefloorSection, isStageSection } from "@nex125/seatmap-core";
 import { AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 
@@ -67,6 +67,10 @@ function freshVenue(store: SeatmapStore): Venue | null {
 
 function setVenue(store: SeatmapStore, venue: Venue) {
   store.getState().setVenue(venue);
+}
+
+function isSectionSeatLayoutLocked(section: Section): boolean {
+  return isStageSection(section) || isDancefloorSection(section);
 }
 
 export function PropertyPanel({
@@ -413,7 +417,7 @@ export function PropertyPanel({
     const v = freshVenue(store);
     if (!v) return;
     const sec = v.sections.find((s) => s.id === sectionId);
-    if (!sec || isStageSection(sec)) return;
+    if (!sec || isSectionSeatLayoutLocked(sec)) return;
 
     let targetRow: Row | undefined = sec.rows[sec.rows.length - 1];
     const newSeat = {
@@ -653,7 +657,7 @@ export function PropertyPanel({
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
-              Section / Stage Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
+              Section / Stage / Dancefloor Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
             </div>
             <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
               Delete Selected
@@ -754,6 +758,20 @@ export function PropertyPanel({
                   }}
                 >
                   Stage areas do not support rows or seats.
+                </div>
+              ) : isDancefloorSection(selectedSection) ? (
+                <div
+                  style={{
+                    marginBottom: 10,
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    background: "#2a2a4a",
+                    color: "#9e9e9e",
+                    fontSize: 12,
+                    fontFamily: "system-ui",
+                  }}
+                >
+                  Dancefloor works as one selectable area seat. Resize the section shape to adjust its footprint.
                 </div>
               ) : (
                 <>

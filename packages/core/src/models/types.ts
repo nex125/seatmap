@@ -46,7 +46,7 @@ export interface Row {
   seats: Seat[];
 }
 
-export type SectionKind = "section" | "stage";
+export type SectionKind = "section" | "stage" | "dancefloor";
 
 export interface Section {
   id: string;

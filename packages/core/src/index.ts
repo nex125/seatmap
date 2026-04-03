@@ -8,7 +8,9 @@ export {
   clampToPolygon,
   normalizeVenue,
   isStageSection,
+  isDancefloorSection,
   STAGE_SECTION_KIND,
+  DANCEFLOOR_SECTION_KIND,
   DEFAULT_SEAT_STATUSES,
   AVAILABLE_STATUS_ID,
 } from "./models/helpers";

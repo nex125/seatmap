@@ -1,10 +1,12 @@
 import type { Viewport } from "@nex125/seatmap-core";
 import { generateId } from "@nex125/seatmap-core";
-import type { CommandHistory, Section, SectionKind, Vec2 } from "@nex125/seatmap-core";
+import type { CommandHistory, Row, Section, SectionKind, Seat, Vec2 } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const CLOSE_THRESHOLD = 15;
+const DANCEFLOOR_SEAT_ID_SUFFIX = "dancefloor-seat";
+const DANCEFLOOR_ROW_ID_SUFFIX = "dancefloor-row";
 
 export type SectionCreationMode = "rectangle" | "polygon";
 
@@ -117,12 +119,14 @@ export class AddSectionTool extends BaseTool {
       label:
         this.sectionKind === "stage"
           ? "Stage"
+          : this.sectionKind === "dancefloor"
+            ? "Dancefloor"
           : `Section ${Date.now().toString(36).slice(-3).toUpperCase()}`,
       kind: this.sectionKind,
       position: { x: cx, y: cy },
       rotation: 0,
       categoryId: this.sectionKind === "stage" ? "" : this.categoryId,
-      rows: [],
+      rows: this.sectionKind === "dancefloor" ? this.createDancefloorRows(this.categoryId) : [],
       outline,
     };
 
@@ -151,6 +155,23 @@ export class AddSectionTool extends BaseTool {
       { x: b.x, y: a.y },
       { x: b.x, y: b.y },
       { x: a.x, y: b.y },
+    ];
+  }
+
+  private createDancefloorRows(categoryId: string): Row[] {
+    const dancefloorSeat: Seat = {
+      id: generateId(DANCEFLOOR_SEAT_ID_SUFFIX),
+      label: "Dancefloor",
+      position: { x: 0, y: 0 },
+      status: "available",
+      categoryId,
+    };
+    return [
+      {
+        id: generateId(DANCEFLOOR_ROW_ID_SUFFIX),
+        label: "DF",
+        seats: [dancefloorSeat],
+      },
     ];
   }
 

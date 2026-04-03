@@ -1356,6 +1356,63 @@ function EditorInner({
                   fontWeight: 600,
                 }}
               >
+                Dancefloor
+              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  onClick={() => handleSectionToolVariantChange("dancefloor", "rectangle")}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #3a3a5a",
+                    background: sectionKind === "dancefloor" && sectionMode === "rectangle" ? "#4a4a7a" : "#2a2a4a",
+                    color: sectionKind === "dancefloor" && sectionMode === "rectangle" ? "#ffffff" : "#d0d0e0",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: "system-ui",
+                    fontWeight: 600,
+                  }}
+                >
+                  Rectangle
+                </button>
+                <button
+                  onClick={() => handleSectionToolVariantChange("dancefloor", "polygon")}
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px solid #3a3a5a",
+                    background: sectionKind === "dancefloor" && sectionMode === "polygon" ? "#4a4a7a" : "#2a2a4a",
+                    color: sectionKind === "dancefloor" && sectionMode === "polygon" ? "#ffffff" : "#d0d0e0",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontFamily: "system-ui",
+                    fontWeight: 600,
+                  }}
+                >
+                  Polygon
+                </button>
+              </div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 8,
+                padding: "8px 10px",
+                border: "1px solid #3a3a5a",
+                borderRadius: 6,
+                background: "rgba(42, 42, 74, 0.65)",
+              }}
+            >
+              <span
+                style={{
+                  color: "#c7c7df",
+                  fontSize: 12,
+                  fontFamily: "system-ui",
+                  fontWeight: 600,
+                }}
+              >
                 Section resize
               </span>
               <button
