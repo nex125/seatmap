@@ -13,13 +13,36 @@ export interface CategoryManagerProps {
 
 const btnSmall: CSSProperties = {
   padding: "3px 8px",
-  border: "1px solid #3a3a5a",
+  border: "1px solid #3a3836",
   borderRadius: 4,
-  background: "#2a2a4a",
-  color: "#e0e0e0",
+  background: "#242424",
+  color: "#e5e2e1",
   cursor: "pointer",
   fontSize: 12,
   fontFamily: "system-ui",
+};
+
+const colorPickerShellStyle: CSSProperties = {
+  width: 14,
+  height: 14,
+  borderRadius: 5,
+  border: "1px solid #5c5957",
+  overflow: "hidden",
+  flexShrink: 0,
+  background: "#242424",
+  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(229, 226, 225, 0.16)",
+  position: "relative",
+};
+
+const colorPickerInputStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  border: "none",
+  padding: 0,
+  margin: 0,
+  display: "inline-block",
+  background: "transparent",
+  opacity: 0,
 };
 
 function replaceCategoryInVenue(venue: Venue, categoryId: string, replacementCategoryId: string): Venue {
@@ -339,7 +362,7 @@ export function CategoryManager({
     width: 34,
     height: 20,
     borderRadius: 999,
-    border: "1px solid #4a4a6a",
+    border: "1px solid #4c4845",
     padding: 2,
     display: "inline-flex",
     alignItems: "center",
@@ -350,13 +373,13 @@ export function CategoryManager({
     width: 14,
     height: 14,
     borderRadius: "50%",
-    background: "#e0e0e0",
+    background: "#e5e2e1",
     transition: "transform 0.12s ease",
   };
 
   return (
     <div style={{ padding: 16, ...style }}>
-      <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+      <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
         Pricing Categories
       </div>
 
@@ -373,16 +396,30 @@ export function CategoryManager({
               marginBottom: 6,
               padding: "4px 8px",
               borderRadius: 4,
-              background: "#2a2a4a",
+              background: "#232323",
             }}
           >
-            <input
-              type="color"
-              value={isEditing ? editingColor : cat.color}
-              onChange={(e) => isEditing && setEditingColor(e.target.value)}
-              disabled={!isEditing}
-              style={{ width: 18, height: 18, border: "none", padding: 0, cursor: isEditing ? "pointer" : "default" }}
-            />
+            <span style={colorPickerShellStyle}>
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: isEditing ? editingColor : cat.color,
+                }}
+              />
+              <input
+                type="color"
+                value={isEditing ? editingColor : cat.color}
+                onChange={(e) => isEditing && setEditingColor(e.target.value)}
+                disabled={!isEditing}
+                style={{
+                  ...colorPickerInputStyle,
+                  cursor: isEditing ? "pointer" : "default",
+                }}
+                title={isEditing ? "Pick category color" : "Enable edit to change color"}
+              />
+            </span>
             {isEditing ? (
               <input
                 value={editingName}
@@ -392,16 +429,16 @@ export function CategoryManager({
                   flex: 1,
                   minWidth: 0,
                   padding: "2px 6px",
-                  background: "#1f1f38",
-                  border: "1px solid #3a3a5a",
+                  background: "#1d1d1d",
+                  border: "1px solid #3a3836",
                   borderRadius: 4,
-                  color: "#e0e0e0",
+                  color: "#e5e2e1",
                   fontSize: 12,
                   fontFamily: "system-ui",
                 }}
               />
             ) : (
-              <div style={{ flex: 1, color: "#e0e0e0", fontSize: 13, fontFamily: "system-ui" }}>
+              <div style={{ flex: 1, color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>
                 {cat.name}
               </div>
             )}
@@ -418,7 +455,7 @@ export function CategoryManager({
               <>
                 <span
                   style={{
-                    color: "#8f8fa4",
+                    color: "#9a9694",
                     fontSize: 12,
                     fontFamily: "system-ui",
                     marginRight: 2,
@@ -444,12 +481,16 @@ export function CategoryManager({
       })}
 
       <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center" }}>
-        <input
-          type="color"
-          value={newColor}
-          onChange={(e) => setNewColor(e.target.value)}
-          style={{ width: 28, height: 28, border: "none", padding: 0, cursor: "pointer" }}
-        />
+        <span style={{ ...colorPickerShellStyle, width: 16, height: 16, borderRadius: 5 }}>
+          <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: newColor }} />
+          <input
+            type="color"
+            value={newColor}
+            onChange={(e) => setNewColor(e.target.value)}
+            style={{ ...colorPickerInputStyle, cursor: "pointer" }}
+            title="Pick new category color"
+          />
+        </span>
         <input
           placeholder="Category name"
           value={newName}
@@ -458,10 +499,10 @@ export function CategoryManager({
           style={{
             flex: 1,
             padding: "4px 8px",
-            background: "#2a2a4a",
-            border: "1px solid #3a3a5a",
+            background: "#242424",
+            border: "1px solid #3a3836",
             borderRadius: 4,
-            color: "#e0e0e0",
+            color: "#e5e2e1",
             fontSize: 13,
             fontFamily: "system-ui",
           }}
@@ -482,7 +523,7 @@ export function CategoryManager({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(8, 8, 18, 0.65)",
+            background: "rgba(10, 10, 10, 0.7)",
             zIndex: 1000,
             display: "flex",
             alignItems: "center",
@@ -496,15 +537,15 @@ export function CategoryManager({
               width: "min(860px, 95vw)",
               maxHeight: "80vh",
               overflow: "auto",
-              background: "#17172b",
-              border: "1px solid #3a3a5a",
+              background: "#181818",
+              border: "1px solid #322f2c",
               borderRadius: 10,
               padding: 16,
             }}
             onClick={(event) => event.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ color: "#e0e0e0", fontSize: 15, fontFamily: "system-ui", fontWeight: 600 }}>
+              <div style={{ color: "#e5e2e1", fontSize: 15, fontFamily: "system-ui", fontWeight: 600 }}>
                 Category Pricing
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -526,7 +567,7 @@ export function CategoryManager({
               </div>
             </div>
 
-            <div style={{ color: "#9e9eb4", fontSize: 12, fontFamily: "system-ui", marginBottom: 10 }}>
+              <div style={{ color: "#9a9694", fontSize: 12, fontFamily: "system-ui", marginBottom: 10 }}>
               Backend prices are read-only data. Override lets you temporarily use an overriden category price in this schema.
             </div>
             <div
@@ -537,7 +578,7 @@ export function CategoryManager({
                     ? "#8fd3a6"
                     : syncStatus === "failed"
                       ? "#ff9a9a"
-                      : "#b8b8cc",
+                      : "#b3aeac",
                 fontSize: 12,
                 fontFamily: "system-ui",
               }}
@@ -564,11 +605,11 @@ export function CategoryManager({
                 gap: 8,
               }}
             >
-              <div style={{ color: "#9e9eb4", fontSize: 11, fontFamily: "system-ui" }}>Category</div>
-              <div style={{ color: "#9e9eb4", fontSize: 11, fontFamily: "system-ui" }}>Backend</div>
-              <div style={{ color: "#9e9eb4", fontSize: 11, fontFamily: "system-ui" }}>Override</div>
-              <div style={{ color: "#9e9eb4", fontSize: 11, fontFamily: "system-ui" }}>Override Price</div>
-              <div style={{ color: "#9e9eb4", fontSize: 11, fontFamily: "system-ui" }}>Effective Price</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Category</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Backend</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Override</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Override Price</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Effective Price</div>
 
               {venue.categories.map((category) => (
                 <div
@@ -581,7 +622,7 @@ export function CategoryManager({
                     alignItems: "center",
                     padding: "8px 10px",
                     borderRadius: 6,
-                    background: "#222242",
+                    background: "#232323",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -594,9 +635,9 @@ export function CategoryManager({
                         flexShrink: 0,
                       }}
                     />
-                    <span style={{ color: "#e0e0e0", fontSize: 13, fontFamily: "system-ui" }}>{category.name}</span>
+                    <span style={{ color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>{category.name}</span>
                   </div>
-                  <span style={{ color: "#c7c7df", fontSize: 12, fontFamily: "system-ui" }}>
+                  <span style={{ color: "#d2cdcb", fontSize: 12, fontFamily: "system-ui" }}>
                     {formatPrice(category.backendPrice)}
                   </span>
                   <button
@@ -606,8 +647,8 @@ export function CategoryManager({
                     onClick={() => toggleOverride(category.id, !category.isPriceOverridden)}
                     style={{
                       ...switchTrackBase,
-                      background: category.isPriceOverridden ? "#2d6a3d" : "#2a2a4a",
-                      borderColor: category.isPriceOverridden ? "#57b26f" : "#4a4a6a",
+                      background: category.isPriceOverridden ? "#5f5632" : "#242424",
+                      borderColor: category.isPriceOverridden ? "#8b7f46" : "#4c4845",
                       cursor: "pointer",
                     }}
                     title={category.isPriceOverridden ? "Disable override" : "Enable override"}
@@ -638,10 +679,10 @@ export function CategoryManager({
                       }}
                       style={{
                         padding: "4px 92px 4px 8px",
-                        background: category.isPriceOverridden ? "#2a2a4a" : "#2a2a4a88",
-                        border: "1px solid #3a3a5a",
+                        background: category.isPriceOverridden ? "#242424" : "#24242488",
+                        border: "1px solid #3a3836",
                         borderRadius: 4,
-                        color: category.isPriceOverridden ? "#e0e0e0" : "#8f8fa4",
+                        color: category.isPriceOverridden ? "#e5e2e1" : "#9a9694",
                         fontSize: 12,
                         fontFamily: "system-ui",
                         width: "100%",
@@ -668,9 +709,9 @@ export function CategoryManager({
                             width: 20,
                             height: 20,
                             borderRadius: 4,
-                            border: "1px solid #4a4a6a",
-                            background: "#2a2a4a",
-                            color: "#d8d8ee",
+                            border: "1px solid #4c4845",
+                            background: "#242424",
+                            color: "#d2cdcb",
                             fontSize: 12,
                             lineHeight: 1,
                             padding: 0,
@@ -687,9 +728,9 @@ export function CategoryManager({
                             width: 20,
                             height: 20,
                             borderRadius: 4,
-                            border: "1px solid #4a4a6a",
-                            background: "#2a2a4a",
-                            color: "#d8d8ee",
+                            border: "1px solid #4c4845",
+                            background: "#242424",
+                            color: "#d2cdcb",
                             fontSize: 12,
                             lineHeight: 1,
                             padding: 0,
@@ -707,9 +748,9 @@ export function CategoryManager({
                             width: 20,
                             height: 20,
                             borderRadius: 4,
-                            border: "1px solid #2f7b44",
-                            background: isDraftChanged(category) ? "#2d6a3d" : "#244832",
-                            color: "#d8ffe4",
+                            border: "1px solid #8b7f46",
+                            background: isDraftChanged(category) ? "#5f5632" : "#4f4933",
+                            color: "#f1e8bf",
                             fontSize: 11,
                             lineHeight: 1,
                             padding: 0,
@@ -744,7 +785,7 @@ export function CategoryManager({
                       </div>
                     )}
                   </div>
-                  <span style={{ color: "#e0e0e0", fontSize: 12, fontFamily: "system-ui", fontWeight: 600, whiteSpace: "nowrap" }}>
+                  <span style={{ color: "#e5e2e1", fontSize: 12, fontFamily: "system-ui", fontWeight: 600, whiteSpace: "nowrap" }}>
                     {formatPrice(effectivePrice(category))}
                   </span>
                 </div>

@@ -77,6 +77,67 @@ function isWorldPointVisible(point: { x: number; y: number }, visibleAABB: AABB,
   );
 }
 
+function drawRoundedPolygonPath(
+  graphics: Graphics,
+  points: Array<{ x: number; y: number }>,
+  cornerRadius: number,
+): boolean {
+  if (points.length < 3) return false;
+  const radius = Math.max(0, cornerRadius);
+  if (radius <= 0) {
+    graphics.poly(points.flatMap((p) => [p.x, p.y]));
+    return true;
+  }
+
+  const starts: Array<{ x: number; y: number }> = [];
+  const ends: Array<{ x: number; y: number }> = [];
+
+  for (let i = 0; i < points.length; i++) {
+    const prev = points[(i - 1 + points.length) % points.length]!;
+    const current = points[i]!;
+    const next = points[(i + 1) % points.length]!;
+
+    const inVecX = prev.x - current.x;
+    const inVecY = prev.y - current.y;
+    const outVecX = next.x - current.x;
+    const outVecY = next.y - current.y;
+    const inLen = Math.hypot(inVecX, inVecY);
+    const outLen = Math.hypot(outVecX, outVecY);
+
+    if (inLen < 1e-4 || outLen < 1e-4) {
+      starts.push({ x: current.x, y: current.y });
+      ends.push({ x: current.x, y: current.y });
+      continue;
+    }
+
+    const limitedRadius = Math.min(radius, inLen / 2, outLen / 2);
+    const inUnitX = inVecX / inLen;
+    const inUnitY = inVecY / inLen;
+    const outUnitX = outVecX / outLen;
+    const outUnitY = outVecY / outLen;
+
+    starts.push({
+      x: current.x + inUnitX * limitedRadius,
+      y: current.y + inUnitY * limitedRadius,
+    });
+    ends.push({
+      x: current.x + outUnitX * limitedRadius,
+      y: current.y + outUnitY * limitedRadius,
+    });
+  }
+
+  graphics.moveTo(starts[0]!.x, starts[0]!.y);
+  for (let i = 0; i < points.length; i++) {
+    const current = points[i]!;
+    const end = ends[i]!;
+    const nextStart = starts[(i + 1) % points.length]!;
+    graphics.quadraticCurveTo(current.x, current.y, end.x, end.y);
+    graphics.lineTo(nextStart.x, nextStart.y);
+  }
+  graphics.closePath();
+  return true;
+}
+
 export interface SeatmapCanvasProps {
   width?: number;
   height?: number;
@@ -167,6 +228,10 @@ export function SeatmapCanvas({
     },
     [],
   );
+  const isSeatInteractable = useCallback(
+    (seat: Seat): boolean => seat.status === AVAILABLE_STATUS_ID || selectedSeatIds.has(seat.id),
+    [selectedSeatIds],
+  );
 
   const zoomToSection = useCallback(
     (section: Section) => {
@@ -195,8 +260,10 @@ export function SeatmapCanvas({
 
   // scheduleRender always calls the latest renderRef
   const scheduleRender = useCallback(() => {
+    if (!readyRef.current) return;
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
+      if (!readyRef.current) return;
       renderRef.current();
     });
   }, []);
@@ -209,19 +276,20 @@ export function SeatmapCanvas({
       const textures = textureCacheRef.current.get(seat.categoryId);
       const texture = textures?.[textureKey] ?? textures?.[AVAILABLE_STATUS_ID];
       if (!texture) return;
+      const canToggleSeat = isSeatInteractable(seat);
 
       const sprite = new Sprite(texture);
       sprite.anchor.set(0.5);
       sprite.position.set(seat.position.x, seat.position.y);
       sprite.eventMode = "static";
-      sprite.cursor = seat.status === AVAILABLE_STATUS_ID ? "pointer" : "default";
+      sprite.cursor = canToggleSeat ? "pointer" : "default";
 
       if (panOnLeftClick) {
         // Viewer mode: sprite handles mouse clicks directly.
         // Touch taps are handled at the container level via spatial index.
         sprite.on("pointerdown", (ev) => {
           if (ev.pointerType === "touch") return;
-          if (seat.status === AVAILABLE_STATUS_ID) {
+          if (canToggleSeat) {
             store.getState().toggleSeat(seat.id);
             onSeatClick?.(seat.id, sectionId);
             scheduleRender();
@@ -252,7 +320,7 @@ export function SeatmapCanvas({
 
       parent.addChild(sprite);
     },
-    [selectedSeatIds, hoveredSeatId, store, onSeatClick, onSeatHover, getSeatTexture, scheduleRender, panOnLeftClick, enableSeatHover],
+    [selectedSeatIds, hoveredSeatId, store, onSeatClick, onSeatHover, getSeatTexture, scheduleRender, panOnLeftClick, enableSeatHover, isSeatInteractable],
   );
 
   const renderDancefloorSeatArea = useCallback(
@@ -263,24 +331,25 @@ export function SeatmapCanvas({
       const fillAlpha = isSelected ? 0.5 : isHovered ? 0.4 : 0.26;
       const strokeColor = isSelected ? 0x4dabf7 : sectionColor;
       const strokeWidth = isSelected ? 3 : 2;
+      const canToggleSeat = isSeatInteractable(seat);
 
       const area = new Graphics();
       if (section.outline.length >= 3) {
-        area.poly(section.outline.flatMap((point) => [point.x, point.y]));
+        drawRoundedPolygonPath(area, section.outline, 8);
       } else {
         const bounds = getSectionLocalBounds(section);
         if (!bounds) return;
         area.rect(bounds.minX, bounds.minY, bounds.maxX - bounds.minX, bounds.maxY - bounds.minY);
       }
       area.fill({ color: sectionColor, alpha: fillAlpha });
-      area.stroke({ color: strokeColor, width: strokeWidth, alpha: 0.95 });
+      area.stroke({ color: strokeColor, width: strokeWidth, alpha: 0.95, join: "round" });
 
       if (panOnLeftClick) {
         area.eventMode = "static";
-        area.cursor = seat.status === AVAILABLE_STATUS_ID ? "pointer" : "default";
+        area.cursor = canToggleSeat ? "pointer" : "default";
         area.on("pointerdown", (ev) => {
           if (ev.pointerType === "touch") return;
-          if (seat.status === AVAILABLE_STATUS_ID) {
+          if (canToggleSeat) {
             store.getState().toggleSeat(seat.id);
             onSeatClick?.(seat.id, section.id);
             scheduleRender();
@@ -320,6 +389,7 @@ export function SeatmapCanvas({
       scheduleRender,
       enableSeatHover,
       onSeatHover,
+      isSeatInteractable,
     ],
   );
 
@@ -330,7 +400,7 @@ export function SeatmapCanvas({
       const g = new Graphics();
       g.poly(ga.shape.flatMap((p) => [p.x, p.y]));
       g.fill({ color: catColor, alpha: 0.25 });
-      g.stroke({ color: catColor, width: 2, alpha: 0.6 });
+      g.stroke({ color: catColor, width: 2, alpha: 0.6, join: "round" });
       parent.addChild(g);
     },
     [getCategoryColor],
@@ -419,12 +489,12 @@ export function SeatmapCanvas({
           }
           if (sectionGridMarkerStyle === "cross") {
             dotLayer.stroke({
-              color: 0xc8c8f4,
+              color: 0xb6b0ae,
               alpha: SECTION_DOT_ALPHA,
               width: 0.8,
             });
           } else {
-            dotLayer.fill({ color: 0xc8c8f4, alpha: SECTION_DOT_ALPHA });
+            dotLayer.fill({ color: 0xb6b0ae, alpha: SECTION_DOT_ALPHA });
           }
           sectionContainer.addChild(dotLayer);
         }
@@ -433,9 +503,9 @@ export function SeatmapCanvas({
       if (lod === LODLevel.Overview) {
         const g = new Graphics();
         if (section.outline.length > 2) {
-          g.poly(section.outline.flatMap((p) => [p.x, p.y]));
+          drawRoundedPolygonPath(g, section.outline, 8);
           g.fill({ color: catColor, alpha: 0.5 });
-          g.stroke({ color: catColor, width: 2 });
+          g.stroke({ color: catColor, width: 2, join: "round" });
         } else {
           const seats = section.rows.flatMap((r) => r.seats);
           if (seats.length > 0) {
@@ -449,10 +519,10 @@ export function SeatmapCanvas({
               minY - pad,
               Math.max(...xs) - minX + pad * 2,
               Math.max(...ys) - minY + pad * 2,
-              8,
+              12,
             );
             g.fill({ color: catColor, alpha: 0.4 });
-            g.stroke({ color: catColor, width: 2 });
+            g.stroke({ color: catColor, width: 2, join: "round" });
           }
         }
 
@@ -477,9 +547,9 @@ export function SeatmapCanvas({
       } else if (lod === LODLevel.Section) {
         if (section.outline.length > 2) {
           const bg = new Graphics();
-          bg.poly(section.outline.flatMap((p) => [p.x, p.y]));
+          drawRoundedPolygonPath(bg, section.outline, 8);
           bg.fill({ color: catColor, alpha: 0.3 });
-          bg.stroke({ color: catColor, width: 2, alpha: 0.6 });
+          bg.stroke({ color: catColor, width: 2, alpha: 0.6, join: "round" });
           sectionContainer.addChild(bg);
         }
         for (const row of section.rows) {
@@ -495,9 +565,9 @@ export function SeatmapCanvas({
       } else {
         if (section.outline.length > 2) {
           const bg = new Graphics();
-          bg.poly(section.outline.flatMap((p) => [p.x, p.y]));
+          drawRoundedPolygonPath(bg, section.outline, 8);
           bg.fill({ color: catColor, alpha: 0.15 });
-          bg.stroke({ color: catColor, width: 1.5, alpha: 0.5 });
+          bg.stroke({ color: catColor, width: 1.5, alpha: 0.5, join: "round" });
           sectionContainer.addChild(bg);
         }
         if (isAreaSeatSection(section)) {
@@ -561,7 +631,7 @@ export function SeatmapCanvas({
       if (selectedSectionIds.has(section.id)) {
         const highlight = new Graphics();
         if (section.outline.length > 2) {
-          highlight.poly(section.outline.flatMap((p) => [p.x, p.y]));
+          drawRoundedPolygonPath(highlight, section.outline, 8);
         } else {
           const seats = section.rows.flatMap((r) => r.seats);
           if (seats.length > 0) {
@@ -575,7 +645,7 @@ export function SeatmapCanvas({
             highlight.rect(minX, minY, maxX - minX, maxY - minY);
           }
         }
-        highlight.stroke({ color: 0x4dabf7, width: 4, alpha: 0.8, alignment: 1 });
+        highlight.stroke({ color: 0x4dabf7, width: 4, alpha: 0.8, alignment: 1, join: "round" });
         highlight.fill({ color: 0x4dabf7, alpha: 0.1 });
         sectionContainer.addChild(highlight);
       }
@@ -595,8 +665,9 @@ export function SeatmapCanvas({
   );
 
   const renderScene = useCallback(() => {
+    const app = appRef.current;
     const world = worldRef.current;
-    if (!world || !venue || !readyRef.current) return;
+    if (!app || !world || !venue || !readyRef.current) return;
 
     world.removeChildren();
 
@@ -694,11 +765,11 @@ export function SeatmapCanvas({
       }
 
       if (canvasGridLineStyle === "dotted") {
-        minorGrid.fill({ color: 0x6b6ba0, alpha: 0.2 });
-        majorGrid.fill({ color: 0x9c9cd8, alpha: 0.35 });
+        minorGrid.fill({ color: 0x5a5653, alpha: 0.2 });
+        majorGrid.fill({ color: 0x8a7f46, alpha: 0.28 });
       } else {
-        minorGrid.stroke({ color: 0x6b6ba0, width: strokeWidthMinor, alpha: 0.2 });
-        majorGrid.stroke({ color: 0x9c9cd8, width: strokeWidthMajor, alpha: 0.35 });
+        minorGrid.stroke({ color: 0x5a5653, width: strokeWidthMinor, alpha: 0.2 });
+        majorGrid.stroke({ color: 0x8a7f46, width: strokeWidthMajor, alpha: 0.28 });
       }
       world.addChild(minorGrid);
       world.addChild(majorGrid);
@@ -721,7 +792,9 @@ export function SeatmapCanvas({
       renderTable(world, table);
     }
 
-    appRef.current?.render();
+    if (!readyRef.current || appRef.current !== app) return;
+    if ((app.renderer as { destroyed?: boolean }).destroyed) return;
+    app.render();
   }, [
     venue,
     viewport,
@@ -750,7 +823,7 @@ export function SeatmapCanvas({
         resizeTo: propWidth ? undefined : containerRef.current,
         width: propWidth,
         height: propHeight,
-        background: 0x1a1a2e,
+        background: 0x181818,
         antialias: true,
         autoDensity: true,
         resolution: window.devicePixelRatio || 1,
@@ -797,6 +870,7 @@ export function SeatmapCanvas({
         appRef.current.destroy(true, { children: true });
         appRef.current = null;
       }
+      worldRef.current = null;
       labelTextCacheRef.current.clear();
       textureCacheRef.current.destroy();
     };
@@ -1089,7 +1163,7 @@ export function SeatmapCanvas({
           for (const sec of v.sections) {
             for (const row of sec.rows) {
               const seat = row.seats.find((s) => s.id === closest.seatId);
-              if (seat && seat.status === AVAILABLE_STATUS_ID) {
+              if (seat && isSeatInteractable(seat)) {
                 store.getState().toggleSeat(seat.id);
                 // Show tooltip on tap (since there's no hover on touch)
                 if (enableSeatHover) {
@@ -1115,7 +1189,7 @@ export function SeatmapCanvas({
       }
       touchTapRef.current = null;
     },
-    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover],
+    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover, isSeatInteractable],
   );
 
   return (

@@ -28,11 +28,11 @@ function DefaultTooltip({ data }: { data: TooltipData }) {
   return (
     <div
       style={{
-        background: "rgba(26, 26, 46, 0.95)",
-        border: "1px solid #2a2a4a",
-        borderRadius: 8,
+        background: "rgba(24, 24, 24, 0.94)",
+        border: "1px solid #353331",
+        borderRadius: 10,
         padding: "8px 14px",
-        color: "#e0e0e0",
+        color: "#e5e2e1",
         fontSize: 13,
         fontFamily: "system-ui",
         pointerEvents: "none",
@@ -45,10 +45,10 @@ function DefaultTooltip({ data }: { data: TooltipData }) {
       <div>
         Row {data.row.label}, Seat {data.seat.label}
       </div>
-      <div style={{ color: "#9e9e9e", fontSize: 12, marginTop: 2 }}>
+      <div style={{ color: "#9a9694", fontSize: 12, marginTop: 2 }}>
         {statusLabel ?? (data.seat.status === AVAILABLE_STATUS_ID ? "Available" : data.seat.status)}
       </div>
-      <div style={{ color: "#9e9e9e", fontSize: 12, marginTop: 2 }}>
+      <div style={{ color: "#9a9694", fontSize: 12, marginTop: 2 }}>
         Price: {priceLabel}
       </div>
     </div>

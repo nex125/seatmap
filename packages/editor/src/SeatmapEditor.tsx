@@ -1072,7 +1072,7 @@ function EditorInner({
       width: 34,
       height: 20,
       borderRadius: 999,
-      border: "1px solid #4a4a6a",
+      border: "1px solid #4c4845",
       padding: 2,
       display: "inline-flex",
       alignItems: "center",
@@ -1082,7 +1082,7 @@ function EditorInner({
       width: 14,
       height: 14,
       borderRadius: "50%",
-      background: "#e0e0e0",
+      background: "#e5e2e1",
       transition: "transform 0.12s ease",
     };
     const renderSwitch = (label: string, checked: boolean, onToggle: () => void) => (
@@ -1091,7 +1091,7 @@ function EditorInner({
           display: "inline-flex",
           alignItems: "center",
           gap: 8,
-          color: "#d0d0e0",
+          color: "#e5e2e1",
           fontSize: 12,
           fontFamily: "system-ui",
           userSelect: "none",
@@ -1105,8 +1105,8 @@ function EditorInner({
           onClick={onToggle}
           style={{
             ...switchTrackBase,
-            background: checked ? "#2d6a3d" : "#2a2a4a",
-            borderColor: checked ? "#57b26f" : "#4a4a6a",
+            background: checked ? "#6f663a" : "#242424",
+            borderColor: checked ? "#8a7f46" : "#4c4845",
             cursor: "pointer",
           }}
         >
@@ -1121,10 +1121,10 @@ function EditorInner({
     );
     const selectStyle: React.CSSProperties = {
       padding: "4px 8px",
-      background: "#2a2a4a",
-      border: "1px solid #3a3a5a",
+      background: "#242424",
+      border: "1px solid #3a3836",
       borderRadius: 4,
-      color: "#e0e0e0",
+      color: "#e5e2e1",
       fontSize: 12,
       fontFamily: "system-ui",
       cursor: "pointer",
@@ -1137,14 +1137,14 @@ function EditorInner({
           alignItems: "flex-start",
           gap: 8,
           padding: "8px 10px",
-          border: "1px solid #3a3a5a",
+          border: "1px solid #3a3836",
           borderRadius: 6,
-          background: "rgba(42, 42, 74, 0.65)",
+          background: "rgba(35, 35, 35, 0.72)",
         }}
       >
         <span
           style={{
-            color: "#c7c7df",
+            color: "#d2cdcb",
             fontSize: 12,
             fontFamily: "system-ui",
             fontWeight: 600,
@@ -1153,7 +1153,7 @@ function EditorInner({
           Grid options
         </span>
         {renderSwitch("Grid", gridEnabled, () => setGridEnabled((v) => !v))}
-        <div style={{ width: "100%", height: 1, background: "#3a3a5a" }} />
+        <div style={{ width: "100%", height: 1, background: "#3a3836" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {renderSwitch("Canvas grid", showCanvasGrid, () => setShowCanvasGrid((v) => !v))}
           <select
@@ -1200,9 +1200,9 @@ function EditorInner({
               alignItems: "center",
               gap: 10,
               padding: "8px 12px",
-              border: "1px solid #3a3a5a",
+              border: "1px solid #3a3836",
               borderRadius: 8,
-              background: "rgba(21, 21, 40, 0.92)",
+              background: "rgba(24, 24, 24, 0.92)",
               backdropFilter: "blur(2px)",
               pointerEvents: "auto",
             }}
@@ -1212,7 +1212,7 @@ function EditorInner({
           >
             <span
               style={{
-                color: "#c7c7df",
+                color: "#d2cdcb",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 fontWeight: 600,
@@ -1221,7 +1221,7 @@ function EditorInner({
             >
               Tool Options
             </span>
-            <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+            <div style={{ width: 1, height: 18, background: "#3a3836" }} />
             <div
               style={{
                 display: "flex",
@@ -1229,14 +1229,14 @@ function EditorInner({
                 alignItems: "flex-start",
                 gap: 8,
                 padding: "8px 10px",
-                border: "1px solid #3a3a5a",
+                border: "1px solid #3a3836",
                 borderRadius: 6,
-                background: "rgba(42, 42, 74, 0.65)",
+                background: "rgba(35, 35, 35, 0.72)",
               }}
             >
               <span
                 style={{
-                  color: "#c7c7df",
+                  color: "#d2cdcb",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
@@ -1250,9 +1250,9 @@ function EditorInner({
                   style={{
                     padding: "4px 8px",
                     borderRadius: 6,
-                    border: "1px solid #3a3a5a",
-                    background: sectionKind === "section" && sectionMode === "rectangle" ? "#4a4a7a" : "#2a2a4a",
-                    color: sectionKind === "section" && sectionMode === "rectangle" ? "#ffffff" : "#d0d0e0",
+                    border: "1px solid #3a3836",
+                    background: sectionKind === "section" && sectionMode === "rectangle" ? "#6f663a" : "#242424",
+                    color: sectionKind === "section" && sectionMode === "rectangle" ? "#fff6d9" : "#e5e2e1",
                     cursor: "pointer",
                     fontSize: 12,
                     fontFamily: "system-ui",
@@ -1266,9 +1266,9 @@ function EditorInner({
                   style={{
                     padding: "4px 8px",
                     borderRadius: 6,
-                    border: "1px solid #3a3a5a",
-                    background: sectionKind === "section" && sectionMode === "polygon" ? "#4a4a7a" : "#2a2a4a",
-                    color: sectionKind === "section" && sectionMode === "polygon" ? "#ffffff" : "#d0d0e0",
+                    border: "1px solid #3a3836",
+                    background: sectionKind === "section" && sectionMode === "polygon" ? "#6f663a" : "#242424",
+                    color: sectionKind === "section" && sectionMode === "polygon" ? "#fff6d9" : "#e5e2e1",
                     cursor: "pointer",
                     fontSize: 12,
                     fontFamily: "system-ui",
@@ -1286,14 +1286,14 @@ function EditorInner({
                 alignItems: "flex-start",
                 gap: 8,
                 padding: "8px 10px",
-                border: "1px solid #3a3a5a",
+                border: "1px solid #3a3836",
                 borderRadius: 6,
-                background: "rgba(42, 42, 74, 0.65)",
+                background: "rgba(35, 35, 35, 0.72)",
               }}
             >
               <span
                 style={{
-                  color: "#c7c7df",
+                  color: "#d2cdcb",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
@@ -1307,9 +1307,9 @@ function EditorInner({
                   style={{
                     padding: "4px 8px",
                     borderRadius: 6,
-                    border: "1px solid #3a3a5a",
-                    background: sectionKind === "stage" && sectionMode === "rectangle" ? "#4a4a7a" : "#2a2a4a",
-                    color: sectionKind === "stage" && sectionMode === "rectangle" ? "#ffffff" : "#d0d0e0",
+                    border: "1px solid #3a3836",
+                    background: sectionKind === "stage" && sectionMode === "rectangle" ? "#6f663a" : "#242424",
+                    color: sectionKind === "stage" && sectionMode === "rectangle" ? "#fff6d9" : "#e5e2e1",
                     cursor: "pointer",
                     fontSize: 12,
                     fontFamily: "system-ui",
@@ -1323,9 +1323,9 @@ function EditorInner({
                   style={{
                     padding: "4px 8px",
                     borderRadius: 6,
-                    border: "1px solid #3a3a5a",
-                    background: sectionKind === "stage" && sectionMode === "polygon" ? "#4a4a7a" : "#2a2a4a",
-                    color: sectionKind === "stage" && sectionMode === "polygon" ? "#ffffff" : "#d0d0e0",
+                    border: "1px solid #3a3836",
+                    background: sectionKind === "stage" && sectionMode === "polygon" ? "#6f663a" : "#242424",
+                    color: sectionKind === "stage" && sectionMode === "polygon" ? "#fff6d9" : "#e5e2e1",
                     cursor: "pointer",
                     fontSize: 12,
                     fontFamily: "system-ui",
@@ -1343,14 +1343,14 @@ function EditorInner({
                 alignItems: "flex-start",
                 gap: 8,
                 padding: "8px 10px",
-                border: "1px solid #3a3a5a",
+                border: "1px solid #3a3836",
                 borderRadius: 6,
-                background: "rgba(42, 42, 74, 0.65)",
+                background: "rgba(35, 35, 35, 0.72)",
               }}
             >
               <span
                 style={{
-                  color: "#c7c7df",
+                  color: "#d2cdcb",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
@@ -1364,9 +1364,9 @@ function EditorInner({
                   style={{
                     padding: "4px 8px",
                     borderRadius: 6,
-                    border: "1px solid #3a3a5a",
-                    background: sectionKind === "dancefloor" && sectionMode === "rectangle" ? "#4a4a7a" : "#2a2a4a",
-                    color: sectionKind === "dancefloor" && sectionMode === "rectangle" ? "#ffffff" : "#d0d0e0",
+                    border: "1px solid #3a3836",
+                    background: sectionKind === "dancefloor" && sectionMode === "rectangle" ? "#6f663a" : "#242424",
+                    color: sectionKind === "dancefloor" && sectionMode === "rectangle" ? "#fff6d9" : "#e5e2e1",
                     cursor: "pointer",
                     fontSize: 12,
                     fontFamily: "system-ui",
@@ -1380,9 +1380,9 @@ function EditorInner({
                   style={{
                     padding: "4px 8px",
                     borderRadius: 6,
-                    border: "1px solid #3a3a5a",
-                    background: sectionKind === "dancefloor" && sectionMode === "polygon" ? "#4a4a7a" : "#2a2a4a",
-                    color: sectionKind === "dancefloor" && sectionMode === "polygon" ? "#ffffff" : "#d0d0e0",
+                    border: "1px solid #3a3836",
+                    background: sectionKind === "dancefloor" && sectionMode === "polygon" ? "#6f663a" : "#242424",
+                    color: sectionKind === "dancefloor" && sectionMode === "polygon" ? "#fff6d9" : "#e5e2e1",
                     cursor: "pointer",
                     fontSize: 12,
                     fontFamily: "system-ui",
@@ -1400,14 +1400,14 @@ function EditorInner({
                 alignItems: "flex-start",
                 gap: 8,
                 padding: "8px 10px",
-                border: "1px solid #3a3a5a",
+                border: "1px solid #3a3836",
                 borderRadius: 6,
-                background: "rgba(42, 42, 74, 0.65)",
+                background: "rgba(35, 35, 35, 0.72)",
               }}
             >
               <span
                 style={{
-                  color: "#c7c7df",
+                  color: "#d2cdcb",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
@@ -1420,9 +1420,9 @@ function EditorInner({
                 style={{
                   padding: "4px 8px",
                   borderRadius: 6,
-                  border: "1px solid #3a3a5a",
-                  background: sectionResizeEnabled ? "#8a6a32" : "#2a2a4a",
-                  color: sectionResizeEnabled ? "#fff3d8" : "#d0d0e0",
+                  border: "1px solid #3a3836",
+                  background: sectionResizeEnabled ? "#6f663a" : "#242424",
+                  color: sectionResizeEnabled ? "#fff6d9" : "#e5e2e1",
                   cursor: "pointer",
                   fontSize: 12,
                   fontFamily: "system-ui",
@@ -1457,9 +1457,9 @@ function EditorInner({
               alignItems: "center",
               gap: 10,
               padding: "8px 12px",
-              border: "1px solid #3a3a5a",
+              border: "1px solid #3a3836",
               borderRadius: 8,
-              background: "rgba(21, 21, 40, 0.92)",
+              background: "rgba(24, 24, 24, 0.92)",
               backdropFilter: "blur(2px)",
               pointerEvents: "auto",
             }}
@@ -1469,7 +1469,7 @@ function EditorInner({
           >
             <span
               style={{
-                color: "#c7c7df",
+                color: "#d2cdcb",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 fontWeight: 600,
@@ -1477,7 +1477,7 @@ function EditorInner({
             >
               Tool Options
             </span>
-            <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+            <div style={{ width: 1, height: 18, background: "#3a3836" }} />
             <div
               style={{
                 display: "flex",
@@ -1485,14 +1485,14 @@ function EditorInner({
                 alignItems: "flex-start",
                 gap: 8,
                 padding: "8px 10px",
-                border: "1px solid #3a3a5a",
+                border: "1px solid #3a3836",
                 borderRadius: 6,
-                background: "rgba(42, 42, 74, 0.65)",
+                background: "rgba(35, 35, 35, 0.72)",
               }}
             >
               <span
                 style={{
-                  color: "#c7c7df",
+                  color: "#d2cdcb",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
@@ -1505,9 +1505,9 @@ function EditorInner({
                 style={{
                   padding: "4px 8px",
                   borderRadius: 6,
-                  border: "1px solid #3a3a5a",
-                  background: sectionResizeEnabled ? "#8a6a32" : "#2a2a4a",
-                  color: sectionResizeEnabled ? "#fff3d8" : "#d0d0e0",
+                  border: "1px solid #3a3836",
+                  background: sectionResizeEnabled ? "#6f663a" : "#242424",
+                  color: sectionResizeEnabled ? "#fff6d9" : "#e5e2e1",
                   cursor: "pointer",
                   fontSize: 12,
                   fontFamily: "system-ui",
@@ -1542,9 +1542,9 @@ function EditorInner({
               alignItems: "center",
               gap: 10,
               padding: "8px 12px",
-              border: "1px solid #3a3a5a",
+              border: "1px solid #3a3836",
               borderRadius: 8,
-              background: "rgba(21, 21, 40, 0.92)",
+              background: "rgba(24, 24, 24, 0.92)",
               backdropFilter: "blur(2px)",
               pointerEvents: "auto",
             }}
@@ -1554,7 +1554,7 @@ function EditorInner({
           >
             <span
               style={{
-                color: "#c7c7df",
+                color: "#d2cdcb",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 fontWeight: 600,
@@ -1562,7 +1562,7 @@ function EditorInner({
             >
               Tool Options
             </span>
-            <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+            <div style={{ width: 1, height: 18, background: "#3a3836" }} />
             {renderGridOptionsCard()}
           </div>
         </div>
@@ -1586,9 +1586,9 @@ function EditorInner({
             alignItems: "center",
             gap: 10,
             padding: "8px 12px",
-            border: "1px solid #3a3a5a",
+            border: "1px solid #3a3836",
             borderRadius: 8,
-            background: "rgba(21, 21, 40, 0.92)",
+            background: "rgba(24, 24, 24, 0.92)",
             backdropFilter: "blur(2px)",
             pointerEvents: "auto",
           }}
@@ -1598,7 +1598,7 @@ function EditorInner({
         >
           <span
             style={{
-              color: "#c7c7df",
+              color: "#d2cdcb",
               fontSize: 12,
               fontFamily: "system-ui",
               fontWeight: 600,
@@ -1607,7 +1607,7 @@ function EditorInner({
           >
             Tool Options
           </span>
-          <div style={{ width: 1, height: 18, background: "#3a3a5a" }} />
+          <div style={{ width: 1, height: 18, background: "#3a3836" }} />
           <div
             style={{
               display: "flex",
@@ -1615,14 +1615,14 @@ function EditorInner({
               alignItems: "flex-start",
               gap: 8,
               padding: "8px 10px",
-              border: "1px solid #3a3a5a",
+              border: "1px solid #3a3836",
               borderRadius: 6,
-              background: "rgba(42, 42, 74, 0.65)",
+              background: "rgba(35, 35, 35, 0.72)",
             }}
           >
             <span
               style={{
-                color: "#c7c7df",
+                color: "#d2cdcb",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 fontWeight: 600,
@@ -1632,7 +1632,7 @@ function EditorInner({
             </span>
             <label
               style={{
-                color: "#9e9e9e",
+                color: "#9a9694",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 display: "flex",
@@ -1652,10 +1652,10 @@ function EditorInner({
                 style={{
                   width: 56,
                   padding: "3px 6px",
-                  background: "#2a2a4a",
-                  border: "1px solid #3a3a5a",
+                  background: "#242424",
+                  border: "1px solid #3a3836",
                   borderRadius: 4,
-                  color: "#e0e0e0",
+                  color: "#e5e2e1",
                   fontSize: 13,
                   fontFamily: "system-ui",
                 }}
@@ -1664,7 +1664,7 @@ function EditorInner({
 
             <label
                 style={{
-                  color: "#9e9e9e",
+                  color: "#9a9694",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   display: "flex",
@@ -1684,10 +1684,10 @@ function EditorInner({
                   style={{
                     width: 56,
                     padding: "3px 6px",
-                    background: "#2a2a4a",
-                    border: "1px solid #3a3a5a",
+                    background: "#242424",
+                    border: "1px solid #3a3836",
                     borderRadius: 4,
-                    color: "#e0e0e0",
+                    color: "#e5e2e1",
                     fontSize: 13,
                     fontFamily: "system-ui",
                   }}
@@ -1696,7 +1696,7 @@ function EditorInner({
 
             <div
               style={{
-                color: "#c7c7df",
+                color: "#d2cdcb",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 fontWeight: 600,
@@ -1713,14 +1713,14 @@ function EditorInner({
               alignItems: "flex-start",
               gap: 8,
               padding: "8px 10px",
-              border: "1px solid #3a3a5a",
+              border: "1px solid #3a3836",
               borderRadius: 6,
-              background: "rgba(42, 42, 74, 0.65)",
+              background: "rgba(35, 35, 35, 0.72)",
             }}
           >
             <span
               style={{
-                color: "#c7c7df",
+                color: "#d2cdcb",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 fontWeight: 600,
@@ -1741,7 +1741,7 @@ function EditorInner({
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
-                  color: rowDirectionArrowMode === "viewer-direction" ? "#8ec5ff" : "#8f8fa8",
+                  color: rowDirectionArrowMode === "viewer-direction" ? "#b8ab67" : "#9a9694",
                 }}
               >
                 Viewer direction
@@ -1760,8 +1760,8 @@ function EditorInner({
                   height: 24,
                   padding: 2,
                   borderRadius: 999,
-                  border: "1px solid #3a3a5a",
-                  background: rowDirectionArrowMode === "row-direction" ? "#2f7d45" : "#2f5f9f",
+                  border: "1px solid #3a3836",
+                  background: rowDirectionArrowMode === "row-direction" ? "#6f663a" : "#3a3836",
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
@@ -1774,7 +1774,7 @@ function EditorInner({
                     width: 18,
                     height: 18,
                     borderRadius: "50%",
-                    background: "#f3f5ff",
+                    background: "#f0ece7",
                     transform:
                       rowDirectionArrowMode === "row-direction"
                         ? "translateX(22px)"
@@ -1788,7 +1788,7 @@ function EditorInner({
                   fontSize: 12,
                   fontFamily: "system-ui",
                   fontWeight: 600,
-                  color: rowDirectionArrowMode === "row-direction" ? "#89d9a2" : "#8f8fa8",
+                  color: rowDirectionArrowMode === "row-direction" ? "#cabc7a" : "#9a9694",
                 }}
               >
                 Row direction
@@ -1797,7 +1797,7 @@ function EditorInner({
 
             <label
               style={{
-                color: "#9e9e9e",
+                color: "#9a9694",
                 fontSize: 12,
                 fontFamily: "system-ui",
                 display: "flex",
@@ -1815,23 +1815,23 @@ function EditorInner({
                 style={{
                   width: 56,
                   padding: "3px 6px",
-                  background: "#2a2a4a",
-                  border: "1px solid #3a3a5a",
+                  background: "#242424",
+                  border: "1px solid #3a3836",
                   borderRadius: 4,
-                  color: "#e0e0e0",
+                  color: "#e5e2e1",
                   fontSize: 13,
                   fontFamily: "system-ui",
                 }}
               />
-              <span style={{ color: "#9e9e9e" }}>deg</span>
+              <span style={{ color: "#9a9694" }}>deg</span>
               <button
                 onClick={handleRotateRowOrientationQuarterTurn}
                 style={{
                   padding: "3px 6px",
                   borderRadius: 4,
-                  border: "1px solid #3a3a5a",
-                  background: "#2a2a4a",
-                  color: "#d0d0e0",
+                  border: "1px solid #3a3836",
+                  background: "#242424",
+                  color: "#e5e2e1",
                   cursor: "pointer",
                   fontSize: 12,
                   fontFamily: "system-ui",
@@ -1845,7 +1845,7 @@ function EditorInner({
 
             <div
               style={{
-                color: "#9e9e9e",
+                color: "#9a9694",
                 fontSize: 11,
                 fontFamily: "system-ui",
               }}
@@ -1983,8 +1983,8 @@ function EditorInner({
 
   const sidebarStyle: React.CSSProperties = {
     width: 260,
-    background: "#1a1a2e",
-    borderLeft: "1px solid #2a2a4a",
+    background: "#181818",
+    borderLeft: "1px solid #2b2a29",
     overflowY: "auto",
     flexShrink: 0,
   };
@@ -2056,14 +2056,14 @@ function EditorInner({
           />
           {selectedSeatIds.size === 0 && (
             <>
-              <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+              <div style={{ height: 1, background: "#2b2a29", margin: "0 16px" }} />
               <LayerPanel
                 venue={venue}
                 selectedSeatIds={selectedSeatIds}
                 selectedSectionIds={selectedSectionIds}
                 onSelectSection={handleSelectSection}
               />
-              <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+              <div style={{ height: 1, background: "#2b2a29", margin: "0 16px" }} />
               <CategoryManager
                 venue={venue}
                 history={historyRef.current}
@@ -2074,7 +2074,7 @@ function EditorInner({
           )}
           {selectedSeatIds.size === 0 && selectedSectionIds.size === 0 && (
             <>
-              <div style={{ height: 1, background: "#2a2a4a", margin: "0 16px" }} />
+              <div style={{ height: 1, background: "#2b2a29", margin: "0 16px" }} />
               <StatusManager
                 venue={venue}
                 history={historyRef.current}

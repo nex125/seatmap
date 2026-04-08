@@ -20,7 +20,7 @@ export interface PropertyPanelProps {
 
 const labelStyle: CSSProperties = {
   fontSize: 11,
-  color: "#9e9e9e",
+  color: "#9a9694",
   marginBottom: 2,
   fontFamily: "system-ui",
 };
@@ -28,10 +28,10 @@ const labelStyle: CSSProperties = {
 const inputStyle: CSSProperties = {
   width: "100%",
   padding: "4px 8px",
-  background: "#2a2a4a",
-  border: "1px solid #3a3a5a",
+  background: "#242424",
+  border: "1px solid #3a3836",
   borderRadius: 4,
-  color: "#e0e0e0",
+  color: "#e5e2e1",
   fontSize: 13,
   fontFamily: "system-ui",
   boxSizing: "border-box",
@@ -41,10 +41,10 @@ const selectStyle: CSSProperties = { ...inputStyle, cursor: "pointer" };
 
 const btnDanger: CSSProperties = {
   padding: "3px 8px",
-  border: "1px solid #5a2a2a",
+  border: "1px solid #6b3d44",
   borderRadius: 4,
-  background: "#3a1a1a",
-  color: "#f48888",
+  background: "#442126",
+  color: "#ffc4cd",
   cursor: "pointer",
   fontSize: 12,
   fontFamily: "system-ui",
@@ -52,10 +52,10 @@ const btnDanger: CSSProperties = {
 
 const btnSmall: CSSProperties = {
   padding: "3px 8px",
-  border: "1px solid #3a3a5a",
+  border: "1px solid #3a3836",
   borderRadius: 4,
-  background: "#2a2a4a",
-  color: "#e0e0e0",
+  background: "#242424",
+  color: "#e5e2e1",
   cursor: "pointer",
   fontSize: 12,
   fontFamily: "system-ui",
@@ -533,7 +533,7 @@ export function PropertyPanel({
 
   if (!venue) {
     return (
-      <div style={{ padding: 16, color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui", ...style }}>
+      <div style={{ padding: 16, color: "#9a9694", fontSize: 13, fontFamily: "system-ui", ...style }}>
         No venue loaded
       </div>
     );
@@ -576,7 +576,7 @@ export function PropertyPanel({
       {selectedSeatIds.size > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
+            <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui" }}>
               Seat Config ({selectedSeatIds.size} selected)
             </div>
             <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
@@ -630,8 +630,8 @@ export function PropertyPanel({
                       padding: "2px 6px",
                       fontSize: 12,
                       fontFamily: "system-ui",
-                      color: "#e0e0e0",
-                      background: "#2a2a4a",
+                      color: "#e5e2e1",
+                      background: "#242424",
                       marginBottom: 2,
                       borderRadius: 4,
                     }}
@@ -649,14 +649,14 @@ export function PropertyPanel({
               })}
             </div>
           </div>
-          <div style={{ height: 1, background: "#2a2a4a", margin: "20px 0" }} />
+          <div style={{ height: 1, background: "#2b2a29", margin: "20px 0" }} />
         </div>
       )}
 
       {selectedSeatIds.size === 0 && selectedSections.length > 0 && (
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui" }}>
+            <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui" }}>
               Section / Stage / Dancefloor Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
             </div>
             <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
@@ -665,7 +665,7 @@ export function PropertyPanel({
           </div>
 
           {hasMultipleSelectedSections && (
-            <div style={{ marginBottom: 12, padding: 10, borderRadius: 6, background: "#26264a" }}>
+            <div style={{ marginBottom: 12, padding: 10, borderRadius: 6, background: "#232323" }}>
               <div style={{ marginBottom: 10 }}>
                 <div style={labelStyle}>Label (apply to all selected)</div>
                 <input
@@ -703,9 +703,9 @@ export function PropertyPanel({
           )}
 
           {selectedSections.map((selectedSection) => (
-            <div key={selectedSection.id} style={{ marginBottom: 14, padding: 10, borderRadius: 6, background: "#222242" }}>
+            <div key={selectedSection.id} style={{ marginBottom: 14, padding: 10, borderRadius: 6, background: "#202020" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ color: "#c7c7df", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
+                <div style={{ color: "#d2cdcb", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
                   ID: {selectedSection.id}
                 </div>
               </div>
@@ -751,8 +751,8 @@ export function PropertyPanel({
                     marginBottom: 10,
                     padding: "8px 10px",
                     borderRadius: 6,
-                    background: "#2a2a4a",
-                    color: "#9e9e9e",
+                    background: "#242424",
+                    color: "#9a9694",
                     fontSize: 12,
                     fontFamily: "system-ui",
                   }}
@@ -765,8 +765,8 @@ export function PropertyPanel({
                     marginBottom: 10,
                     padding: "8px 10px",
                     borderRadius: 6,
-                    background: "#2a2a4a",
-                    color: "#9e9e9e",
+                    background: "#242424",
+                    color: "#9a9694",
                     fontSize: 12,
                     fontFamily: "system-ui",
                   }}
@@ -798,14 +798,14 @@ export function PropertyPanel({
                           padding: "3px 6px",
                           borderRadius: 4,
                           marginBottom: 2,
-                          background: "#2a2a4a",
+                          background: "#242424",
                           fontSize: 12,
                           fontFamily: "system-ui",
-                          color: "#e0e0e0",
+                          color: "#e5e2e1",
                         }}
                       >
                         <span style={{ fontWeight: 600, minWidth: 24 }}>Row {row.label}</span>
-                        <span style={{ flex: 1, color: "#9e9e9e" }}>{row.seats.length} seats</span>
+                        <span style={{ flex: 1, color: "#9a9694" }}>{row.seats.length} seats</span>
                         <button
                           onClick={() => deleteRow(selectedSection.id, row.id)}
                           style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
@@ -825,7 +825,7 @@ export function PropertyPanel({
 
       {selectedSections.length === 0 && selectedSeatIds.size === 0 && (
         <div>
-          <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+          <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
             Venue Config
           </div>
 
@@ -847,12 +847,12 @@ export function PropertyPanel({
             />
           </div>
 
-          <div style={{ color: "#9e9e9e", fontSize: 11, fontFamily: "system-ui", marginBottom: 12 }}>
+          <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui", marginBottom: 12 }}>
             Stats: {venue.sections.length} sections &middot;{" "}
             {venue.sections.reduce((t, s) => t + s.rows.reduce((rt, r) => rt + r.seats.length, 0), 0)} seats
           </div>
 
-          <div style={{ height: 1, background: "#2a2a4a", margin: "14px 0" }} />
+          <div style={{ height: 1, background: "#2b2a29", margin: "14px 0" }} />
           <div style={labelStyle}>Background Image</div>
           {venue.backgroundImage ? (
             <div style={{ marginTop: 6 }}>
@@ -861,7 +861,7 @@ export function PropertyPanel({
                   width: "100%",
                   height: 80,
                   borderRadius: 4,
-                  border: "1px solid #3a3a5a",
+                  border: "1px solid #3a3836",
                   overflow: "hidden",
                   marginBottom: 8,
                 }}
@@ -881,7 +881,7 @@ export function PropertyPanel({
                 max={100}
                 value={Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}
                 onChange={(e) => onBackgroundOpacityChange?.(parseInt(e.target.value) / 100)}
-                style={{ width: "100%", accentColor: "#6a6aaa", cursor: "pointer" }}
+                style={{ width: "100%", accentColor: "#8a7f46", cursor: "pointer" }}
               />
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                 <div style={{ flex: 1 }}>
@@ -921,7 +921,7 @@ export function PropertyPanel({
                   alignItems: "center",
                   gap: 8,
                   marginTop: 8,
-                  color: "#c7c7df",
+                  color: "#d2cdcb",
                   fontSize: 12,
                   fontFamily: "system-ui",
                   cursor: "pointer",

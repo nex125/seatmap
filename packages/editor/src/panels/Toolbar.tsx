@@ -28,10 +28,10 @@ const btnBase: CSSProperties = {
   padding: "6px 10px",
   borderWidth: 1,
   borderStyle: "solid",
-  borderColor: "#3a3a5a",
+  borderColor: "#3a3836",
   borderRadius: 6,
-  background: "#2a2a4a",
-  color: "#e0e0e0",
+  background: "#242424",
+  color: "#e5e2e1",
   cursor: "pointer",
   fontSize: 13,
   fontFamily: "system-ui",
@@ -42,8 +42,8 @@ const btnBase: CSSProperties = {
 
 const activeBtnStyle: CSSProperties = {
   ...btnBase,
-  background: "#4a4a7a",
-  borderColor: "#6a6aaa",
+  background: "#2e2e2e",
+  borderColor: "#6e6642",
 };
 
 export function Toolbar({
@@ -65,8 +65,8 @@ export function Toolbar({
     <div
       style={{
         display: "flex",
-        background: "#1a1a2e",
-        borderBottom: "1px solid #2a2a4a",
+        background: "#181818",
+        borderBottom: "1px solid #2b2a29",
         ...style,
       }}
     >
@@ -91,7 +91,7 @@ export function Toolbar({
           </button>
         ))}
 
-        <div style={{ width: 1, height: 24, background: "#3a3a5a", margin: "0 6px" }} />
+        <div style={{ width: 1, height: 24, background: "#353331", margin: "0 6px" }} />
 
         <button onClick={onUndo} disabled={!canUndo} style={{ ...btnBase, opacity: canUndo ? 1 : 0.4 }} title="Undo (Ctrl+Z)">
           ↩ Undo
@@ -100,7 +100,7 @@ export function Toolbar({
           ↪ Redo
         </button>
 
-        <div style={{ width: 1, height: 24, background: "#3a3a5a", margin: "0 6px" }} />
+        <div style={{ width: 1, height: 24, background: "#353331", margin: "0 6px" }} />
 
         <button onClick={onFitView} style={btnBase} title="Fit to view">
           ⊞ Fit
@@ -109,15 +109,15 @@ export function Toolbar({
           onClick={onToggleGridOptions}
           style={{
             ...(isGridOptionsOpen ? activeBtnStyle : btnBase),
-            borderColor: gridEnabled ? "#57b26f" : (isGridOptionsOpen ? activeBtnStyle.borderColor : btnBase.borderColor),
-            boxShadow: gridEnabled ? "0 0 0 1px #57b26f inset" : "none",
+            borderColor: gridEnabled ? "#7f7340" : (isGridOptionsOpen ? activeBtnStyle.borderColor : btnBase.borderColor),
+            boxShadow: gridEnabled ? "0 0 0 1px #7f7340 inset" : "none",
           }}
           title="Show grid options"
         >
           # Grid
         </button>
 
-        <div style={{ width: 1, height: 24, background: "#3a3a5a", margin: "0 6px" }} />
+        <div style={{ width: 1, height: 24, background: "#353331", margin: "0 6px" }} />
 
         <button onClick={onSave} style={btnBase} title="Export venue as JSON">
           ↓ Save

@@ -30,7 +30,7 @@ export function Minimap({ width = 180, height = 120, style }: MinimapProps) {
       ctx.scale(dpr, dpr);
 
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "rgba(26, 26, 46, 0.9)";
+      ctx.fillStyle = "rgba(24, 24, 24, 0.92)";
       ctx.fillRect(0, 0, width, height);
 
       const bounds = venueAABB(venue);
@@ -62,7 +62,7 @@ export function Minimap({ width = 180, height = 120, style }: MinimapProps) {
       const visAABB = viewport.getVisibleAABB();
       const vtl = toMinimap(visAABB.minX, visAABB.minY);
       const vbr = toMinimap(visAABB.maxX, visAABB.maxY);
-      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      ctx.strokeStyle = "rgba(229,226,225,0.75)";
       ctx.lineWidth = 1.5;
       ctx.strokeRect(vtl.x, vtl.y, vbr.x - vtl.x, vbr.y - vtl.y);
     };
@@ -80,8 +80,8 @@ export function Minimap({ width = 180, height = 120, style }: MinimapProps) {
       style={{
         width,
         height,
-        borderRadius: 6,
-        border: "1px solid #2a2a4a",
+        borderRadius: 8,
+        border: "1px solid #353331",
         ...style,
       }}
     />

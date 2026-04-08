@@ -14,8 +14,8 @@ A high-performance, React-based seat map system for venues of all sizes — from
 ## Quick Start
 
 ```bash
-pnpm install
-pnpm dev       # starts demo app at http://localhost:3000
+bun install
+bun dev       # starts demo app at http://localhost:3005
 ```
 
 ### Viewer Usage
@@ -112,7 +112,9 @@ Venue Data → R-tree Spatial Index → Viewport Culling → LOD Selection → P
 | `H` / `2` | Pan tool |
 | `S` / `3` | Add Section tool |
 | `R` / `4` | Add Row tool |
-| `Space` (hold) | Temporary pan |
+| `A` / `5` | Add Seat tool |
+| `Space` | Toggle pan tool |
+| `Delete` / `Backspace` | Delete selected objects |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Shift+Z` | Redo |
 
@@ -123,15 +125,23 @@ Venue Data → R-tree Spatial Index → Viewport Culling → LOD Selection → P
 - **Spatial Index**: rbush (R-tree)
 - **State**: Zustand
 - **Build**: tsup (ESM + CJS)
-- **Monorepo**: pnpm workspaces + Turborepo
+- **Monorepo**: Bun workspaces + Turborepo
 
 ## Development
 
 ```bash
-pnpm install          # install dependencies
-pnpm dev              # start all packages in watch mode
-pnpm build            # build all packages
-pnpm lint             # type-check all packages
+bun install          # install dependencies
+bun dev              # start all packages in watch mode
+bun build            # build all packages
+bun lint             # type-check all packages
+```
+
+```bash
+# bump packages versions
+docker compose exec -w /app/packages/core seatmap bun pm version patch
+docker compose exec -w /app/packages/editor seatmap bun pm version patch
+docker compose exec -w /app/packages/react seatmap bun pm version patch
+docker compose exec -w /app/packages/viewer seatmap bun pm version patch
 ```
 
 ## Project Structure
@@ -145,5 +155,5 @@ seatmap/
 │   ├── editor/        # Editor tools, panels, SeatmapEditor
 │   └── viewer/        # Viewer component, tooltip overlay
 ├── turbo.json
-└── pnpm-workspace.yaml
+└── package.json       # Bun workspace configuration
 ```

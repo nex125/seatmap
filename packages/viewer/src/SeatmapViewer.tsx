@@ -52,15 +52,15 @@ const legendContainerStyle: CSSProperties = {
   left: 12,
   zIndex: 10,
   pointerEvents: "none",
-  background: "rgba(18, 18, 34, 0.88)",
-  border: "1px solid rgba(110, 110, 150, 0.45)",
-  borderRadius: 8,
+  background: "rgba(24, 24, 24, 0.9)",
+  border: "1px solid rgba(92, 89, 87, 0.6)",
+  borderRadius: 10,
   padding: "10px 12px",
   minWidth: 150,
-  color: "#e0e0e0",
+  color: "#e5e2e1",
   fontFamily: "system-ui",
   fontSize: 12,
-  backdropFilter: "blur(2px)",
+  backdropFilter: "blur(8px)",
 };
 
 const legendHeadingStyle: CSSProperties = {
@@ -68,7 +68,7 @@ const legendHeadingStyle: CSSProperties = {
   fontSize: 11,
   fontWeight: 600,
   letterSpacing: 0.2,
-  color: "#b9b9d6",
+  color: "#9a9694",
 };
 
 const legendListStyle: CSSProperties = {
@@ -90,7 +90,7 @@ const legendItemStyle: CSSProperties = {
 const legendSwatchStyle: CSSProperties = {
   width: 10,
   height: 10,
-  borderRadius: 2,
+  borderRadius: 3,
   flexShrink: 0,
   border: "1px solid rgba(255, 255, 255, 0.25)",
 };
@@ -100,16 +100,16 @@ const cartChipStyle: CSSProperties = {
   right: 12,
   bottom: 12,
   zIndex: 20,
-  border: "1px solid rgba(110, 110, 150, 0.65)",
-  background: "rgba(24, 24, 42, 0.95)",
-  color: "#ececff",
+  border: "1px solid rgba(92, 89, 87, 0.65)",
+  background: "rgba(30, 30, 30, 0.95)",
+  color: "#e5e2e1",
   borderRadius: 999,
   padding: "8px 14px",
   fontSize: 12,
   fontWeight: 600,
   fontFamily: "system-ui",
   cursor: "pointer",
-  boxShadow: "0 8px 18px rgba(0, 0, 0, 0.35)",
+  boxShadow: "0 10px 24px rgba(0, 0, 0, 0.28)",
 };
 
 const cartPopupStyle: CSSProperties = {
@@ -120,12 +120,12 @@ const cartPopupStyle: CSSProperties = {
   maxHeight: "72vh",
   display: "flex",
   flexDirection: "column",
-  background: "rgba(17, 17, 34, 0.98)",
-  borderTop: "1px solid rgba(110, 110, 150, 0.65)",
-  borderLeft: "1px solid rgba(110, 110, 150, 0.65)",
+  background: "rgba(24, 24, 24, 0.98)",
+  borderTop: "1px solid rgba(92, 89, 87, 0.65)",
+  borderLeft: "1px solid rgba(92, 89, 87, 0.65)",
   borderTopLeftRadius: 12,
   overflow: "hidden",
-  boxShadow: "-8px -8px 20px rgba(0, 0, 0, 0.35)",
+  boxShadow: "-12px -12px 24px rgba(0, 0, 0, 0.28)",
 };
 
 const cartIconButtonStyle: CSSProperties = {
@@ -135,9 +135,9 @@ const cartIconButtonStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   borderRadius: 5,
-  border: "1px solid #4a4a6a",
-  background: "#262648",
-  color: "#ececff",
+  border: "1px solid #4a4643",
+  background: "#2b2b2b",
+  color: "#e5e2e1",
   fontSize: 14,
   cursor: "pointer",
 };
@@ -368,10 +368,14 @@ function ViewerContent({
 
   const removeSeatFromSelection = useCallback(
     (seatId: string) => {
+      const seat = seatDetailsById.get(seatId);
+      if (seat?.sectionId) {
+        onSeatClick?.(seatId, seat.sectionId);
+      }
       const next = selectedSeatIdArray.filter((id) => id !== seatId);
       setSelection(next);
     },
-    [selectedSeatIdArray, setSelection],
+    [seatDetailsById, onSeatClick, selectedSeatIdArray, setSelection],
   );
 
   const handleSeatCanvasClick = useCallback(
@@ -411,8 +415,11 @@ function ViewerContent({
         }, candidates[0]);
       }
       setSelection([...selectedSeatIdArray, nextSeat.seatId]);
+      if (nextSeat.sectionId) {
+        onSeatClick?.(nextSeat.seatId, nextSeat.sectionId);
+      }
     },
-    [lastUserAnchorByCategory, seatDetailsById, selectedSeatIdArray, setSelection],
+    [lastUserAnchorByCategory, seatDetailsById, selectedSeatIdArray, setSelection, onSeatClick],
   );
 
   const handleRemoveLastInCategory = useCallback(
@@ -422,9 +429,13 @@ function ViewerContent({
       );
       const seatIdToRemove = selectedInCategory[selectedInCategory.length - 1];
       if (!seatIdToRemove) return;
+      const seat = seatDetailsById.get(seatIdToRemove);
+      if (seat?.sectionId) {
+        onSeatClick?.(seatIdToRemove, seat.sectionId);
+      }
       setSelection(selectedSeatIdArray.filter((selectedSeatId) => selectedSeatId !== seatIdToRemove));
     },
-    [seatDetailsById, selectedSeatIdArray, setSelection],
+    [seatDetailsById, selectedSeatIdArray, setSelection, onSeatClick],
   );
 
   const handleProceed = useCallback(() => {
@@ -458,7 +469,7 @@ function ViewerContent({
             </section>
           )}
           {showStatuses && showCategories && (
-            <div style={{ height: 1, background: "rgba(123, 123, 165, 0.45)", margin: "8px 0" }} />
+            <div style={{ height: 1, background: "rgba(92, 89, 87, 0.55)", margin: "8px 0" }} />
           )}
           {showCategories && (
             <section>
@@ -491,10 +502,10 @@ function ViewerContent({
               justifyContent: "space-between",
               gap: 8,
               padding: "10px 12px",
-              borderBottom: "1px solid rgba(110, 110, 150, 0.35)",
+              borderBottom: "1px solid rgba(92, 89, 87, 0.45)",
             }}
           >
-            <strong style={{ color: "#ececff", fontSize: 13, fontFamily: "system-ui" }}>Selected Seats Cart</strong>
+            <strong style={{ color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>Selected Seats Cart</strong>
             <button
               type="button"
               onClick={() => setIsCartOpen(false)}
@@ -516,19 +527,19 @@ function ViewerContent({
                 <article
                   key={group.categoryId}
                   style={{
-                    background: "#242447",
-                    border: "1px solid #3b3b61",
-                    borderRadius: 8,
+                    background: "#212121",
+                    border: "1px solid #383533",
+                    borderRadius: 10,
                     padding: 8,
                     display: "flex",
                     flexDirection: "column",
                     gap: 6,
                   }}
                 >
-                  <div style={{ color: "#ececff", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
+                  <div style={{ color: "#e5e2e1", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
                     {group.categoryName}
                   </div>
-                  <div style={{ color: "#adb0d2", fontSize: 11, fontFamily: "system-ui" }}>
+                  <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>
                     {group.seats.length} ticket{group.seats.length === 1 ? "" : "s"} - {formatMoney(group.unitPrice)} each
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -542,7 +553,7 @@ function ViewerContent({
                       >
                         -
                       </button>
-                      <span style={{ minWidth: 20, textAlign: "center", color: "#ececff", fontSize: 12 }}>
+                      <span style={{ minWidth: 20, textAlign: "center", color: "#e5e2e1", fontSize: 12 }}>
                         {group.seats.length}
                       </span>
                       <button
@@ -555,7 +566,7 @@ function ViewerContent({
                         +
                       </button>
                     </div>
-                    <span style={{ color: "#ececff", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
+                    <span style={{ color: "#e5e2e1", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
                       {formatMoney(group.seats.reduce((sum, seat) => sum + seat.unitPrice, 0))}
                     </span>
                   </div>
@@ -565,7 +576,7 @@ function ViewerContent({
                         key={seat.seatId}
                         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
                       >
-                        <span style={{ color: "#c8c8df", fontSize: 11, fontFamily: "system-ui" }}>
+                        <span style={{ color: "#beb9b8", fontSize: 11, fontFamily: "system-ui" }}>
                           {seat.sectionLabel ?? "Section"} {seat.rowLabel ? `- ${seat.rowLabel}${seat.seatLabel}` : `- ${seat.seatLabel}`}
                         </span>
                         <button
@@ -587,14 +598,14 @@ function ViewerContent({
 
           <div
             style={{
-              borderTop: "1px solid rgba(110, 110, 150, 0.35)",
+              borderTop: "1px solid rgba(92, 89, 87, 0.45)",
               padding: 12,
               display: "flex",
               flexDirection: "column",
               gap: 8,
             }}
           >
-            <div style={{ color: "#d4d4ee", fontSize: 12, fontFamily: "system-ui" }}>
+            <div style={{ color: "#d2cdcb", fontSize: 12, fontFamily: "system-ui" }}>
               {totalSelectedSeats} seat{totalSelectedSeats === 1 ? "" : "s"} - Total {formatMoney(totalCost)}
             </div>
             <button
@@ -602,9 +613,9 @@ function ViewerContent({
               disabled={cartSeats.length === 0}
               onClick={handleProceed}
               style={{
-                border: "1px solid #2f7b44",
-                background: cartSeats.length === 0 ? "#30543d" : "#2f7b44",
-                color: "#ecfff2",
+                border: "1px solid #8a7f46",
+                background: cartSeats.length === 0 ? "#4f4933" : "#6f663a",
+                color: "#f5edc7",
                 borderRadius: 8,
                 padding: "8px 12px",
                 fontSize: 13,

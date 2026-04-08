@@ -12,13 +12,36 @@ export interface StatusManagerProps {
 
 const btnSmall: CSSProperties = {
   padding: "3px 8px",
-  border: "1px solid #3a3a5a",
+  border: "1px solid #3a3836",
   borderRadius: 4,
-  background: "#2a2a4a",
-  color: "#e0e0e0",
+  background: "#242424",
+  color: "#e5e2e1",
   cursor: "pointer",
   fontSize: 12,
   fontFamily: "system-ui",
+};
+
+const colorPickerShellStyle: CSSProperties = {
+  width: 14,
+  height: 14,
+  borderRadius: 5,
+  border: "1px solid #5c5957",
+  overflow: "hidden",
+  flexShrink: 0,
+  background: "#242424",
+  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(229, 226, 225, 0.16)",
+  position: "relative",
+};
+
+const colorPickerInputStyle: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  border: "none",
+  padding: 0,
+  margin: 0,
+  display: "inline-block",
+  background: "transparent",
+  opacity: 0,
 };
 
 function sanitizeStatusId(name: string): string {
@@ -164,7 +187,7 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
 
   return (
     <div style={{ padding: 16, ...style }}>
-      <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+      <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
         Seat Statuses
       </div>
 
@@ -181,16 +204,30 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
               marginBottom: 6,
               padding: "4px 8px",
               borderRadius: 4,
-              background: "#2a2a4a",
+              background: "#232323",
             }}
           >
-            <input
-              type="color"
-              value={isEditing ? editingColor : status.color}
-              onChange={(e) => isEditing && setEditingColor(e.target.value)}
-              disabled={!isEditing}
-              style={{ width: 18, height: 18, border: "none", padding: 0, cursor: isEditing ? "pointer" : "default" }}
-            />
+            <span style={colorPickerShellStyle}>
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: isEditing ? editingColor : status.color,
+                }}
+              />
+              <input
+                type="color"
+                value={isEditing ? editingColor : status.color}
+                onChange={(e) => isEditing && setEditingColor(e.target.value)}
+                disabled={!isEditing}
+                style={{
+                  ...colorPickerInputStyle,
+                  cursor: isEditing ? "pointer" : "default",
+                }}
+                title={isEditing ? "Pick status color" : "Enable edit to change color"}
+              />
+            </span>
             {isEditing ? (
               <input
                 value={editingName}
@@ -200,16 +237,16 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
                   flex: 1,
                   minWidth: 0,
                   padding: "2px 6px",
-                  background: "#1f1f38",
-                  border: "1px solid #3a3a5a",
+                  background: "#1d1d1d",
+                  border: "1px solid #3a3836",
                   borderRadius: 4,
-                  color: "#e0e0e0",
+                  color: "#e5e2e1",
                   fontSize: 12,
                   fontFamily: "system-ui",
                 }}
               />
             ) : (
-              <div style={{ flex: 1, color: "#e0e0e0", fontSize: 13, fontFamily: "system-ui" }}>
+              <div style={{ flex: 1, color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>
                 {status.name}
               </div>
             )}
@@ -242,12 +279,16 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
       })}
 
       <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center" }}>
-        <input
-          type="color"
-          value={newColor}
-          onChange={(e) => setNewColor(e.target.value)}
-          style={{ width: 28, height: 28, border: "none", padding: 0, cursor: "pointer" }}
-        />
+        <span style={{ ...colorPickerShellStyle, width: 16, height: 16, borderRadius: 5 }}>
+          <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: newColor }} />
+          <input
+            type="color"
+            value={newColor}
+            onChange={(e) => setNewColor(e.target.value)}
+            style={{ ...colorPickerInputStyle, cursor: "pointer" }}
+            title="Pick new status color"
+          />
+        </span>
         <input
           placeholder="Status name"
           value={newName}
@@ -256,10 +297,10 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
           style={{
             flex: 1,
             padding: "4px 8px",
-            background: "#2a2a4a",
-            border: "1px solid #3a3a5a",
+            background: "#242424",
+            border: "1px solid #3a3836",
             borderRadius: 4,
-            color: "#e0e0e0",
+            color: "#e5e2e1",
             fontSize: 13,
             fontFamily: "system-ui",
           }}

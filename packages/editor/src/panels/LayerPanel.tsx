@@ -33,7 +33,7 @@ export function LayerPanel({
 
   return (
     <div style={{ padding: 16, ...style }}>
-      <div style={{ fontWeight: 600, color: "#e0e0e0", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+      <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
         Layers
       </div>
 
@@ -58,7 +58,7 @@ export function LayerPanel({
               borderRadius: 4,
               marginBottom: 2,
               cursor: "pointer",
-              background: isActive ? "#3a3a5a" : "transparent",
+              background: isActive ? "#2f2d2b" : "transparent",
             }}
           >
             <div
@@ -73,7 +73,7 @@ export function LayerPanel({
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
-                  color: "#e0e0e0",
+                  color: "#e5e2e1",
                   fontSize: 13,
                   fontFamily: "system-ui",
                   whiteSpace: "nowrap",
@@ -83,7 +83,7 @@ export function LayerPanel({
               >
                 {section.label}
               </div>
-              <div style={{ color: "#9e9e9e", fontSize: 11, fontFamily: "system-ui" }}>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>
                 {section.rows.length} rows, {seatCount} seats
               </div>
             </div>
@@ -92,7 +92,7 @@ export function LayerPanel({
       })}
 
       {venue.sections.length === 0 && (
-        <div style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+        <div style={{ color: "#9a9694", fontSize: 13, fontFamily: "system-ui" }}>
           No sections yet. Use the Add Section tool.
         </div>
       )}
