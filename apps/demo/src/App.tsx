@@ -1,19 +1,52 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Venue } from "@nex125/seatmap-core";
 import { deserializeVenue, generateId } from "@nex125/seatmap-core";
+import { SeatmapCanvas, SeatmapProvider, TooltipOverlay, useSeatmapContext } from "@nex125/seatmap-react";
 import { SeatmapViewer } from "@nex125/seatmap-viewer";
 import { SeatmapEditor } from "@nex125/seatmap-editor";
 import { sampleVenue } from "./sampleVenue";
 import { generateLargeVenue } from "./generateLargeVenue";
 
 type Tab = "viewer" | "editor";
-type VenueSize = "sample" | "5k" | "25k" | "50k" | "custom";
+type VenueSize = "sample" | "5k" | "25k" | "50k" | `template:${string}`;
 type EditorMode = "template" | "event";
 
 interface TemplateRecord {
   id: string;
   name: string;
   layout: Venue;
+}
+
+const TEMPLATES_STORAGE_KEY = "seatmap-demo-templates-v1";
+
+function createDefaultTemplateRecord(): TemplateRecord {
+  return {
+    id: "template-sample-hall",
+    name: "Sample Hall Template",
+    layout: cloneVenue(sampleVenue),
+  };
+}
+
+function readTemplatesFromStorage(): TemplateRecord[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(TEMPLATES_STORAGE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw) as TemplateRecord[];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((item) => item && typeof item.id === "string" && typeof item.name === "string" && item.layout)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        layout: cloneVenue(item.layout),
+      }));
+  } catch {
+    return [];
+  }
 }
 
 function createEmptyVenue(name = "New Venue"): Venue {
@@ -40,28 +73,73 @@ function cloneVenue(venue: Venue): Venue {
   return deserializeVenue(JSON.stringify(venue));
 }
 
+function PreviewSeatmapCanvas() {
+  const { viewport } = useSeatmapContext();
+  const dragStateRef = useRef<{ dragging: boolean; x: number; y: number }>({
+    dragging: false,
+    x: 0,
+    y: 0,
+  });
+
+  return (
+    <div
+      style={{ width: "100%", height: "100%", position: "relative", cursor: dragStateRef.current.dragging ? "grabbing" : "grab" }}
+      onPointerDown={(event) => {
+        if (event.button !== 0) return;
+        dragStateRef.current = { dragging: true, x: event.clientX, y: event.clientY };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        if (!dragStateRef.current.dragging) return;
+        const dx = event.clientX - dragStateRef.current.x;
+        const dy = event.clientY - dragStateRef.current.y;
+        dragStateRef.current = { dragging: true, x: event.clientX, y: event.clientY };
+        viewport.pan(dx, dy);
+      }}
+      onPointerUp={(event) => {
+        dragStateRef.current = { ...dragStateRef.current, dragging: false };
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+      }}
+      onPointerCancel={(event) => {
+        dragStateRef.current = { ...dragStateRef.current, dragging: false };
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+      }}
+    >
+      <SeatmapCanvas showSectionLabels enableSeatHover panOnLeftClick={false} />
+      <TooltipOverlay />
+    </div>
+  );
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>("viewer");
   const [venueSize, setVenueSize] = useState<VenueSize>("sample");
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-  const [customVenue, setCustomVenue] = useState<Venue | null>(null);
+  const [isSelectionOpen, setIsSelectionOpen] = useState(false);
+  const [lastCartEventType, setLastCartEventType] = useState<string | null>(null);
   const [editorMode, setEditorMode] = useState<EditorMode>("template");
 
   const [templateDraft, setTemplateDraft] = useState<Venue>(() => {
-    const next = cloneVenue(sampleVenue);
-    next.id = `template-${generateId()}`;
-    next.name = "Sample Hall Template";
+    const stored = readTemplatesFromStorage();
+    const seed = stored[0] ?? createDefaultTemplateRecord();
+    const next = cloneVenue(seed.layout);
+    next.id = seed.id;
+    next.name = seed.name;
     return next;
   });
-  const [templates, setTemplates] = useState<TemplateRecord[]>([
-    {
-      id: "template-sample-hall",
-      name: "Sample Hall Template",
-      layout: cloneVenue(sampleVenue),
-    },
-  ]);
+  const [templates, setTemplates] = useState<TemplateRecord[]>(() => {
+    const stored = readTemplatesFromStorage();
+    return stored.length > 0 ? stored : [createDefaultTemplateRecord()];
+  });
   const [templateQuery, setTemplateQuery] = useState("");
-  const [eventTemplateId, setEventTemplateId] = useState<string>("template-sample-hall");
+  const [eventTemplateId, setEventTemplateId] = useState<string>(() => {
+    const stored = readTemplatesFromStorage();
+    return stored[0]?.id ?? "template-sample-hall";
+  });
   const [eventDraft, setEventDraft] = useState<Venue>(() => {
     const seeded = cloneVenue(sampleVenue);
     seeded.id = "event-sample-night";
@@ -69,8 +147,25 @@ function App() {
     return seeded;
   });
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+  }, [templates]);
+
+  useEffect(() => {
+    if (templates.some((template) => template.id === eventTemplateId)) return;
+    if (templates.length > 0) {
+      setEventTemplateId(templates[0].id);
+    }
+  }, [eventTemplateId, templates]);
+
   const viewerVenue = useMemo(() => {
-    if (venueSize === "custom" && customVenue) return customVenue;
+    if (venueSize.startsWith("template:")) {
+      const templateId = venueSize.slice("template:".length);
+      const template = templates.find((record) => record.id === templateId);
+      return template?.layout ?? sampleVenue;
+    }
+
     switch (venueSize) {
       case "sample": return sampleVenue;
       case "5k": return generateLargeVenue(5000);
@@ -78,7 +173,7 @@ function App() {
       case "50k": return generateLargeVenue(50000);
       default: return sampleVenue;
     }
-  }, [venueSize, customVenue]);
+  }, [templates, venueSize]);
 
   const filteredTemplates = useMemo(() => {
     const query = templateQuery.trim().toLowerCase();
@@ -97,9 +192,29 @@ function App() {
       reader.onload = () => {
         try {
           const loaded = deserializeVenue(reader.result as string);
-          setCustomVenue(loaded);
-          setVenueSize("custom");
+          const importedId = (loaded.id?.trim() || `template-${generateId()}`).replace(/\s+/g, "-");
+          const importedName = loaded.name?.trim() || "Imported Venue";
+          const importedVenue = cloneVenue({ ...loaded, id: importedId, name: importedName });
+          const importedTemplate: TemplateRecord = {
+            id: importedId,
+            name: importedName,
+            layout: importedVenue,
+          };
+
+          setTemplates((prev) => {
+            const existingIndex = prev.findIndex((template) => template.id === importedTemplate.id);
+            if (existingIndex >= 0) {
+              const next = [...prev];
+              next[existingIndex] = importedTemplate;
+              return next;
+            }
+            return [importedTemplate, ...prev];
+          });
+          setTemplateDraft(importedVenue);
+          setEventTemplateId(importedId);
+          setVenueSize(`template:${importedId}`);
           setSelectedSeats([]);
+          setLastCartEventType(null);
         } catch {
           alert("Invalid venue JSON file");
         }
@@ -122,10 +237,10 @@ function App() {
     setTemplateDraft(next);
   }, []);
 
-  const handleSaveTemplate = useCallback(() => {
-    const trimmedId = templateDraft.id.trim() || `template-${generateId()}`;
-    const trimmedName = templateDraft.name.trim() || "Untitled Template";
-    const savedLayout = cloneVenue({ ...templateDraft, id: trimmedId, name: trimmedName });
+  const persistTemplate = useCallback((venue: Venue) => {
+    const trimmedId = venue.id.trim() || `template-${generateId()}`;
+    const trimmedName = venue.name.trim() || "Untitled Template";
+    const savedLayout = cloneVenue({ ...venue, id: trimmedId, name: trimmedName });
 
     setTemplateDraft(savedLayout);
     setTemplates((prev) => {
@@ -143,7 +258,7 @@ function App() {
       return [nextTemplate, ...prev];
     });
     setEventTemplateId(trimmedId);
-  }, [templateDraft]);
+  }, []);
 
   const handleCreateNewEvent = useCallback(() => {
     setEventDraft({
@@ -164,6 +279,12 @@ function App() {
       seeded.name = prev.name.trim() || `${template.name} Event`;
       return seeded;
     });
+  }, [templates]);
+
+  const applyTemplateToEditorDraft = useCallback((templateId: string) => {
+    const template = templates.find((record) => record.id === templateId);
+    if (!template) return;
+    setTemplateDraft(cloneVenue(template.layout));
   }, [templates]);
 
   const tabBtnBase: React.CSSProperties = {
@@ -198,7 +319,7 @@ function App() {
   };
 
   const panelStyle: React.CSSProperties = {
-    margin: 16,
+    margin: 0,
     padding: 12,
     borderRadius: 8,
     border: "1px solid #2a2a4a",
@@ -210,7 +331,7 @@ function App() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#0f0f23" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "#0f0f23", overflow: "hidden" }}>
       <header
         style={{
           padding: "0 24px",
@@ -242,7 +363,11 @@ function App() {
               <option value="5k">Large (5,000 seats)</option>
               <option value="25k">Arena (25,000 seats)</option>
               <option value="50k">Stadium (50,000 seats)</option>
-              {customVenue && <option value="custom">{customVenue.name}</option>}
+              {templates.map((template) => (
+                <option key={`viewer-template-${template.id}`} value={`template:${template.id}`}>
+                  Template: {template.name}
+                </option>
+              ))}
             </select>
             <button
               onClick={handleLoadSchema}
@@ -265,27 +390,116 @@ function App() {
 
         <div style={{ marginLeft: "auto", color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
           {tab === "viewer"
-            ? selectedSeats.length > 0
-              ? `${selectedSeats.length} seat${selectedSeats.length > 1 ? "s" : ""} selected`
-              : "Click seats to select. Alt+drag to pan. Scroll to zoom."
+            ? "Includes preview (hover-only) and separate seat selection (with cart)."
             : editorMode === "template"
               ? "Template Editor: create reusable base layouts."
               : "Venue Event Editor: choose a template then customize event layout."}
         </div>
       </header>
 
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: 1, position: "relative", overflow: "hidden", minHeight: 0, padding: 12 }}>
         {tab === "viewer" ? (
-          <SeatmapViewer
-            key={venueSize === "custom" ? `custom-${customVenue?.id}` : venueSize}
-            venue={viewerVenue}
-            onSelectionChange={setSelectedSeats}
-            onCartEvent={(event) => {
-              console.log("Cart Proceed click event:", event.type, event.payload);
-            }}
-          />
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, gap: 12 }}>
+            <div style={panelStyle}>
+              <strong style={{ color: "#e0e0e0", fontFamily: "system-ui", fontSize: 13 }}>
+                Event-style flow
+              </strong>
+              <span style={{ color: "#9e9e9e", fontFamily: "system-ui", fontSize: 13 }}>
+                Preview is hover-only; seat selection and cart are in a separate viewer.
+              </span>
+              <button
+                onClick={() => setIsSelectionOpen((prev) => !prev)}
+                style={selectStyle}
+              >
+                {isSelectionOpen ? "Hide Seat Selection" : "Open Seat Selection"}
+              </button>
+            </div>
+
+            <div style={panelStyle}>
+              <span style={{ color: "#e0e0e0", fontFamily: "system-ui", fontSize: 13 }}>
+                Preview map
+              </span>
+              <span style={{ color: "#9e9e9e", fontFamily: "system-ui", fontSize: 13 }}>
+                Cart hidden, click disabled, hover enabled.
+              </span>
+            </div>
+
+            <div style={{ flex: isSelectionOpen ? "0 0 45%" : 1, minHeight: 280, position: "relative", overflow: "hidden" }}>
+              <SeatmapProvider venue={viewerVenue} key={`preview-${venueSize}-${viewerVenue.id}`}>
+                <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                  <PreviewSeatmapCanvas />
+                  <aside
+                    aria-label="Seatmap legend"
+                    style={{
+                      position: "absolute",
+                      top: 12,
+                      left: 12,
+                      borderRadius: 8,
+                      border: "1px solid #4a4a6a",
+                      background: "#1f1f39",
+                      color: "#ececff",
+                      fontFamily: "system-ui",
+                      fontSize: 12,
+                      padding: 10,
+                      minWidth: 170,
+                      maxWidth: 220,
+                      zIndex: 5,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>Legend</div>
+                    {viewerVenue.seatStatuses.length > 0 && (
+                      <div style={{ marginBottom: viewerVenue.categories.length > 0 ? 8 : 0 }}>
+                        <div style={{ opacity: 0.8, marginBottom: 4 }}>Statuses</div>
+                        {viewerVenue.seatStatuses.map((status) => (
+                          <div key={status.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: 2, background: status.color, display: "inline-block" }} />
+                            <span>{status.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {viewerVenue.categories.length > 0 && (
+                      <div>
+                        <div style={{ opacity: 0.8, marginBottom: 4 }}>Categories</div>
+                        {viewerVenue.categories.map((category) => (
+                          <div key={category.id} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                            <span style={{ width: 10, height: 10, borderRadius: 2, background: category.color, display: "inline-block" }} />
+                            <span>{category.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </aside>
+                </div>
+              </SeatmapProvider>
+            </div>
+
+            {isSelectionOpen && (
+              <>
+                <div style={panelStyle}>
+                  <span style={{ color: "#e0e0e0", fontFamily: "system-ui", fontSize: 13 }}>
+                    Seat selection map
+                  </span>
+                  <span style={{ color: "#9e9e9e", fontFamily: "system-ui", fontSize: 13 }}>
+                    Full viewer with clickable seats and built-in cart.
+                  </span>
+                </div>
+                <div style={{ flex: 1, minHeight: 300, position: "relative", overflow: "hidden" }}>
+                  <SeatmapViewer
+                    key={`selection-${venueSize}-${viewerVenue.id}`}
+                    venue={viewerVenue}
+                    onSelectionChange={setSelectedSeats}
+                    onCartEvent={(event) => {
+                      setLastCartEventType(event.type);
+                      console.log("Cart event:", event.type, event.payload);
+                    }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, gap: 12 }}>
             <div style={panelStyle}>
               <button
                 onClick={() => setEditorMode("template")}
@@ -305,6 +519,20 @@ function App() {
               <>
                 <div style={panelStyle}>
                   <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                    Load Template:
+                    <select
+                      value={templateDraft.id}
+                      onChange={(e) => applyTemplateToEditorDraft(e.target.value)}
+                      style={{ ...selectStyle, marginLeft: 8, minWidth: 260 }}
+                    >
+                      {templates.map((template) => (
+                        <option key={`editor-template-${template.id}`} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
                     Template ID:
                     <input
                       value={templateDraft.id}
@@ -323,9 +551,6 @@ function App() {
                   <button onClick={handleCreateNewTemplate} style={selectStyle}>
                     Create New Template
                   </button>
-                  <button onClick={handleSaveTemplate} style={selectStyle}>
-                    Save Template
-                  </button>
                 </div>
 
                 <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
@@ -333,6 +558,7 @@ function App() {
                     venue={templateDraft}
                     fetchCategoryPrices={fetchCategoryPrices}
                     onChange={setTemplateDraft}
+                    onSave={(venue) => persistTemplate(venue)}
                   />
                 </div>
               </>
@@ -418,7 +644,7 @@ function App() {
         )}
       </div>
 
-      {tab === "viewer" && selectedSeats.length > 0 && (
+      {tab === "viewer" && isSelectionOpen && (
         <footer
           style={{
             padding: "12px 24px",
@@ -427,11 +653,13 @@ function App() {
             color: "#e0e0e0",
             fontSize: 13,
             fontFamily: "system-ui",
-            maxHeight: 80,
-            overflow: "auto",
+            display: "flex",
+            gap: 16,
+            flexWrap: "wrap",
           }}
         >
-          Selected: {selectedSeats.join(", ")}
+          <span>Selected seats: {selectedSeats.length}</span>
+          <span>Last cart event: {lastCartEventType ?? "none"}</span>
         </footer>
       )}
     </div>

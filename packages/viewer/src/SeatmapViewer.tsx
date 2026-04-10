@@ -165,7 +165,9 @@ function TrashIcon() {
   );
 }
 
-function ViewerContent({
+export type SeatmapViewerContentProps = Omit<SeatmapViewerProps, "className"> & { showLabels: boolean };
+
+export function SeatmapViewerContent({
   venue,
   onSeatClick,
   onSeatHover,
@@ -173,7 +175,7 @@ function ViewerContent({
   renderTooltip,
   showLabels,
   onCartEvent,
-}: Omit<SeatmapViewerProps, "className"> & { showLabels: boolean }) {
+}: SeatmapViewerContentProps) {
   const { selectedSeatIds, setSelection } = useSelection();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [lastUserAnchorByCategory, setLastUserAnchorByCategory] = useState<Record<string, string>>({});
@@ -186,6 +188,48 @@ function ViewerContent({
   const showStatuses = venue.seatStatuses.length > 0;
   const showCategories = venue.categories.length > 0;
   const selectedSeatIdArray = useMemo(() => Array.from(selectedSeatIds), [selectedSeatIds]);
+  const isMobile = viewportWidth < 768;
+
+  const legendStyle = useMemo<CSSProperties>(
+    () => ({
+      ...legendContainerStyle,
+      top: isMobile ? 8 : 12,
+      left: isMobile ? 8 : 12,
+      minWidth: isMobile ? 120 : 150,
+      padding: isMobile ? "8px 9px" : "10px 12px",
+      borderRadius: isMobile ? 8 : 10,
+      fontSize: isMobile ? 11 : 12,
+    }),
+    [isMobile],
+  );
+
+  const legendHeadingResponsiveStyle = useMemo<CSSProperties>(
+    () => ({
+      ...legendHeadingStyle,
+      marginBottom: isMobile ? 3 : 0,
+      fontSize: isMobile ? 10 : 11,
+    }),
+    [isMobile],
+  );
+
+  const legendListResponsiveStyle = useMemo<CSSProperties>(
+    () => ({
+      ...legendListStyle,
+      margin: isMobile ? "4px 0 0" : "6px 0 0",
+      gap: isMobile ? 3 : 4,
+    }),
+    [isMobile],
+  );
+
+  const legendSwatchResponsiveStyle = useMemo<CSSProperties>(
+    () => ({
+      ...legendSwatchStyle,
+      width: isMobile ? 8 : 10,
+      height: isMobile ? 8 : 10,
+      borderRadius: isMobile ? 2 : 3,
+    }),
+    [isMobile],
+  );
 
   const seatDetailsById = useMemo(() => {
     const categoryMap = new Map(venue.categories.map((category) => [category.id, category]));
@@ -454,14 +498,14 @@ function ViewerContent({
         enableSeatHover={showLabels}
       />
       {(showStatuses || showCategories) && (
-        <aside aria-label="Seatmap legend" style={legendContainerStyle}>
+        <aside aria-label="Seatmap legend" style={legendStyle}>
           {showStatuses && (
             <section>
-              <p style={legendHeadingStyle}>Seat Status</p>
-              <ul style={legendListStyle}>
+              <p style={legendHeadingResponsiveStyle}>Seat Status</p>
+              <ul style={legendListResponsiveStyle}>
                 {venue.seatStatuses.map((status) => (
                   <li key={status.id} style={legendItemStyle}>
-                    <span style={{ ...legendSwatchStyle, background: status.color }} />
+                    <span style={{ ...legendSwatchResponsiveStyle, background: status.color }} />
                     <span>{status.name}</span>
                   </li>
                 ))}
@@ -469,15 +513,15 @@ function ViewerContent({
             </section>
           )}
           {showStatuses && showCategories && (
-            <div style={{ height: 1, background: "rgba(92, 89, 87, 0.55)", margin: "8px 0" }} />
+            <div style={{ height: 1, background: "rgba(92, 89, 87, 0.55)", margin: isMobile ? "6px 0" : "8px 0" }} />
           )}
           {showCategories && (
             <section>
-              <p style={legendHeadingStyle}>Pricing</p>
-              <ul style={legendListStyle}>
+              <p style={legendHeadingResponsiveStyle}>Pricing</p>
+              <ul style={legendListResponsiveStyle}>
                 {venue.categories.map((category) => (
                   <li key={category.id} style={legendItemStyle}>
-                    <span style={{ ...legendSwatchStyle, background: category.color }} />
+                    <span style={{ ...legendSwatchResponsiveStyle, background: category.color }} />
                     <span>{category.name}</span>
                   </li>
                 ))}
@@ -648,7 +692,7 @@ export function SeatmapViewer({
   return (
     <SeatmapProvider venue={venue}>
       <div className={className} style={{ width: "100%", height: "100%", position: "relative" }}>
-        <ViewerContent
+        <SeatmapViewerContent
           venue={venue}
           onSeatClick={onSeatClick}
           onSeatHover={onSeatHover}

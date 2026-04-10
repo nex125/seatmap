@@ -1,6 +1,7 @@
-export { SeatmapViewer } from "./SeatmapViewer";
+export { SeatmapViewer, SeatmapViewerContent } from "./SeatmapViewer";
 export type {
   SeatmapViewerProps,
+  SeatmapViewerContentProps,
   SeatmapCartSeat,
   SeatmapCartPayload,
   SeatmapCartEvent,

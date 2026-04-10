@@ -13,9 +13,18 @@ A high-performance, React-based seat map system for venues of all sizes — from
 
 ## Quick Start
 
+From `seatmap/`:
+
 ```bash
-bun install
-bun dev       # starts demo app at http://localhost:3005
+docker compose up -d seatmap
+docker compose exec seatmap bun install --frozen-lockfile
+docker compose exec seatmap bun run dev # starts demo app at http://localhost:3005
+```
+
+If the `seatmap` container is not running yet:
+
+```bash
+docker compose up -d seatmap
 ```
 
 ### Viewer Usage
@@ -129,11 +138,13 @@ Venue Data → R-tree Spatial Index → Viewport Culling → LOD Selection → P
 
 ## Development
 
+From `seatmap/`:
+
 ```bash
-bun install          # install dependencies
-bun dev              # start all packages in watch mode
-bun build            # build all packages
-bun lint             # type-check all packages
+docker compose exec seatmap bun install --frozen-lockfile
+docker compose exec seatmap bun run dev
+docker compose exec seatmap bun run build
+docker compose exec seatmap bun run lint
 ```
 
 ```bash
