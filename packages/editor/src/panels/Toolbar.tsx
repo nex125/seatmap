@@ -13,6 +13,8 @@ export interface ToolbarProps {
   onFitView: () => void;
   onSave: () => void;
   onLoad: () => void;
+  showHints: boolean;
+  onToggleHints: () => void;
   style?: CSSProperties;
 }
 
@@ -59,6 +61,8 @@ export function Toolbar({
   onFitView,
   onSave,
   onLoad,
+  showHints,
+  onToggleHints,
   style,
 }: ToolbarProps) {
   return (
@@ -115,6 +119,17 @@ export function Toolbar({
           title="Show grid options"
         >
           # Grid
+        </button>
+        <button
+          onClick={onToggleHints}
+          style={{
+            ...(showHints ? activeBtnStyle : btnBase),
+            borderColor: showHints ? "#7f7340" : btnBase.borderColor,
+            boxShadow: showHints ? "0 0 0 1px #7f7340 inset" : "none",
+          }}
+          title="Toggle inline editor hints"
+        >
+          ? Hints
         </button>
 
         <div style={{ width: 1, height: 24, background: "#353331", margin: "0 6px" }} />

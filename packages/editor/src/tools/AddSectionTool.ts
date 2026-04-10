@@ -43,6 +43,16 @@ export class AddSectionTool extends BaseTool {
     this.notifyChange();
   }
 
+  hasPendingDraft(): boolean {
+    return this.points.length > 0;
+  }
+
+  cancelDrawing(): void {
+    if (this.points.length === 0) return;
+    this.points = [];
+    this.notifyChange();
+  }
+
   onPointerDown(e: ToolPointerEvent, _viewport: Viewport, store: SeatmapStore): void {
     if (this.mode === "rectangle") {
       if (this.points.length === 0) {
@@ -180,7 +190,6 @@ export class AddSectionTool extends BaseTool {
   }
 
   onDeactivate(): void {
-    this.points = [];
-    this.notifyChange();
+    this.cancelDrawing();
   }
 }

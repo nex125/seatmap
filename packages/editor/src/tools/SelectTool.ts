@@ -131,7 +131,8 @@ export class SelectTool extends BaseTool {
           return;
         }
         if (clickedSection && !seatHit) {
-          // In resize mode, clicking a section body just targets it and shows handles.
+          // In resize mode, allow dragging section bodies while keeping resize handles active.
+          this.beginSectionDrag(venue, store, clickedSection);
           return;
         }
       }
@@ -167,27 +168,10 @@ export class SelectTool extends BaseTool {
     }
 
     // Mode 2: Dragging a section (clicked on section background, not a seat)
-    if (!this.sectionResizeEnabled && sectionHit && !seatHit) {
+    if (sectionHit && !seatHit) {
       const section = venue.sections.find((s) => s.id === sectionHit.sectionId);
       if (section) {
-        const selectedSectionIds = store.getState().selectedSectionIds;
-        const sectionIds =
-          selectedSectionIds.has(section.id) && selectedSectionIds.size > 1
-            ? [...selectedSectionIds]
-            : [section.id];
-        const originalPositions = new Map<string, Vec2>();
-        for (const sec of venue.sections) {
-          if (sectionIds.includes(sec.id)) {
-            originalPositions.set(sec.id, { ...sec.position });
-          }
-        }
-        this.dragMode = {
-          type: "section",
-          primarySectionId: section.id,
-          sectionIds,
-          originalPositions,
-          delta: { x: 0, y: 0 },
-        };
+        this.beginSectionDrag(venue, store, section);
         return;
       }
     }
@@ -441,6 +425,27 @@ export class SelectTool extends BaseTool {
         });
       },
     });
+  }
+
+  private beginSectionDrag(venue: VenueState, store: SeatmapStore, section: Section): void {
+    const selectedSectionIds = store.getState().selectedSectionIds;
+    const sectionIds =
+      selectedSectionIds.has(section.id) && selectedSectionIds.size > 1
+        ? [...selectedSectionIds]
+        : [section.id];
+    const originalPositions = new Map<string, Vec2>();
+    for (const sec of venue.sections) {
+      if (sectionIds.includes(sec.id)) {
+        originalPositions.set(sec.id, { ...sec.position });
+      }
+    }
+    this.dragMode = {
+      type: "section",
+      primarySectionId: section.id,
+      sectionIds,
+      originalPositions,
+      delta: { x: 0, y: 0 },
+    };
   }
 
   private commitDrag(store: SeatmapStore, dropWorld: Vec2): void {

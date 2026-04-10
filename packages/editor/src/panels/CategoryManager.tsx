@@ -9,6 +9,8 @@ export interface CategoryManagerProps {
   store: SeatmapStore;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   style?: CSSProperties;
+  locale?: string;
+  currency?: string;
 }
 
 const btnSmall: CSSProperties = {
@@ -81,6 +83,8 @@ export function CategoryManager({
   store,
   fetchCategoryPrices,
   style,
+  locale = "ru-RU",
+  currency = "BYN",
 }: CategoryManagerProps) {
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#4caf50");
@@ -95,7 +99,11 @@ export function CategoryManager({
 
   if (!venue) return null;
 
-  const formatPrice = (price?: number) => `$${(Number.isFinite(price) ? (price as number) : 0).toFixed(2)}`;
+  const formatPrice = (price?: number) =>
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+    }).format(Number.isFinite(price) ? (price as number) : 0);
 
   const effectivePrice = (category: PricingCategory) => {
     if (category.isPriceOverridden && Number.isFinite(category.overriddenPrice)) {
@@ -244,7 +252,7 @@ export function CategoryManager({
       });
       setSyncStatus("synced");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to fetch prices.";
+      const message = error instanceof Error ? error.message : "Не удалось загрузить цены.";
       setFetchError(message);
       const currentVenue = store.getState().venue;
       if (currentVenue) {
@@ -380,7 +388,7 @@ export function CategoryManager({
   return (
     <div style={{ padding: 16, ...style }}>
       <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
-        Pricing Categories
+        Ценовые категории
       </div>
 
       {venue.categories.map((cat: PricingCategory) => {
@@ -417,7 +425,7 @@ export function CategoryManager({
                   ...colorPickerInputStyle,
                   cursor: isEditing ? "pointer" : "default",
                 }}
-                title={isEditing ? "Pick category color" : "Enable edit to change color"}
+                title={isEditing ? "Выбрать цвет категории" : "Включите редактирование для смены цвета"}
               />
             </span>
             {isEditing ? (
@@ -445,10 +453,10 @@ export function CategoryManager({
             {isEditing ? (
               <>
                 <button onClick={saveEdit} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
-                  Save
+                  Сохранить
                 </button>
                 <button onClick={() => setEditingId(null)} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
-                  Cancel
+                  Отмена
                 </button>
               </>
             ) : (
@@ -464,13 +472,13 @@ export function CategoryManager({
                   {formatPrice(effectivePrice(cat))}
                 </span>
                 <button onClick={() => startEdit(cat)} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
-                  Edit
+                  Изм.
                 </button>
                 <button
                   onClick={() => removeCategory(cat.id)}
                   style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}
                   disabled={venue.categories.length <= 1}
-                  title={venue.categories.length <= 1 ? "At least one category is required" : "Delete category"}
+                  title={venue.categories.length <= 1 ? "Нужна минимум одна категория" : "Удалить категорию"}
                 >
                   ✕
                 </button>
@@ -488,11 +496,11 @@ export function CategoryManager({
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
             style={{ ...colorPickerInputStyle, cursor: "pointer" }}
-            title="Pick new category color"
+            title="Выбрать цвет новой категории"
           />
         </span>
         <input
-          placeholder="Category name"
+          placeholder="Название категории"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addCategory()}
@@ -508,13 +516,13 @@ export function CategoryManager({
           }}
         />
         <button onClick={addCategory} style={btnSmall}>
-          Add
+          Добавить
         </button>
       </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
         <button onClick={openPriceManager} style={btnSmall}>
-          Manage Prices
+          Управление ценами
         </button>
       </div>
 
@@ -546,7 +554,7 @@ export function CategoryManager({
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <div style={{ color: "#e5e2e1", fontSize: 15, fontFamily: "system-ui", fontWeight: 600 }}>
-                Category Pricing
+                Цены категорий
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <button
@@ -557,18 +565,18 @@ export function CategoryManager({
                     opacity: !fetchCategoryPrices || isFetchingPrices ? 0.6 : 1,
                     cursor: !fetchCategoryPrices || isFetchingPrices ? "not-allowed" : "pointer",
                   }}
-                  title={fetchCategoryPrices ? "Fetch latest category prices from backend" : "No backend price fetch configured"}
+                  title={fetchCategoryPrices ? "Загрузить актуальные цены из backend" : "Загрузка цен из backend не настроена"}
                 >
-                  {isFetchingPrices ? "Syncing..." : "Sync from Backend"}
+                  {isFetchingPrices ? "Синхронизация..." : "Синхронизировать с backend"}
                 </button>
                 <button onClick={() => setIsPriceManagerOpen(false)} style={btnSmall}>
-                  Close
+                  Закрыть
                 </button>
               </div>
             </div>
 
               <div style={{ color: "#9a9694", fontSize: 12, fontFamily: "system-ui", marginBottom: 10 }}>
-              Backend prices are read-only data. Override lets you temporarily use an overriden category price in this schema.
+              Цены backend доступны только для чтения. Override позволяет временно использовать переопределенную цену категории в этой схеме.
             </div>
             <div
               style={{
@@ -583,14 +591,14 @@ export function CategoryManager({
                 fontFamily: "system-ui",
               }}
             >
-              Sync status:{" "}
+              Статус синхронизации:{" "}
               {syncStatus === "not-synced"
-                ? "Not synced"
+                ? "Не синхронизировано"
                 : syncStatus === "syncing"
-                  ? "Syncing..."
+                  ? "Синхронизация..."
                   : syncStatus === "synced"
-                    ? "Synced"
-                    : "Failed"}
+                    ? "Синхронизировано"
+                    : "Ошибка"}
             </div>
             {fetchError && (
               <div style={{ marginBottom: 10, color: "#ff9a9a", fontSize: 12, fontFamily: "system-ui" }}>
@@ -605,11 +613,11 @@ export function CategoryManager({
                 gap: 8,
               }}
             >
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Category</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Категория</div>
               <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Backend</div>
               <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Override</div>
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Override Price</div>
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Effective Price</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Цена override</div>
+              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Итоговая цена</div>
 
               {venue.categories.map((category) => (
                 <div
@@ -651,7 +659,7 @@ export function CategoryManager({
                       borderColor: category.isPriceOverridden ? "#8b7f46" : "#4c4845",
                       cursor: "pointer",
                     }}
-                    title={category.isPriceOverridden ? "Disable override" : "Enable override"}
+                    title={category.isPriceOverridden ? "Выключить override" : "Включить override"}
                   >
                     <span
                       style={{
@@ -717,7 +725,7 @@ export function CategoryManager({
                             padding: 0,
                             cursor: "pointer",
                           }}
-                          title="Increase override price"
+                          title="Увеличить цену override"
                         >
                           +
                         </button>
@@ -736,7 +744,7 @@ export function CategoryManager({
                             padding: 0,
                             cursor: "pointer",
                           }}
-                          title="Decrease override price"
+                          title="Уменьшить цену override"
                         >
                           -
                         </button>
@@ -757,7 +765,7 @@ export function CategoryManager({
                             opacity: isDraftChanged(category) ? 1 : 0.55,
                             cursor: isDraftChanged(category) ? "pointer" : "not-allowed",
                           }}
-                          title="Apply override price"
+                          title="Применить цену override"
                         >
                           ✓
                         </button>
@@ -778,7 +786,7 @@ export function CategoryManager({
                             opacity: isDraftChanged(category) ? 1 : 0.55,
                             cursor: isDraftChanged(category) ? "pointer" : "not-allowed",
                           }}
-                          title="Cancel override price changes"
+                          title="Отменить изменения override"
                         >
                           ✕
                         </button>

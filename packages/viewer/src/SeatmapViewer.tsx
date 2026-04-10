@@ -3,6 +3,7 @@ import { AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import type { PricingCategory, SeatStatus, Venue } from "@nex125/seatmap-core";
 import { SeatmapCanvas, SeatmapProvider, TooltipOverlay, useSelection } from "@nex125/seatmap-react";
 import type { TooltipData } from "@nex125/seatmap-react";
+import type { SeatmapViewerClassNames, SeatmapViewerStyles } from "./styleContract";
 
 export interface SeatmapCartSeat {
   seatId: string;
@@ -44,6 +45,10 @@ export interface SeatmapViewerProps {
   showLabels?: boolean;
   className?: string;
   onCartEvent?: (event: SeatmapCartEvent) => void;
+  locale?: string;
+  currency?: string;
+  styles?: SeatmapViewerStyles;
+  classNames?: SeatmapViewerClassNames;
 }
 
 const legendContainerStyle: CSSProperties = {
@@ -52,13 +57,13 @@ const legendContainerStyle: CSSProperties = {
   left: 12,
   zIndex: 10,
   pointerEvents: "none",
-  background: "rgba(24, 24, 24, 0.9)",
-  border: "1px solid rgba(92, 89, 87, 0.6)",
+  background: "var(--seatmap-viewer-surface, rgba(24, 24, 24, 0.9))",
+  border: "1px solid var(--seatmap-viewer-border, rgba(92, 89, 87, 0.6))",
   borderRadius: 10,
   padding: "10px 12px",
   minWidth: 150,
-  color: "#e5e2e1",
-  fontFamily: "system-ui",
+  color: "var(--seatmap-viewer-text, #e5e2e1)",
+  fontFamily: "var(--ds-font-body, system-ui)",
   fontSize: 12,
   backdropFilter: "blur(8px)",
 };
@@ -68,7 +73,7 @@ const legendHeadingStyle: CSSProperties = {
   fontSize: 11,
   fontWeight: 600,
   letterSpacing: 0.2,
-  color: "#9a9694",
+  color: "var(--seatmap-viewer-text-muted, #9a9694)",
 };
 
 const legendListStyle: CSSProperties = {
@@ -92,7 +97,7 @@ const legendSwatchStyle: CSSProperties = {
   height: 10,
   borderRadius: 3,
   flexShrink: 0,
-  border: "1px solid rgba(255, 255, 255, 0.25)",
+  border: "1px solid var(--seatmap-viewer-border-subtle, rgba(255, 255, 255, 0.25))",
 };
 
 const cartChipStyle: CSSProperties = {
@@ -100,16 +105,16 @@ const cartChipStyle: CSSProperties = {
   right: 12,
   bottom: 12,
   zIndex: 20,
-  border: "1px solid rgba(92, 89, 87, 0.65)",
-  background: "rgba(30, 30, 30, 0.95)",
-  color: "#e5e2e1",
+  border: "1px solid var(--seatmap-viewer-border, rgba(92, 89, 87, 0.65))",
+  background: "var(--seatmap-viewer-surface-elevated, rgba(30, 30, 30, 0.95))",
+  color: "var(--seatmap-viewer-text, #e5e2e1)",
   borderRadius: 999,
   padding: "8px 14px",
   fontSize: 12,
   fontWeight: 600,
-  fontFamily: "system-ui",
+  fontFamily: "var(--ds-font-body, system-ui)",
   cursor: "pointer",
-  boxShadow: "0 10px 24px rgba(0, 0, 0, 0.28)",
+  boxShadow: "var(--seatmap-viewer-shadow-elevated, 0 10px 24px rgba(0, 0, 0, 0.28))",
 };
 
 const cartPopupStyle: CSSProperties = {
@@ -120,12 +125,12 @@ const cartPopupStyle: CSSProperties = {
   maxHeight: "72vh",
   display: "flex",
   flexDirection: "column",
-  background: "rgba(24, 24, 24, 0.98)",
-  borderTop: "1px solid rgba(92, 89, 87, 0.65)",
-  borderLeft: "1px solid rgba(92, 89, 87, 0.65)",
+  background: "var(--seatmap-viewer-surface-elevated, rgba(24, 24, 24, 0.98))",
+  borderTop: "1px solid var(--seatmap-viewer-border, rgba(92, 89, 87, 0.65))",
+  borderLeft: "1px solid var(--seatmap-viewer-border, rgba(92, 89, 87, 0.65))",
   borderTopLeftRadius: 12,
   overflow: "hidden",
-  boxShadow: "-12px -12px 24px rgba(0, 0, 0, 0.28)",
+  boxShadow: "var(--seatmap-viewer-shadow-elevated, -12px -12px 24px rgba(0, 0, 0, 0.28))",
 };
 
 const cartIconButtonStyle: CSSProperties = {
@@ -135,9 +140,9 @@ const cartIconButtonStyle: CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   borderRadius: 5,
-  border: "1px solid #4a4643",
-  background: "#2b2b2b",
-  color: "#e5e2e1",
+  border: "1px solid var(--seatmap-viewer-border, #4a4643)",
+  background: "var(--seatmap-viewer-surface-muted, #2b2b2b)",
+  color: "var(--seatmap-viewer-text, #e5e2e1)",
   fontSize: 14,
   cursor: "pointer",
 };
@@ -150,8 +155,11 @@ function getEffectiveCategoryPrice(category: PricingCategory | undefined): numbe
   return Number.isFinite(category.backendPrice) ? (category.backendPrice as number) : 0;
 }
 
-function formatMoney(value: number): string {
-  return `$${value.toFixed(2)}`;
+function formatMoney(value: number, locale: string, currency: string): string {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+  }).format(value);
 }
 
 function TrashIcon() {
@@ -165,6 +173,16 @@ function TrashIcon() {
   );
 }
 
+function mergeStyles(base: CSSProperties, override?: CSSProperties): CSSProperties {
+  if (!override) return base;
+  return { ...base, ...override };
+}
+
+function mergeClassNames(...classNames: Array<string | undefined>): string | undefined {
+  const merged = classNames.filter(Boolean).join(" ").trim();
+  return merged.length > 0 ? merged : undefined;
+}
+
 export type SeatmapViewerContentProps = Omit<SeatmapViewerProps, "className"> & { showLabels: boolean };
 
 export function SeatmapViewerContent({
@@ -175,6 +193,10 @@ export function SeatmapViewerContent({
   renderTooltip,
   showLabels,
   onCartEvent,
+  locale = "ru-RU",
+  currency = "BYN",
+  styles = {},
+  classNames = {},
 }: SeatmapViewerContentProps) {
   const { selectedSeatIds, setSelection } = useSelection();
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -199,8 +221,9 @@ export function SeatmapViewerContent({
       padding: isMobile ? "8px 9px" : "10px 12px",
       borderRadius: isMobile ? 8 : 10,
       fontSize: isMobile ? 11 : 12,
+      ...(styles.legendContainer ?? {}),
     }),
-    [isMobile],
+    [isMobile, styles.legendContainer],
   );
 
   const legendHeadingResponsiveStyle = useMemo<CSSProperties>(
@@ -208,8 +231,9 @@ export function SeatmapViewerContent({
       ...legendHeadingStyle,
       marginBottom: isMobile ? 3 : 0,
       fontSize: isMobile ? 10 : 11,
+      ...(styles.legendHeading ?? {}),
     }),
-    [isMobile],
+    [isMobile, styles.legendHeading],
   );
 
   const legendListResponsiveStyle = useMemo<CSSProperties>(
@@ -217,8 +241,9 @@ export function SeatmapViewerContent({
       ...legendListStyle,
       margin: isMobile ? "4px 0 0" : "6px 0 0",
       gap: isMobile ? 3 : 4,
+      ...(styles.legendList ?? {}),
     }),
-    [isMobile],
+    [isMobile, styles.legendList],
   );
 
   const legendSwatchResponsiveStyle = useMemo<CSSProperties>(
@@ -227,8 +252,9 @@ export function SeatmapViewerContent({
       width: isMobile ? 8 : 10,
       height: isMobile ? 8 : 10,
       borderRadius: isMobile ? 2 : 3,
+      ...(styles.legendSwatch ?? {}),
     }),
-    [isMobile],
+    [isMobile, styles.legendSwatch],
   );
 
   const seatDetailsById = useMemo(() => {
@@ -248,7 +274,7 @@ export function SeatmapViewerContent({
             sectionId: section.id,
             sectionLabel: section.label,
             categoryId: seat.categoryId,
-            categoryName: category?.name ?? "Unknown",
+            categoryName: category?.name ?? "Без категории",
             unitPrice: getEffectiveCategoryPrice(category),
             status: seat.status,
             x: section.position.x + seat.position.x * cos - seat.position.y * sin,
@@ -266,9 +292,9 @@ export function SeatmapViewerContent({
           seatLabel: seat.label,
           rowLabel: null,
           sectionId: table.id,
-          sectionLabel: `Table ${table.label}`,
+            sectionLabel: `Стол ${table.label}`,
           categoryId: seat.categoryId,
-          categoryName: category?.name ?? "Unknown",
+          categoryName: category?.name ?? "Без категории",
           unitPrice: getEffectiveCategoryPrice(category),
           status: seat.status,
           x: table.position.x + seat.position.x,
@@ -490,7 +516,10 @@ export function SeatmapViewerContent({
   const cartWidth = viewportWidth > 1200 ? Math.floor(viewportWidth / 5) : viewportWidth;
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+    <div
+      className={classNames.root}
+      style={mergeStyles({ width: "100%", height: "100%", position: "relative" }, styles.root)}
+    >
       <SeatmapCanvas
         onSeatClick={handleSeatCanvasClick}
         onSeatHover={onSeatHover}
@@ -498,14 +527,17 @@ export function SeatmapViewerContent({
         enableSeatHover={showLabels}
       />
       {(showStatuses || showCategories) && (
-        <aside aria-label="Seatmap legend" style={legendStyle}>
+        <aside aria-label="Легенда схемы зала" className={classNames.legendContainer} style={legendStyle}>
           {showStatuses && (
             <section>
-              <p style={legendHeadingResponsiveStyle}>Seat Status</p>
-              <ul style={legendListResponsiveStyle}>
+              <p className={classNames.legendHeading} style={legendHeadingResponsiveStyle}>Статус мест</p>
+              <ul className={classNames.legendList} style={legendListResponsiveStyle}>
                 {venue.seatStatuses.map((status) => (
-                  <li key={status.id} style={legendItemStyle}>
-                    <span style={{ ...legendSwatchResponsiveStyle, background: status.color }} />
+                  <li key={status.id} className={classNames.legendItem} style={mergeStyles(legendItemStyle, styles.legendItem)}>
+                    <span
+                      className={classNames.legendSwatch}
+                      style={{ ...legendSwatchResponsiveStyle, background: status.color }}
+                    />
                     <span>{status.name}</span>
                   </li>
                 ))}
@@ -513,15 +545,28 @@ export function SeatmapViewerContent({
             </section>
           )}
           {showStatuses && showCategories && (
-            <div style={{ height: 1, background: "rgba(92, 89, 87, 0.55)", margin: isMobile ? "6px 0" : "8px 0" }} />
+            <div
+              className={classNames.legendDivider}
+              style={mergeStyles(
+                {
+                  height: 1,
+                  background: "var(--seatmap-viewer-border-subtle, rgba(92, 89, 87, 0.55))",
+                  margin: isMobile ? "6px 0" : "8px 0",
+                },
+                styles.legendDivider,
+              )}
+            />
           )}
           {showCategories && (
             <section>
-              <p style={legendHeadingResponsiveStyle}>Pricing</p>
-              <ul style={legendListResponsiveStyle}>
+              <p className={classNames.legendHeading} style={legendHeadingResponsiveStyle}>Цены</p>
+              <ul className={classNames.legendList} style={legendListResponsiveStyle}>
                 {venue.categories.map((category) => (
-                  <li key={category.id} style={legendItemStyle}>
-                    <span style={{ ...legendSwatchResponsiveStyle, background: category.color }} />
+                  <li key={category.id} className={classNames.legendItem} style={mergeStyles(legendItemStyle, styles.legendItem)}>
+                    <span
+                      className={classNames.legendSwatch}
+                      style={{ ...legendSwatchResponsiveStyle, background: category.color }}
+                    />
                     <span>{category.name}</span>
                   </li>
                 ))}
@@ -532,103 +577,181 @@ export function SeatmapViewerContent({
       )}
 
       {!isCartOpen && (
-        <button type="button" onClick={() => setIsCartOpen(true)} style={cartChipStyle}>
-          Cart ({totalSelectedSeats})
+        <button
+          type="button"
+          className={classNames.cartChip}
+          onClick={() => setIsCartOpen(true)}
+          style={mergeStyles(cartChipStyle, styles.cartChip)}
+        >
+          Корзина ({totalSelectedSeats})
         </button>
       )}
 
       {isCartOpen && (
-        <aside aria-label="Selected seats cart" style={{ ...cartPopupStyle, width: cartWidth, maxWidth: "100%" }}>
+        <aside
+          aria-label="Корзина выбранных мест"
+          className={classNames.cartPopup}
+          style={mergeStyles({ ...cartPopupStyle, width: cartWidth, maxWidth: "100%" }, styles.cartPopup)}
+        >
           <div
+            className={classNames.cartHeader}
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               gap: 8,
               padding: "10px 12px",
-              borderBottom: "1px solid rgba(92, 89, 87, 0.45)",
+              borderBottom: "1px solid var(--seatmap-viewer-border-subtle, rgba(92, 89, 87, 0.45))",
+              ...(styles.cartHeader ?? {}),
             }}
           >
-            <strong style={{ color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>Selected Seats Cart</strong>
+            <strong
+              className={classNames.cartHeaderTitle}
+              style={mergeStyles(
+                { color: "var(--seatmap-viewer-text, #e5e2e1)", fontSize: 13, fontFamily: "var(--ds-font-body, system-ui)" },
+                styles.cartHeaderTitle,
+              )}
+            >
+              Корзина выбранных мест
+            </strong>
             <button
               type="button"
               onClick={() => setIsCartOpen(false)}
-              style={{ ...cartIconButtonStyle, width: 22, height: 22 }}
-              title="Close cart"
-              aria-label="Close cart"
+              className={classNames.cartIconButton}
+              style={mergeStyles({ ...cartIconButtonStyle, width: 22, height: 22 }, styles.cartIconButton)}
+              title="Закрыть корзину"
+              aria-label="Закрыть корзину"
             >
               x
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, overflow: "auto", padding: 12, flex: 1 }}>
+          <div
+            className={classNames.cartBody}
+            style={mergeStyles(
+              { display: "flex", flexDirection: "column", gap: 8, overflow: "auto", padding: 12, flex: 1 },
+              styles.cartBody,
+            )}
+          >
             {groupedSeatsList.length === 0 ? (
-              <div style={{ color: "#9e9eb8", fontSize: 12, fontFamily: "system-ui" }}>
-                No seats selected yet.
+              <div
+                className={classNames.cartEmptyState}
+                style={mergeStyles(
+                  { color: "var(--seatmap-viewer-text-muted, #9e9eb8)", fontSize: 12, fontFamily: "var(--ds-font-body, system-ui)" },
+                  styles.cartEmptyState,
+                )}
+              >
+                Пока нет выбранных мест.
               </div>
             ) : (
               groupedSeatsList.map((group) => (
                 <article
                   key={group.categoryId}
+                  className={classNames.cartGroup}
                   style={{
-                    background: "#212121",
-                    border: "1px solid #383533",
-                    borderRadius: 10,
+                    background: "var(--seatmap-viewer-surface-muted, #212121)",
+                    border: "1px solid var(--seatmap-viewer-border, #383533)",
+                    borderRadius: "var(--seatmap-viewer-radius-md, 10px)",
                     padding: 8,
                     display: "flex",
                     flexDirection: "column",
                     gap: 6,
+                    ...(styles.cartGroup ?? {}),
                   }}
                 >
-                  <div style={{ color: "#e5e2e1", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
+                  <div
+                    className={classNames.cartGroupTitle}
+                    style={mergeStyles(
+                      {
+                        color: "var(--seatmap-viewer-text, #e5e2e1)",
+                        fontSize: 12,
+                        fontFamily: "var(--ds-font-body, system-ui)",
+                        fontWeight: 600,
+                      },
+                      styles.cartGroupTitle,
+                    )}
+                  >
                     {group.categoryName}
                   </div>
-                  <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>
-                    {group.seats.length} ticket{group.seats.length === 1 ? "" : "s"} - {formatMoney(group.unitPrice)} each
+                  <div
+                    className={classNames.cartGroupMeta}
+                    style={mergeStyles(
+                      { color: "var(--seatmap-viewer-text-muted, #9a9694)", fontSize: 11, fontFamily: "var(--ds-font-body, system-ui)" },
+                      styles.cartGroupMeta,
+                    )}
+                  >
+                    {group.seats.length} бил. - {formatMoney(group.unitPrice, locale, currency)} / шт.
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div className={classNames.cartQuantityRow} style={mergeStyles({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }, styles.cartQuantityRow)}>
                     <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                       <button
                         type="button"
-                        style={cartIconButtonStyle}
+                        className={classNames.cartIconButton}
+                        style={mergeStyles(cartIconButtonStyle, styles.cartIconButton)}
                         onClick={() => handleRemoveLastInCategory(group.categoryId)}
                         disabled={group.seats.length === 0}
-                        aria-label={`Remove one ${group.categoryName} seat`}
+                        aria-label={`Убрать одно место из категории ${group.categoryName}`}
                       >
                         -
                       </button>
-                      <span style={{ minWidth: 20, textAlign: "center", color: "#e5e2e1", fontSize: 12 }}>
+                      <span
+                        className={classNames.cartQuantityValue}
+                        style={mergeStyles(
+                          { minWidth: 20, textAlign: "center", color: "var(--seatmap-viewer-text, #e5e2e1)", fontSize: 12 },
+                          styles.cartQuantityValue,
+                        )}
+                      >
                         {group.seats.length}
                       </span>
                       <button
                         type="button"
-                        style={cartIconButtonStyle}
+                        className={classNames.cartIconButton}
+                        style={mergeStyles(cartIconButtonStyle, styles.cartIconButton)}
                         onClick={() => handleAddSeatInCategory(group.categoryId)}
                         disabled={group.availableToAdd === 0}
-                        aria-label={`Add one ${group.categoryName} seat`}
+                        aria-label={`Добавить одно место в категорию ${group.categoryName}`}
                       >
                         +
                       </button>
                     </div>
-                    <span style={{ color: "#e5e2e1", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
-                      {formatMoney(group.seats.reduce((sum, seat) => sum + seat.unitPrice, 0))}
+                    <span
+                      className={classNames.cartGroupTotal}
+                      style={mergeStyles(
+                        {
+                          color: "var(--seatmap-viewer-text, #e5e2e1)",
+                          fontSize: 12,
+                          fontFamily: "var(--ds-font-body, system-ui)",
+                          fontWeight: 600,
+                        },
+                        styles.cartGroupTotal,
+                      )}
+                    >
+                      {formatMoney(group.seats.reduce((sum, seat) => sum + seat.unitPrice, 0), locale, currency)}
                     </span>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {group.seats.map((seat) => (
                       <div
                         key={seat.seatId}
-                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
+                        className={classNames.cartSeatRow}
+                        style={mergeStyles({ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }, styles.cartSeatRow)}
                       >
-                        <span style={{ color: "#beb9b8", fontSize: 11, fontFamily: "system-ui" }}>
-                          {seat.sectionLabel ?? "Section"} {seat.rowLabel ? `- ${seat.rowLabel}${seat.seatLabel}` : `- ${seat.seatLabel}`}
+                        <span
+                          className={classNames.cartSeatLabel}
+                          style={mergeStyles(
+                            { color: "var(--seatmap-viewer-text-muted, #beb9b8)", fontSize: 11, fontFamily: "var(--ds-font-body, system-ui)" },
+                            styles.cartSeatLabel,
+                          )}
+                        >
+                          {seat.sectionLabel ?? "Секция"} {seat.rowLabel ? `- ${seat.rowLabel}${seat.seatLabel}` : `- ${seat.seatLabel}`}
                         </span>
                         <button
                           type="button"
-                          style={cartIconButtonStyle}
+                          className={classNames.cartIconButton}
+                          style={mergeStyles(cartIconButtonStyle, styles.cartIconButton)}
                           onClick={() => removeSeatFromSelection(seat.seatId)}
-                          title="Remove seat"
-                          aria-label={`Remove seat ${seat.seatLabel}`}
+                          title="Убрать место"
+                          aria-label={`Убрать место ${seat.seatLabel}`}
                         >
                           <TrashIcon />
                         </button>
@@ -641,34 +764,46 @@ export function SeatmapViewerContent({
           </div>
 
           <div
+            className={classNames.cartFooter}
             style={{
-              borderTop: "1px solid rgba(92, 89, 87, 0.45)",
+              borderTop: "1px solid var(--seatmap-viewer-border-subtle, rgba(92, 89, 87, 0.45))",
               padding: 12,
               display: "flex",
               flexDirection: "column",
               gap: 8,
+              ...(styles.cartFooter ?? {}),
             }}
           >
-            <div style={{ color: "#d2cdcb", fontSize: 12, fontFamily: "system-ui" }}>
-              {totalSelectedSeats} seat{totalSelectedSeats === 1 ? "" : "s"} - Total {formatMoney(totalCost)}
+            <div
+              className={classNames.cartSummary}
+              style={mergeStyles(
+                { color: "var(--seatmap-viewer-text-muted, #d2cdcb)", fontSize: 12, fontFamily: "var(--ds-font-body, system-ui)" },
+                styles.cartSummary,
+              )}
+            >
+              {totalSelectedSeats} мест - Итого {formatMoney(totalCost, locale, currency)}
             </div>
             <button
               type="button"
               disabled={cartSeats.length === 0}
               onClick={handleProceed}
+              className={classNames.cartProceedButton}
               style={{
-                border: "1px solid #8a7f46",
-                background: cartSeats.length === 0 ? "#4f4933" : "#6f663a",
-                color: "#f5edc7",
-                borderRadius: 8,
+                border: "1px solid var(--seatmap-viewer-accent, #8a7f46)",
+                background: cartSeats.length === 0
+                  ? "var(--seatmap-viewer-accent-disabled, #4f4933)"
+                  : "var(--seatmap-viewer-accent, #6f663a)",
+                color: "var(--seatmap-viewer-accent-text, #f5edc7)",
+                borderRadius: "var(--seatmap-viewer-radius-sm, 8px)",
                 padding: "8px 12px",
                 fontSize: 13,
                 fontWeight: 600,
-                fontFamily: "system-ui",
+                fontFamily: "var(--ds-font-body, system-ui)",
                 cursor: cartSeats.length === 0 ? "not-allowed" : "pointer",
+                ...(styles.cartProceedButton ?? {}),
               }}
             >
-              Proceed
+              Продолжить
             </button>
           </div>
         </aside>
@@ -688,10 +823,17 @@ export function SeatmapViewer({
   showLabels = true,
   className,
   onCartEvent,
+  locale,
+  currency,
+  styles,
+  classNames,
 }: SeatmapViewerProps) {
   return (
     <SeatmapProvider venue={venue}>
-      <div className={className} style={{ width: "100%", height: "100%", position: "relative" }}>
+      <div
+        className={mergeClassNames(className, classNames?.root)}
+        style={mergeStyles({ width: "100%", height: "100%", position: "relative" }, styles?.root)}
+      >
         <SeatmapViewerContent
           venue={venue}
           onSeatClick={onSeatClick}
@@ -700,6 +842,10 @@ export function SeatmapViewer({
           renderTooltip={renderTooltip}
           showLabels={showLabels}
           onCartEvent={onCartEvent}
+          locale={locale}
+          currency={currency}
+          styles={styles}
+          classNames={classNames}
         />
       </div>
     </SeatmapProvider>

@@ -74,6 +74,7 @@ function PolygonPreviewOverlay({
   const svgPoints = screenPoints.map((p) => `${p.x},${p.y}`).join(" ");
   const first = screenPoints[0];
   const last = screenPoints[screenPoints.length - 1];
+  const isRectanglePreview = mode === "rectangle" && screenPoints.length >= 3;
 
   return (
     <svg
@@ -87,13 +88,23 @@ function PolygonPreviewOverlay({
       }}
     >
       {screenPoints.length >= 2 && (
-        <polyline
-          points={svgPoints}
-          fill="rgba(100, 180, 255, 0.1)"
-          stroke="rgba(100, 180, 255, 0.8)"
-          strokeWidth={2}
-          strokeDasharray="6 4"
-        />
+        isRectanglePreview ? (
+          <polygon
+            points={svgPoints}
+            fill="rgba(100, 180, 255, 0.1)"
+            stroke="rgba(100, 180, 255, 0.8)"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+          />
+        ) : (
+          <polyline
+            points={svgPoints}
+            fill="rgba(100, 180, 255, 0.1)"
+            stroke="rgba(100, 180, 255, 0.8)"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+          />
+        )
       )}
       {mode === "polygon" && screenPoints.length >= 3 && (
         <line
@@ -261,11 +272,13 @@ function EditorInner({
   const [canvasGridStyle, setCanvasGridStyle] = useState<CanvasGridStyle>("solid");
   const [showSectionGrid, setShowSectionGrid] = useState(true);
   const [sectionGridStyle, setSectionGridStyle] = useState<SectionGridStyle>("dots");
+  const [showHints, setShowHints] = useState(true);
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
   const [rowOrientationDeg, setRowOrientationDeg] = useState(0);
   const [rowDirectionArrowMode, setRowDirectionArrowMode] = useState<RowDirectionArrowMode>("row-direction");
   const [rowPreviewPoint, setRowPreviewPoint] = useState<Vec2 | null>(null);
+  const [cursorScreenPoint, setCursorScreenPoint] = useState<{ x: number; y: number } | null>(null);
   const handleSeatsPerRowChange = useCallback(
     (n: number) => {
       setSeatsPerRow(n);
@@ -310,6 +323,23 @@ function EditorInner({
   useEffect(() => {
     addSectionTool.setSectionKind(sectionKind);
   }, [addSectionTool, sectionKind]);
+
+  const sectionHintText = useMemo(() => {
+    if (activeToolName === "select" && sectionResizeEnabled) {
+      return "Resize mode: drag inside section to move it, drag corners to resize, drag sides to move edges, click a side to add a polygon point.";
+    }
+    if (activeToolName !== "add-section") return null;
+    if (sectionMode === "rectangle") {
+      if (addSectionTool.hasPendingDraft()) {
+        return "Click opposite corner to finish. Esc to cancel.";
+      }
+      return "Click first corner to start rectangle.";
+    }
+    if (addSectionTool.hasPendingDraft()) {
+      return "Click to add points. Click first point to close. Esc to cancel.";
+    }
+    return "Click to place first polygon point.";
+  }, [activeToolName, sectionMode, addSectionTool, polygonPoints, sectionResizeEnabled]);
 
   useEffect(() => {
     selectTool.setSectionResizeEnabled(sectionResizeEnabled);
@@ -1887,6 +1917,11 @@ function EditorInner({
         handleDeleteSelectedObjects();
         return;
       }
+      if (e.key === "Escape" && activeToolName === "add-section") {
+        e.preventDefault();
+        addSectionTool.cancelDrawing();
+        return;
+      }
       if (e.key === "v" || e.key === "1") setActiveTool("select");
       if (e.key === "h" || e.key === "2") setActiveTool("pan");
       if (e.key === "s" || e.key === "3") setActiveTool("add-section");
@@ -1909,7 +1944,7 @@ function EditorInner({
       window.removeEventListener("keydown", handler);
       window.removeEventListener("keyup", upHandler);
     };
-  }, [setActiveTool, activeToolName, handleDeleteSelectedObjects]);
+  }, [setActiveTool, activeToolName, handleDeleteSelectedObjects, addSectionTool]);
 
   // Tool pointer event adapter for the canvas overlay
   const toToolPointerEvent = useCallback(
@@ -1963,6 +1998,11 @@ function EditorInner({
     (e: React.PointerEvent<HTMLDivElement>) => {
       const toolEvent = toToolPointerEvent(e);
       activeToolRef.current.onPointerMove(toolEvent, viewport, store);
+      const rect = e.currentTarget.getBoundingClientRect();
+      setCursorScreenPoint({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
       if (activeToolName === "add-row") {
         setRowPreviewPoint({ x: toolEvent.worldX, y: toolEvent.worldY });
       }
@@ -2004,6 +2044,8 @@ function EditorInner({
         onFitView={handleFitView}
         onSave={handleSave}
         onLoad={handleLoad}
+        showHints={showHints}
+        onToggleHints={() => setShowHints((current) => !current)}
       />
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -2014,6 +2056,7 @@ function EditorInner({
           onPointerMove={handleCanvasPointerMove}
           onPointerUp={handleCanvasPointerUp}
           onPointerCancel={handleCanvasPointerCancel}
+          onPointerLeave={() => setCursorScreenPoint(null)}
         >
           <SeatmapCanvas
             panOnLeftClick={false}
@@ -2038,6 +2081,28 @@ function EditorInner({
               mode={sectionMode}
               viewport={viewport}
             />
+          )}
+          {showHints && sectionHintText && cursorScreenPoint && (
+            <div
+              style={{
+                position: "absolute",
+                left: cursorScreenPoint.x + 14,
+                top: cursorScreenPoint.y + 14,
+                pointerEvents: "none",
+                zIndex: 18,
+                maxWidth: 280,
+                background: "rgba(18, 18, 18, 0.88)",
+                border: "1px solid rgba(117, 176, 255, 0.6)",
+                borderRadius: 8,
+                color: "#e5edf6",
+                fontSize: 12,
+                fontFamily: "system-ui",
+                padding: "6px 8px",
+                boxShadow: "0 6px 18px rgba(0, 0, 0, 0.35)",
+              }}
+            >
+              {sectionHintText}
+            </div>
           )}
         </div>
 

@@ -526,22 +526,24 @@ export function SeatmapCanvas({
           }
         }
 
-        g.eventMode = "static";
-        g.cursor = "pointer";
+        if (panOnLeftClick) {
+          g.eventMode = "static";
+          g.cursor = "pointer";
 
-        let downPos: { x: number; y: number } | null = null;
-        g.on("pointerdown", (ev) => {
-          downPos = { x: ev.globalX, y: ev.globalY };
-        });
-        g.on("pointerup", (ev) => {
-          if (!downPos) return;
-          const dist = Math.hypot(ev.globalX - downPos.x, ev.globalY - downPos.y);
-          downPos = null;
-          if (dist < 6) {
-            zoomToSection(section);
-          }
-        });
-        g.on("pointerupoutside", () => { downPos = null; });
+          let downPos: { x: number; y: number } | null = null;
+          g.on("pointerdown", (ev) => {
+            downPos = { x: ev.globalX, y: ev.globalY };
+          });
+          g.on("pointerup", (ev) => {
+            if (!downPos) return;
+            const dist = Math.hypot(ev.globalX - downPos.x, ev.globalY - downPos.y);
+            downPos = null;
+            if (dist < 6) {
+              zoomToSection(section);
+            }
+          });
+          g.on("pointerupoutside", () => { downPos = null; });
+        }
 
         sectionContainer.addChild(g);
       } else if (lod === LODLevel.Section) {

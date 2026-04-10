@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-core",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -20,6 +20,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "tsc --noEmit",
+    "test": "bun test",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {

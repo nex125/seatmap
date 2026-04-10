@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-editor",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -20,6 +20,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "tsc --noEmit",
+    "test": "bun test",
     "clean": "rm -rf dist"
   },
   "dependencies": {

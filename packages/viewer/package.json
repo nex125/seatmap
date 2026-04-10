@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-viewer",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -10,16 +10,22 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./theme.css": "./src/theme/seatmapViewerTheme.css"
   },
+  "sideEffects": [
+    "./src/theme/seatmapViewerTheme.css"
+  ],
   "files": [
     "dist",
+    "src/theme/seatmapViewerTheme.css",
     "README.md"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "tsc --noEmit",
+    "test": "bun test",
     "clean": "rm -rf dist"
   },
   "dependencies": {

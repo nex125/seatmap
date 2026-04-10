@@ -1,0 +1,106 @@
+.seatmap-viewer-theme {
+  --seatmap-viewer-surface: rgba(24, 24, 24, 0.94);
+  --seatmap-viewer-surface-elevated: rgba(28, 28, 28, 0.98);
+  --seatmap-viewer-surface-muted: #212121;
+  --seatmap-viewer-border: rgba(92, 89, 87, 0.65);
+  --seatmap-viewer-border-subtle: rgba(92, 89, 87, 0.45);
+  --seatmap-viewer-text: #e5e2e1;
+  --seatmap-viewer-text-muted: #9a9694;
+  --seatmap-viewer-accent: #6f663a;
+  --seatmap-viewer-accent-disabled: #4f4933;
+  --seatmap-viewer-accent-text: #f5edc7;
+  --seatmap-viewer-danger: #ad3f3f;
+  --seatmap-viewer-danger-text: #ffffff;
+  --seatmap-viewer-radius-sm: 8px;
+  --seatmap-viewer-radius-md: 10px;
+  --seatmap-viewer-shadow-elevated: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__legend-container {
+  font-family: var(--ds-font-body, system-ui);
+  color: var(--seatmap-viewer-text);
+  background: var(--seatmap-viewer-surface);
+  border: 1px solid var(--seatmap-viewer-border);
+  border-radius: var(--seatmap-viewer-radius-md);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__legend-heading {
+  color: var(--seatmap-viewer-text-muted);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__legend-divider {
+  background: var(--seatmap-viewer-border-subtle);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__legend-swatch {
+  border-color: color-mix(in srgb, var(--seatmap-viewer-text) 25%, transparent);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-chip {
+  font-family: var(--ds-font-body, system-ui);
+  color: var(--seatmap-viewer-text);
+  background: var(--seatmap-viewer-surface-elevated);
+  border: 1px solid var(--seatmap-viewer-border);
+  border-radius: 999px;
+  box-shadow: var(--seatmap-viewer-shadow-elevated);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-popup {
+  background: var(--seatmap-viewer-surface-elevated);
+  border-top: 1px solid var(--seatmap-viewer-border);
+  border-left: 1px solid var(--seatmap-viewer-border);
+  border-top-left-radius: calc(var(--seatmap-viewer-radius-md) + 2px);
+  box-shadow: var(--seatmap-viewer-shadow-elevated);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-header {
+  border-bottom: 1px solid var(--seatmap-viewer-border-subtle);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-header-title {
+  color: var(--seatmap-viewer-text);
+  font-family: var(--ds-font-body, system-ui);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-icon-button {
+  border: 1px solid var(--seatmap-viewer-border);
+  color: var(--seatmap-viewer-text);
+  background: var(--seatmap-viewer-surface-muted);
+  border-radius: calc(var(--seatmap-viewer-radius-sm) - 3px);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-empty-state,
+.seatmap-viewer-theme .seatmap-viewer__cart-group-meta,
+.seatmap-viewer-theme .seatmap-viewer__cart-seat-label,
+.seatmap-viewer-theme .seatmap-viewer__cart-summary {
+  color: var(--seatmap-viewer-text-muted);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-group {
+  background: var(--seatmap-viewer-surface-muted);
+  border: 1px solid var(--seatmap-viewer-border);
+  border-radius: var(--seatmap-viewer-radius-md);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-group-title,
+.seatmap-viewer-theme .seatmap-viewer__cart-group-total,
+.seatmap-viewer-theme .seatmap-viewer__cart-quantity-value {
+  color: var(--seatmap-viewer-text);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-footer {
+  border-top: 1px solid var(--seatmap-viewer-border-subtle);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-proceed-button {
+  border: 1px solid color-mix(in srgb, var(--seatmap-viewer-accent) 65%, #000);
+  color: var(--seatmap-viewer-accent-text);
+  background: var(--seatmap-viewer-accent);
+  border-radius: var(--seatmap-viewer-radius-sm);
+  font-family: var(--ds-font-body, system-ui);
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-proceed-button:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
