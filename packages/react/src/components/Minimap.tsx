@@ -29,8 +29,18 @@ export function Minimap({ width = 180, height = 120, style }: MinimapProps) {
       canvas.height = height * dpr;
       ctx.scale(dpr, dpr);
 
+      const computedStyle = getComputedStyle(canvas);
+      const minimapSurface = computedStyle.getPropertyValue("--seatmap-surface-container-low").trim()
+        || computedStyle.getPropertyValue("--seatmap-viewer-legend-bg").trim()
+        || "rgba(24, 24, 24, 0.92)";
+      const minimapBorder = computedStyle.getPropertyValue("--seatmap-outline").trim()
+        || computedStyle.getPropertyValue("--seatmap-viewer-legend-border").trim()
+        || "#353331";
+      const minimapViewportStroke = computedStyle.getPropertyValue("--seatmap-on-surface").trim() || "rgba(229,226,225,0.75)";
+      const minimapFallbackCategory = computedStyle.getPropertyValue("--seatmap-on-surface-variant").trim() || "rgba(100,100,100,0.5)";
+
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "rgba(24, 24, 24, 0.92)";
+      ctx.fillStyle = minimapSurface;
       ctx.fillRect(0, 0, width, height);
 
       const bounds = venueAABB(venue);
@@ -55,16 +65,18 @@ export function Minimap({ width = 180, height = 120, style }: MinimapProps) {
         const tl = toMinimap(box.minX, box.minY);
         const br = toMinimap(box.maxX, box.maxY);
         const cat = venue.categories.find((c: PricingCategory) => c.id === section.categoryId);
-        ctx.fillStyle = cat ? cat.color + "80" : "rgba(100,100,100,0.5)";
+        ctx.fillStyle = cat ? cat.color + "80" : minimapFallbackCategory;
         ctx.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
       }
 
       const visAABB = viewport.getVisibleAABB();
       const vtl = toMinimap(visAABB.minX, visAABB.minY);
       const vbr = toMinimap(visAABB.maxX, visAABB.maxY);
-      ctx.strokeStyle = "rgba(229,226,225,0.75)";
+      ctx.strokeStyle = minimapViewportStroke;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(vtl.x, vtl.y, vbr.x - vtl.x, vbr.y - vtl.y);
+
+      canvas.style.border = `1px solid ${minimapBorder}`;
     };
 
     draw();
@@ -81,7 +93,7 @@ export function Minimap({ width = 180, height = 120, style }: MinimapProps) {
         width,
         height,
         borderRadius: 8,
-        border: "1px solid #353331",
+        border: "1px solid var(--seatmap-outline, #353331)",
         ...style,
       }}
     />

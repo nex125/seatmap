@@ -10,40 +10,6 @@ export interface StatusManagerProps {
   style?: CSSProperties;
 }
 
-const btnSmall: CSSProperties = {
-  padding: "3px 8px",
-  border: "1px solid #3a3836",
-  borderRadius: 4,
-  background: "#242424",
-  color: "#e5e2e1",
-  cursor: "pointer",
-  fontSize: 12,
-  fontFamily: "system-ui",
-};
-
-const colorPickerShellStyle: CSSProperties = {
-  width: 14,
-  height: 14,
-  borderRadius: 5,
-  border: "1px solid #5c5957",
-  overflow: "hidden",
-  flexShrink: 0,
-  background: "#242424",
-  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(229, 226, 225, 0.16)",
-  position: "relative",
-};
-
-const colorPickerInputStyle: CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  border: "none",
-  padding: 0,
-  margin: 0,
-  display: "inline-block",
-  background: "transparent",
-  opacity: 0,
-};
-
 function sanitizeStatusId(name: string): string {
   const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return slug || generateId();
@@ -72,10 +38,10 @@ function replaceStatusInVenue(venue: Venue, statusId: string, replacementStatusI
 
 export function StatusManager({ venue, history, store, style }: StatusManagerProps) {
   const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState("#4caf50");
+  const [newColor, setNewColor] = useState("#dfcd72");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [editingColor, setEditingColor] = useState("#4caf50");
+  const [editingColor, setEditingColor] = useState("#dfcd72");
 
   const statusIds = useMemo(() => new Set(venue?.seatStatuses.map((status) => status.id) ?? []), [venue]);
 
@@ -186,8 +152,8 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
   };
 
   return (
-    <div style={{ padding: 16, ...style }}>
-      <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+    <div className="seatmap-editor__panel" style={style}>
+      <div className="seatmap-editor__panel-title">
         Seat Statuses
       </div>
 
@@ -196,35 +162,21 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
         return (
           <div
             key={status.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexWrap: "wrap",
-              marginBottom: 6,
-              padding: "4px 8px",
-              borderRadius: 4,
-              background: "#232323",
-            }}
+            className="seatmap-editor__panel-list-item"
           >
-            <span style={colorPickerShellStyle}>
+            <span className="seatmap-editor__color-picker-shell">
               <span
                 aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: isEditing ? editingColor : status.color,
-                }}
+                className="seatmap-editor__color-picker-dot"
+                style={{ background: isEditing ? editingColor : status.color }}
               />
               <input
                 type="color"
                 value={isEditing ? editingColor : status.color}
                 onChange={(e) => isEditing && setEditingColor(e.target.value)}
                 disabled={!isEditing}
-                style={{
-                  ...colorPickerInputStyle,
-                  cursor: isEditing ? "pointer" : "default",
-                }}
+                className="seatmap-editor__color-picker-input"
+                data-editable={isEditing ? "true" : "false"}
                 title={isEditing ? "Pick status color" : "Enable edit to change color"}
               />
             </span>
@@ -233,40 +185,30 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
                 value={editingName}
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "2px 6px",
-                  background: "#1d1d1d",
-                  border: "1px solid #3a3836",
-                  borderRadius: 4,
-                  color: "#e5e2e1",
-                  fontSize: 12,
-                  fontFamily: "system-ui",
-                }}
+                className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
               />
             ) : (
-              <div style={{ flex: 1, color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>
+              <div className="seatmap-editor__panel-text seatmap-editor__panel-content-grow">
                 {status.name}
               </div>
             )}
             {isEditing ? (
               <>
-                <button onClick={saveEdit} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
+                <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
                   Save
                 </button>
-                <button onClick={() => setEditingId(null)} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
+                <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
                   Cancel
                 </button>
               </>
             ) : (
               <>
-                <button onClick={() => startEdit(status)} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
+                <button onClick={() => startEdit(status)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
                   Edit
                 </button>
                 <button
                   onClick={() => removeStatus(status.id)}
-                  style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}
+                  className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
                   disabled={status.id === AVAILABLE_STATUS_ID}
                   title={status.id === AVAILABLE_STATUS_ID ? "Available status cannot be removed" : "Delete status"}
                 >
@@ -278,14 +220,15 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
         );
       })}
 
-      <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center" }}>
-        <span style={{ ...colorPickerShellStyle, width: 16, height: 16, borderRadius: 5 }}>
-          <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: newColor }} />
+      <div className="seatmap-editor__panel-row seatmap-editor__panel-row--spaced">
+        <span className="seatmap-editor__color-picker-shell seatmap-editor__color-picker-shell--lg">
+          <span aria-hidden="true" className="seatmap-editor__color-picker-dot" style={{ background: newColor }} />
           <input
             type="color"
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
-            style={{ ...colorPickerInputStyle, cursor: "pointer" }}
+            className="seatmap-editor__color-picker-input"
+            data-editable="true"
             title="Pick new status color"
           />
         </span>
@@ -294,18 +237,9 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addStatus()}
-          style={{
-            flex: 1,
-            padding: "4px 8px",
-            background: "#242424",
-            border: "1px solid #3a3836",
-            borderRadius: 4,
-            color: "#e5e2e1",
-            fontSize: 13,
-            fontFamily: "system-ui",
-          }}
+          className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
         />
-        <button onClick={addStatus} style={btnSmall}>
+        <button onClick={addStatus} className="seatmap-editor__panel-button">
           Add
         </button>
       </div>

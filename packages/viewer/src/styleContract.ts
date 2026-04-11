@@ -63,6 +63,26 @@ export const seatmapViewerDefaultClassNames: Record<SeatmapViewerStyleSlot, stri
 };
 
 export const seatmapViewerCssVariables = [
+  "--seatmap-surface",
+  "--seatmap-surface-elevated",
+  "--seatmap-surface-muted",
+  "--seatmap-on-surface",
+  "--seatmap-on-surface-variant",
+  "--seatmap-outline",
+  "--seatmap-outline-variant",
+  "--seatmap-primary",
+  "--seatmap-on-primary",
+  "--seatmap-error",
+  "--seatmap-on-error",
+  "--seatmap-state-layer-hover",
+  "--seatmap-state-layer-pressed",
+  "--seatmap-focus-ring",
+  "--seatmap-radius-sm",
+  "--seatmap-radius-md",
+  "--seatmap-radius-lg",
+  "--seatmap-shadow-raised",
+  "--seatmap-shadow-elevated",
+  "--seatmap-shadow-floating",
   "--seatmap-viewer-surface",
   "--seatmap-viewer-surface-elevated",
   "--seatmap-viewer-surface-muted",
@@ -75,9 +95,15 @@ export const seatmapViewerCssVariables = [
   "--seatmap-viewer-accent-text",
   "--seatmap-viewer-danger",
   "--seatmap-viewer-danger-text",
+  "--seatmap-viewer-state-layer-hover",
+  "--seatmap-viewer-state-layer-pressed",
+  "--seatmap-viewer-focus-ring",
   "--seatmap-viewer-radius-sm",
   "--seatmap-viewer-radius-md",
+  "--seatmap-viewer-radius-lg",
+  "--seatmap-viewer-shadow-raised",
   "--seatmap-viewer-shadow-elevated",
+  "--seatmap-viewer-shadow-floating",
 ] as const;
 
 export type SeatmapViewerCssVariable = (typeof seatmapViewerCssVariables)[number];

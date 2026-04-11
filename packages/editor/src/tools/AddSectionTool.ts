@@ -18,6 +18,7 @@ export class AddSectionTool extends BaseTool {
   sectionKind: SectionKind = "section";
   points: Vec2[] = [];
   onPointsChange?: (points: Vec2[], closeable: boolean) => void;
+  onSectionCreated?: (sectionId: string) => void;
 
   constructor(
     private history: CommandHistory,
@@ -146,6 +147,7 @@ export class AddSectionTool extends BaseTool {
         const v = store.getState().venue;
         if (!v) return;
         store.getState().setVenue({ ...v, sections: [...v.sections, newSection] });
+        this.onSectionCreated?.(newSection.id);
       },
       undo: () => {
         const v = store.getState().venue;

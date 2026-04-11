@@ -13,40 +13,6 @@ export interface CategoryManagerProps {
   currency?: string;
 }
 
-const btnSmall: CSSProperties = {
-  padding: "3px 8px",
-  border: "1px solid #3a3836",
-  borderRadius: 4,
-  background: "#242424",
-  color: "#e5e2e1",
-  cursor: "pointer",
-  fontSize: 12,
-  fontFamily: "system-ui",
-};
-
-const colorPickerShellStyle: CSSProperties = {
-  width: 14,
-  height: 14,
-  borderRadius: 5,
-  border: "1px solid #5c5957",
-  overflow: "hidden",
-  flexShrink: 0,
-  background: "#242424",
-  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(229, 226, 225, 0.16)",
-  position: "relative",
-};
-
-const colorPickerInputStyle: CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  border: "none",
-  padding: 0,
-  margin: 0,
-  display: "inline-block",
-  background: "transparent",
-  opacity: 0,
-};
-
 function replaceCategoryInVenue(venue: Venue, categoryId: string, replacementCategoryId: string): Venue {
   return {
     ...venue,
@@ -83,14 +49,14 @@ export function CategoryManager({
   store,
   fetchCategoryPrices,
   style,
-  locale = "ru-RU",
+  locale = "en-US",
   currency = "BYN",
 }: CategoryManagerProps) {
   const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState("#4caf50");
+  const [newColor, setNewColor] = useState("#dfcd72");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [editingColor, setEditingColor] = useState("#4caf50");
+  const [editingColor, setEditingColor] = useState("#dfcd72");
   const [isPriceManagerOpen, setIsPriceManagerOpen] = useState(false);
   const [isFetchingPrices, setIsFetchingPrices] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -252,7 +218,7 @@ export function CategoryManager({
       });
       setSyncStatus("synced");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Не удалось загрузить цены.";
+      const message = error instanceof Error ? error.message : "Failed to load prices.";
       setFetchError(message);
       const currentVenue = store.getState().venue;
       if (currentVenue) {
@@ -366,29 +332,10 @@ export function CategoryManager({
     });
   };
 
-  const switchTrackBase: CSSProperties = {
-    width: 34,
-    height: 20,
-    borderRadius: 999,
-    border: "1px solid #4c4845",
-    padding: 2,
-    display: "inline-flex",
-    alignItems: "center",
-    transition: "all 0.12s ease",
-  };
-
-  const switchThumbBase: CSSProperties = {
-    width: 14,
-    height: 14,
-    borderRadius: "50%",
-    background: "#e5e2e1",
-    transition: "transform 0.12s ease",
-  };
-
   return (
-    <div style={{ padding: 16, ...style }}>
-      <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
-        Ценовые категории
+    <div className="seatmap-editor__panel" style={style}>
+      <div className="seatmap-editor__panel-title">
+        Pricing categories
       </div>
 
       {venue.categories.map((cat: PricingCategory) => {
@@ -396,36 +343,22 @@ export function CategoryManager({
         return (
           <div
             key={cat.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              flexWrap: "wrap",
-              marginBottom: 6,
-              padding: "4px 8px",
-              borderRadius: 4,
-              background: "#232323",
-            }}
+            className="seatmap-editor__panel-list-item"
           >
-            <span style={colorPickerShellStyle}>
+            <span className="seatmap-editor__color-picker-shell">
               <span
                 aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: isEditing ? editingColor : cat.color,
-                }}
+                className="seatmap-editor__color-picker-dot"
+                style={{ background: isEditing ? editingColor : cat.color }}
               />
               <input
                 type="color"
                 value={isEditing ? editingColor : cat.color}
                 onChange={(e) => isEditing && setEditingColor(e.target.value)}
                 disabled={!isEditing}
-                style={{
-                  ...colorPickerInputStyle,
-                  cursor: isEditing ? "pointer" : "default",
-                }}
-                title={isEditing ? "Выбрать цвет категории" : "Включите редактирование для смены цвета"}
+                className="seatmap-editor__color-picker-input"
+                data-editable={isEditing ? "true" : "false"}
+                title={isEditing ? "Pick category color" : "Enable edit mode to change color"}
               />
             </span>
             {isEditing ? (
@@ -433,52 +366,35 @@ export function CategoryManager({
                 value={editingName}
                 onChange={(e) => setEditingName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "2px 6px",
-                  background: "#1d1d1d",
-                  border: "1px solid #3a3836",
-                  borderRadius: 4,
-                  color: "#e5e2e1",
-                  fontSize: 12,
-                  fontFamily: "system-ui",
-                }}
+                className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
               />
             ) : (
-              <div style={{ flex: 1, color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>
+              <div className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate">
                 {cat.name}
               </div>
             )}
             {isEditing ? (
               <>
-                <button onClick={saveEdit} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
-                  Сохранить
+                <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                  Save
                 </button>
-                <button onClick={() => setEditingId(null)} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
-                  Отмена
+                <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                  Cancel
                 </button>
               </>
             ) : (
               <>
-                <span
-                  style={{
-                    color: "#9a9694",
-                    fontSize: 12,
-                    fontFamily: "system-ui",
-                    marginRight: 2,
-                  }}
-                >
+                <span className="seatmap-editor__panel-muted seatmap-editor__panel-price">
                   {formatPrice(effectivePrice(cat))}
                 </span>
-                <button onClick={() => startEdit(cat)} style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}>
-                  Изм.
+                <button onClick={() => startEdit(cat)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                  Edit
                 </button>
                 <button
                   onClick={() => removeCategory(cat.id)}
-                  style={{ ...btnSmall, padding: "1px 6px", fontSize: 11 }}
+                  className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
                   disabled={venue.categories.length <= 1}
-                  title={venue.categories.length <= 1 ? "Нужна минимум одна категория" : "Удалить категорию"}
+                  title={venue.categories.length <= 1 ? "At least one category is required" : "Delete category"}
                 >
                   ✕
                 </button>
@@ -488,164 +404,112 @@ export function CategoryManager({
         );
       })}
 
-      <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center" }}>
-        <span style={{ ...colorPickerShellStyle, width: 16, height: 16, borderRadius: 5 }}>
-          <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: newColor }} />
+      <div className="seatmap-editor__panel-row seatmap-editor__panel-row--spaced">
+        <span className="seatmap-editor__color-picker-shell seatmap-editor__color-picker-shell--lg">
+          <span aria-hidden="true" className="seatmap-editor__color-picker-dot" style={{ background: newColor }} />
           <input
             type="color"
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
-            style={{ ...colorPickerInputStyle, cursor: "pointer" }}
-            title="Выбрать цвет новой категории"
+            className="seatmap-editor__color-picker-input"
+            data-editable="true"
+            title="Pick new category color"
           />
         </span>
         <input
-          placeholder="Название категории"
+          placeholder="Category name"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addCategory()}
-          style={{
-            flex: 1,
-            padding: "4px 8px",
-            background: "#242424",
-            border: "1px solid #3a3836",
-            borderRadius: 4,
-            color: "#e5e2e1",
-            fontSize: 13,
-            fontFamily: "system-ui",
-          }}
+          className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
         />
-        <button onClick={addCategory} style={btnSmall}>
-          Добавить
+        <button onClick={addCategory} className="seatmap-editor__panel-button">
+          Add
         </button>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-        <button onClick={openPriceManager} style={btnSmall}>
-          Управление ценами
+      <div className="seatmap-editor__panel-actions-end">
+        <button onClick={openPriceManager} className="seatmap-editor__panel-button">
+          Manage prices
         </button>
       </div>
 
       {isPriceManagerOpen && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(10, 10, 10, 0.7)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-          }}
+          className="seatmap-editor__modal-backdrop"
           onClick={() => setIsPriceManagerOpen(false)}
         >
           <div
-            style={{
-              width: "min(860px, 95vw)",
-              maxHeight: "80vh",
-              overflow: "auto",
-              background: "#181818",
-              border: "1px solid #322f2c",
-              borderRadius: 10,
-              padding: 16,
-            }}
+            className="seatmap-editor__modal"
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ color: "#e5e2e1", fontSize: 15, fontFamily: "system-ui", fontWeight: 600 }}>
-                Цены категорий
+            <div className="seatmap-editor__modal-header">
+              <div className="seatmap-editor__panel-title">
+                Category prices
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="seatmap-editor__modal-actions">
                 <button
                   onClick={syncPricesFromBackend}
                   disabled={!fetchCategoryPrices || isFetchingPrices}
-                  style={{
-                    ...btnSmall,
-                    opacity: !fetchCategoryPrices || isFetchingPrices ? 0.6 : 1,
-                    cursor: !fetchCategoryPrices || isFetchingPrices ? "not-allowed" : "pointer",
-                  }}
-                  title={fetchCategoryPrices ? "Загрузить актуальные цены из backend" : "Загрузка цен из backend не настроена"}
+                  className="seatmap-editor__panel-button"
+                  title={fetchCategoryPrices ? "Load latest prices from backend" : "Backend price sync is not configured"}
                 >
-                  {isFetchingPrices ? "Синхронизация..." : "Синхронизировать с backend"}
+                  {isFetchingPrices ? "Syncing..." : "Sync with backend"}
                 </button>
-                <button onClick={() => setIsPriceManagerOpen(false)} style={btnSmall}>
-                  Закрыть
+                <button onClick={() => setIsPriceManagerOpen(false)} className="seatmap-editor__panel-button">
+                  Close
                 </button>
               </div>
             </div>
 
-              <div style={{ color: "#9a9694", fontSize: 12, fontFamily: "system-ui", marginBottom: 10 }}>
-              Цены backend доступны только для чтения. Override позволяет временно использовать переопределенную цену категории в этой схеме.
+              <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--spaced">
+              Backend prices are read-only. Override temporarily uses a custom category price for this seatmap.
             </div>
             <div
-              style={{
-                marginBottom: 10,
-                color:
-                  syncStatus === "synced"
-                    ? "#8fd3a6"
-                    : syncStatus === "failed"
-                      ? "#ff9a9a"
-                      : "#b3aeac",
-                fontSize: 12,
-                fontFamily: "system-ui",
-              }}
+              className={
+                syncStatus === "synced"
+                  ? "seatmap-editor__status-line seatmap-editor__status-line--success"
+                  : syncStatus === "failed"
+                    ? "seatmap-editor__status-line seatmap-editor__status-line--error"
+                    : "seatmap-editor__status-line seatmap-editor__status-line--idle"
+              }
             >
-              Статус синхронизации:{" "}
+              Sync status:{" "}
               {syncStatus === "not-synced"
-                ? "Не синхронизировано"
+                ? "Not synced"
                 : syncStatus === "syncing"
-                  ? "Синхронизация..."
+                  ? "Syncing..."
                   : syncStatus === "synced"
-                    ? "Синхронизировано"
-                    : "Ошибка"}
+                    ? "Synced"
+                    : "Error"}
             </div>
             {fetchError && (
-              <div style={{ marginBottom: 10, color: "#ff9a9a", fontSize: 12, fontFamily: "system-ui" }}>
+              <div className="seatmap-editor__status-line seatmap-editor__status-line--error">
                 {fetchError}
               </div>
             )}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(160px, 1.6fr) minmax(92px, 0.9fr) minmax(88px, 0.8fr) minmax(188px, 1.4fr) minmax(96px, 0.9fr)",
-                gap: 8,
-              }}
-            >
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Категория</div>
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Backend</div>
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Override</div>
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Цена override</div>
-              <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui" }}>Итоговая цена</div>
+            <div className="seatmap-editor__table-grid">
+              <div className="seatmap-editor__table-head">Category</div>
+              <div className="seatmap-editor__table-head">Backend</div>
+              <div className="seatmap-editor__table-head">Override</div>
+              <div className="seatmap-editor__table-head">Override price</div>
+              <div className="seatmap-editor__table-head">Effective price</div>
 
               {venue.categories.map((category) => (
                 <div
                   key={category.id}
-                  style={{
-                    gridColumn: "1 / -1",
-                    display: "grid",
-                    gridTemplateColumns: "minmax(160px, 1.6fr) minmax(92px, 0.9fr) minmax(88px, 0.8fr) minmax(188px, 1.4fr) minmax(96px, 0.9fr)",
-                    gap: 8,
-                    alignItems: "center",
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    background: "#232323",
-                  }}
+                  className="seatmap-editor__table-row"
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <div className="seatmap-editor__table-category-cell">
                     <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 2,
-                        background: category.color,
-                        flexShrink: 0,
-                      }}
+                      className="seatmap-editor__table-category-swatch"
+                      aria-hidden="true"
+                      style={{ background: category.color }}
                     />
-                    <span style={{ color: "#e5e2e1", fontSize: 13, fontFamily: "system-ui" }}>{category.name}</span>
+                    <span className="seatmap-editor__table-category-name">{category.name}</span>
                   </div>
-                  <span style={{ color: "#d2cdcb", fontSize: 12, fontFamily: "system-ui" }}>
+                  <span className="seatmap-editor__table-amount">
                     {formatPrice(category.backendPrice)}
                   </span>
                   <button
@@ -653,22 +517,12 @@ export function CategoryManager({
                     role="switch"
                     aria-checked={Boolean(category.isPriceOverridden)}
                     onClick={() => toggleOverride(category.id, !category.isPriceOverridden)}
-                    style={{
-                      ...switchTrackBase,
-                      background: category.isPriceOverridden ? "#5f5632" : "#242424",
-                      borderColor: category.isPriceOverridden ? "#8b7f46" : "#4c4845",
-                      cursor: "pointer",
-                    }}
-                    title={category.isPriceOverridden ? "Выключить override" : "Включить override"}
+                    className={`seatmap-editor__switch-track${category.isPriceOverridden ? " is-checked" : ""}`}
+                    title={category.isPriceOverridden ? "Disable override" : "Enable override"}
                   >
-                    <span
-                      style={{
-                        ...switchThumbBase,
-                        transform: category.isPriceOverridden ? "translateX(14px)" : "translateX(0)",
-                      }}
-                    />
+                    <span className="seatmap-editor__switch-thumb" />
                   </button>
-                  <div style={{ position: "relative", width: "100%", minWidth: 0, maxWidth: "100%", overflow: "hidden" }}>
+                  <div className="seatmap-editor__override-editor">
                     <input
                       type="text"
                       inputMode="decimal"
@@ -685,66 +539,23 @@ export function CategoryManager({
                           resetOverrideDraft(category);
                         }
                       }}
-                      style={{
-                        padding: "4px 92px 4px 8px",
-                        background: category.isPriceOverridden ? "#242424" : "#24242488",
-                        border: "1px solid #3a3836",
-                        borderRadius: 4,
-                        color: category.isPriceOverridden ? "#e5e2e1" : "#9a9694",
-                        fontSize: 12,
-                        fontFamily: "system-ui",
-                        width: "100%",
-                        maxWidth: "100%",
-                        boxSizing: "border-box",
-                        MozAppearance: "textfield",
-                      }}
+                      className={`seatmap-editor__override-input${category.isPriceOverridden ? "" : " is-disabled"}`}
                     />
                     {category.isPriceOverridden && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          right: 3,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          display: "inline-flex",
-                          gap: 2,
-                        }}
-                      >
+                      <div className="seatmap-editor__override-actions">
                         <button
                           type="button"
                           onClick={() => adjustOverrideDraft(category.id, 0.01)}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            border: "1px solid #4c4845",
-                            background: "#242424",
-                            color: "#d2cdcb",
-                            fontSize: 12,
-                            lineHeight: 1,
-                            padding: 0,
-                            cursor: "pointer",
-                          }}
-                          title="Увеличить цену override"
+                          className="seatmap-editor__table-action-button"
+                          title="Increase override price"
                         >
                           +
                         </button>
                         <button
                           type="button"
                           onClick={() => adjustOverrideDraft(category.id, -0.01)}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            border: "1px solid #4c4845",
-                            background: "#242424",
-                            color: "#d2cdcb",
-                            fontSize: 12,
-                            lineHeight: 1,
-                            padding: 0,
-                            cursor: "pointer",
-                          }}
-                          title="Уменьшить цену override"
+                          className="seatmap-editor__table-action-button"
+                          title="Decrease override price"
                         >
                           -
                         </button>
@@ -752,20 +563,8 @@ export function CategoryManager({
                           type="button"
                           onClick={() => commitOverridePrice(category.id)}
                           disabled={!isDraftChanged(category)}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            border: "1px solid #8b7f46",
-                            background: isDraftChanged(category) ? "#5f5632" : "#4f4933",
-                            color: "#f1e8bf",
-                            fontSize: 11,
-                            lineHeight: 1,
-                            padding: 0,
-                            opacity: isDraftChanged(category) ? 1 : 0.55,
-                            cursor: isDraftChanged(category) ? "pointer" : "not-allowed",
-                          }}
-                          title="Применить цену override"
+                          className="seatmap-editor__table-action-button seatmap-editor__table-action-button--apply"
+                          title="Apply override price"
                         >
                           ✓
                         </button>
@@ -773,27 +572,15 @@ export function CategoryManager({
                           type="button"
                           onClick={() => resetOverrideDraft(category)}
                           disabled={!isDraftChanged(category)}
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: 4,
-                            border: "1px solid #8b3f4d",
-                            background: isDraftChanged(category) ? "#6f2c3b" : "#4d2730",
-                            color: "#ffd9df",
-                            fontSize: 11,
-                            lineHeight: 1,
-                            padding: 0,
-                            opacity: isDraftChanged(category) ? 1 : 0.55,
-                            cursor: isDraftChanged(category) ? "pointer" : "not-allowed",
-                          }}
-                          title="Отменить изменения override"
+                          className="seatmap-editor__table-action-button seatmap-editor__table-action-button--reset"
+                          title="Revert override changes"
                         >
                           ✕
                         </button>
                       </div>
                     )}
                   </div>
-                  <span style={{ color: "#e5e2e1", fontSize: 12, fontFamily: "system-ui", fontWeight: 600, whiteSpace: "nowrap" }}>
+                  <span className="seatmap-editor__table-effective-price">
                     {formatPrice(effectivePrice(category))}
                   </span>
                 </div>

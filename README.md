@@ -44,6 +44,44 @@ function TicketPage({ venue }) {
 }
 ```
 
+### Viewer Localization
+
+`@nex125/seatmap-viewer` ships with English defaults and exposes a message contract for host apps.
+
+- Default locale baseline is English (`en-US` formatting behavior by default).
+- Host apps can override labels via the `messages` prop.
+- Recommended pattern: keep EN as fallback catalog and merge locale-specific overrides in the app.
+
+```tsx
+import { SeatmapViewer } from '@nex125/seatmap-viewer';
+import type { SeatmapViewerMessages } from '@nex125/seatmap-viewer';
+
+const seatmapMessages: Partial<SeatmapViewerMessages> = {
+  legendStatusesTitle: t('seatmap.legendStatusesTitle'),
+  cartProceedButton: t('seatmap.cartProceedButton'),
+  cartSummary: (count, totalCost) => t('seatmap.cartSummary', { count, totalCost }),
+};
+
+<SeatmapViewer
+  venue={venue}
+  locale="ru-RU"
+  currency="BYN"
+  messages={seatmapMessages}
+/>;
+```
+
+When adding a new locale in consuming apps:
+
+1. Add a new locale JSON catalog in each app (`events-frontend`, `events-admin-frontend`).
+2. Add/translate seatmap message keys (for example `seatmapViewer.*` or `ticketLauncher.seatmap.*`).
+3. Ensure fallback merge still uses EN as base.
+4. Run catalog validation in app containers:
+
+```bash
+docker compose --project-directory ./infrastructure exec events-frontend bun run i18n:check
+docker compose --project-directory ./infrastructure exec events-admin-frontend bun run i18n:check
+```
+
 ### Editor Usage
 
 ```tsx

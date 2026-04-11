@@ -18,49 +18,6 @@ export interface PropertyPanelProps {
   style?: CSSProperties;
 }
 
-const labelStyle: CSSProperties = {
-  fontSize: 11,
-  color: "#9a9694",
-  marginBottom: 2,
-  fontFamily: "system-ui",
-};
-
-const inputStyle: CSSProperties = {
-  width: "100%",
-  padding: "4px 8px",
-  background: "#242424",
-  border: "1px solid #3a3836",
-  borderRadius: 4,
-  color: "#e5e2e1",
-  fontSize: 13,
-  fontFamily: "system-ui",
-  boxSizing: "border-box",
-};
-
-const selectStyle: CSSProperties = { ...inputStyle, cursor: "pointer" };
-
-const btnDanger: CSSProperties = {
-  padding: "3px 8px",
-  border: "1px solid #6b3d44",
-  borderRadius: 4,
-  background: "#442126",
-  color: "#ffc4cd",
-  cursor: "pointer",
-  fontSize: 12,
-  fontFamily: "system-ui",
-};
-
-const btnSmall: CSSProperties = {
-  padding: "3px 8px",
-  border: "1px solid #3a3836",
-  borderRadius: 4,
-  background: "#242424",
-  color: "#e5e2e1",
-  cursor: "pointer",
-  fontSize: 12,
-  fontFamily: "system-ui",
-};
-
 function freshVenue(store: SeatmapStore): Venue | null {
   return store.getState().venue;
 }
@@ -533,7 +490,7 @@ export function PropertyPanel({
 
   if (!venue) {
     return (
-      <div style={{ padding: 16, color: "#9a9694", fontSize: 13, fontFamily: "system-ui", ...style }}>
+      <div className="seatmap-editor__panel seatmap-editor__panel-muted" style={style}>
         No venue loaded
       </div>
     );
@@ -572,22 +529,22 @@ export function PropertyPanel({
         : "__mixed__";
 
   return (
-    <div style={{ padding: 16, ...style }}>
+    <div className="seatmap-editor__panel" style={style}>
       {selectedSeatIds.size > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui" }}>
+        <div className="seatmap-editor__panel-section">
+          <div className="seatmap-editor__panel-section-header">
+            <div className="seatmap-editor__panel-title">
               Seat Config ({selectedSeatIds.size} selected)
             </div>
-            <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
+            <button onClick={deleteSelectedObjects} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger" title="Delete selected objects">
               Delete Selected
             </button>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <div style={labelStyle}>Seat Status</div>
+          <div className="seatmap-editor__panel-section">
+            <div className="seatmap-editor__panel-label">Seat Status</div>
             <select
-              style={selectStyle}
+              className="seatmap-editor__panel-select"
               value={isMixedSeatStatus ? "__mixed__" : selectedSeatStatusId}
               onChange={(e) => updateSelectedSeatStatus(e.target.value)}
             >
@@ -602,9 +559,9 @@ export function PropertyPanel({
             </select>
           </div>
 
-          <div style={{ marginBottom: 10 }}>
-            <div style={labelStyle}>Selected Seats ({selectedSeatIds.size})</div>
-            <div style={{ maxHeight: 200, overflowY: "auto" }}>
+          <div className="seatmap-editor__panel-section">
+            <div className="seatmap-editor__panel-label">Selected Seats ({selectedSeatIds.size})</div>
+            <div className="seatmap-editor__panel-list seatmap-editor__panel-scroll seatmap-editor__panel-scroll--sm">
               {Array.from(selectedSeatIds).map((seatId) => {
                 let found: { seat: Seat; row: Row; section: Section } | null = null;
                 for (const section of venue.sections) {
@@ -623,23 +580,14 @@ export function PropertyPanel({
                 return (
                   <div
                     key={seat.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      padding: "2px 6px",
-                      fontSize: 12,
-                      fontFamily: "system-ui",
-                      color: "#e5e2e1",
-                      background: "#242424",
-                      marginBottom: 2,
-                      borderRadius: 4,
-                    }}
+                    className="seatmap-editor__panel-list-item"
                   >
-                    <span style={{ flex: 1 }}>{section.label} &middot; Row {row.label}, Seat {seat.label}</span>
+                    <span className="seatmap-editor__panel-text seatmap-editor__panel-content-grow">
+                      {section.label} &middot; Row {row.label}, Seat {seat.label}
+                    </span>
                     <button
                       onClick={() => deleteSeat(section.id, row.id, seat.id)}
-                      style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
+                      className="seatmap-editor__panel-button seatmap-editor__panel-button--danger seatmap-editor__panel-button--tiny"
                       title="Delete seat"
                     >
                       ✕
@@ -649,36 +597,36 @@ export function PropertyPanel({
               })}
             </div>
           </div>
-          <div style={{ height: 1, background: "#2b2a29", margin: "20px 0" }} />
+          <div className="seatmap-editor__panel-divider" />
         </div>
       )}
 
       {selectedSeatIds.size === 0 && selectedSections.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui" }}>
+        <div className="seatmap-editor__panel-section">
+          <div className="seatmap-editor__panel-section-header">
+            <div className="seatmap-editor__panel-title">
               Section / Stage / Dancefloor Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
             </div>
-            <button onClick={deleteSelectedObjects} style={btnDanger} title="Delete selected objects">
+            <button onClick={deleteSelectedObjects} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger" title="Delete selected objects">
               Delete Selected
             </button>
           </div>
 
           {hasMultipleSelectedSections && (
-            <div style={{ marginBottom: 12, padding: 10, borderRadius: 6, background: "#232323" }}>
-              <div style={{ marginBottom: 10 }}>
-                <div style={labelStyle}>Label (apply to all selected)</div>
+            <div className="seatmap-editor__panel-section seatmap-editor__panel-section--card">
+              <div className="seatmap-editor__panel-section">
+                <div className="seatmap-editor__panel-label">Label (apply to all selected)</div>
                 <input
-                  style={inputStyle}
+                  className="seatmap-editor__panel-input"
                   value={sharedLabelValue}
                   placeholder="Mixed labels"
                   onChange={(e) => updateSelectedSectionsLabel(selectedSectionIdsList, e.target.value)}
                 />
               </div>
               <div>
-                <div style={labelStyle}>Category (apply to all selected)</div>
+                <div className="seatmap-editor__panel-label">Category (apply to all selected)</div>
                 <select
-                  style={selectStyle}
+                  className="seatmap-editor__panel-select"
                   value={sharedCategoryValue}
                   onChange={(e) => updateSelectedSectionsCategory(selectedSectionIdsList, e.target.value)}
                   disabled={selectedNonStageSections.length === 0}
@@ -694,7 +642,7 @@ export function PropertyPanel({
                   ))}
                 </select>
                 {hasSelectedStage && (
-                  <div style={{ ...labelStyle, marginTop: 4 }}>
+                  <div className="seatmap-editor__panel-label">
                     Stage selection is excluded from category changes.
                   </div>
                 )}
@@ -703,28 +651,28 @@ export function PropertyPanel({
           )}
 
           {selectedSections.map((selectedSection) => (
-            <div key={selectedSection.id} style={{ marginBottom: 14, padding: 10, borderRadius: 6, background: "#202020" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ color: "#d2cdcb", fontSize: 12, fontFamily: "system-ui", fontWeight: 600 }}>
+            <div key={selectedSection.id} className="seatmap-editor__panel-section seatmap-editor__panel-section--card">
+              <div className="seatmap-editor__panel-section-header">
+                <div className="seatmap-editor__panel-muted">
                   ID: {selectedSection.id}
                 </div>
               </div>
 
               {!hasMultipleSelectedSections && (
                 <>
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={labelStyle}>Label</div>
+                  <div className="seatmap-editor__panel-section">
+                    <div className="seatmap-editor__panel-label">Label</div>
                     <input
-                      style={inputStyle}
+                      className="seatmap-editor__panel-input"
                       value={selectedSection.label}
                       onChange={(e) => updateSectionLabel(selectedSection.id, e.target.value)}
                     />
                   </div>
 
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={labelStyle}>Category</div>
+                  <div className="seatmap-editor__panel-section">
+                    <div className="seatmap-editor__panel-label">Category</div>
                     <select
-                      style={selectStyle}
+                      className="seatmap-editor__panel-select"
                       value={selectedSection.categoryId}
                       onChange={(e) => updateSectionCategory(selectedSection.id, e.target.value)}
                       disabled={isStageSection(selectedSection)}
@@ -737,7 +685,7 @@ export function PropertyPanel({
                       ))}
                     </select>
                     {isStageSection(selectedSection) && (
-                      <div style={{ ...labelStyle, marginTop: 4 }}>
+                      <div className="seatmap-editor__panel-label">
                         Stage does not use pricing category.
                       </div>
                     )}
@@ -746,69 +694,38 @@ export function PropertyPanel({
               )}
 
               {isStageSection(selectedSection) ? (
-                <div
-                  style={{
-                    marginBottom: 10,
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    background: "#242424",
-                    color: "#9a9694",
-                    fontSize: 12,
-                    fontFamily: "system-ui",
-                  }}
-                >
+                <div className="seatmap-editor__panel-section seatmap-editor__panel-section--card seatmap-editor__panel-muted">
                   Stage areas do not support rows or seats.
                 </div>
               ) : isDancefloorSection(selectedSection) ? (
-                <div
-                  style={{
-                    marginBottom: 10,
-                    padding: "8px 10px",
-                    borderRadius: 6,
-                    background: "#242424",
-                    color: "#9a9694",
-                    fontSize: 12,
-                    fontFamily: "system-ui",
-                  }}
-                >
+                <div className="seatmap-editor__panel-section seatmap-editor__panel-section--card seatmap-editor__panel-muted">
                   Dancefloor works as one selectable area seat. Resize the section shape to adjust its footprint.
                 </div>
               ) : (
                 <>
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={labelStyle}>
+                  <div className="seatmap-editor__panel-section">
+                    <div className="seatmap-editor__panel-section-header">
+                      <div className="seatmap-editor__panel-label">
                         Rows ({selectedSection.rows.length}) &middot;{" "}
                         {selectedSection.rows.reduce((t, r) => t + r.seats.length, 0)} seats
                       </div>
-                      <button onClick={() => addSingleSeat(selectedSection.id)} style={btnSmall} title="Add a single seat to the last row">
+                      <button onClick={() => addSingleSeat(selectedSection.id)} className="seatmap-editor__panel-button" title="Add a single seat to the last row">
                         + Seat
                       </button>
                     </div>
                   </div>
 
-                  <div style={{ maxHeight: 220, overflowY: "auto" }}>
+                  <div className="seatmap-editor__panel-list seatmap-editor__panel-scroll seatmap-editor__panel-scroll--md">
                     {selectedSection.rows.map((row) => (
                       <div
                         key={row.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "3px 6px",
-                          borderRadius: 4,
-                          marginBottom: 2,
-                          background: "#242424",
-                          fontSize: 12,
-                          fontFamily: "system-ui",
-                          color: "#e5e2e1",
-                        }}
+                        className="seatmap-editor__panel-list-item"
                       >
-                        <span style={{ fontWeight: 600, minWidth: 24 }}>Row {row.label}</span>
-                        <span style={{ flex: 1, color: "#9a9694" }}>{row.seats.length} seats</span>
+                        <span className="seatmap-editor__panel-text seatmap-editor__panel-text--strong seatmap-editor__panel-text--mono-min">Row {row.label}</span>
+                        <span className="seatmap-editor__panel-muted seatmap-editor__panel-content-grow">{row.seats.length} seats</span>
                         <button
                           onClick={() => deleteRow(selectedSection.id, row.id)}
-                          style={{ ...btnDanger, padding: "1px 5px", fontSize: 11 }}
+                          className="seatmap-editor__panel-button seatmap-editor__panel-button--danger seatmap-editor__panel-button--tiny"
                           title={`Delete row ${row.label}`}
                         >
                           ✕
@@ -825,54 +742,41 @@ export function PropertyPanel({
 
       {selectedSections.length === 0 && selectedSeatIds.size === 0 && (
         <div>
-          <div style={{ fontWeight: 600, color: "#e5e2e1", fontSize: 14, fontFamily: "system-ui", marginBottom: 12 }}>
+          <div className="seatmap-editor__panel-title">
             Venue Config
           </div>
 
-          <div style={{ marginBottom: 10 }}>
-            <div style={labelStyle}>Venue Name</div>
+          <div className="seatmap-editor__panel-section">
+            <div className="seatmap-editor__panel-label">Venue Name</div>
             <input
-              style={inputStyle}
+              className="seatmap-editor__panel-input"
               value={venue.name}
               onChange={(e) => updateVenueName(e.target.value)}
             />
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <div style={labelStyle}>Venue ID</div>
+          <div className="seatmap-editor__panel-section">
+            <div className="seatmap-editor__panel-label">Venue ID</div>
             <input
-              style={inputStyle}
+              className="seatmap-editor__panel-input"
               value={venue.id}
               onChange={(e) => updateVenueId(e.target.value)}
             />
           </div>
 
-          <div style={{ color: "#9a9694", fontSize: 11, fontFamily: "system-ui", marginBottom: 12 }}>
+          <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--small">
             Stats: {venue.sections.length} sections &middot;{" "}
             {venue.sections.reduce((t, s) => t + s.rows.reduce((rt, r) => rt + r.seats.length, 0), 0)} seats
           </div>
 
-          <div style={{ height: 1, background: "#2b2a29", margin: "14px 0" }} />
-          <div style={labelStyle}>Background Image</div>
+          <div className="seatmap-editor__panel-divider" />
+          <div className="seatmap-editor__panel-label">Background Image</div>
           {venue.backgroundImage ? (
-            <div style={{ marginTop: 6 }}>
-              <div
-                style={{
-                  width: "100%",
-                  height: 80,
-                  borderRadius: 4,
-                  border: "1px solid #3a3836",
-                  overflow: "hidden",
-                  marginBottom: 8,
-                }}
-              >
-                <img
-                  src={venue.backgroundImage}
-                  alt="Background"
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                />
+            <div className="seatmap-editor__panel-section">
+              <div className="seatmap-editor__panel-img-preview">
+                <img src={venue.backgroundImage} alt="Background" />
               </div>
-              <div style={{ ...labelStyle, marginBottom: 4 }}>
+              <div className="seatmap-editor__panel-label">
                 Opacity: {Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}%
               </div>
               <input
@@ -881,11 +785,11 @@ export function PropertyPanel({
                 max={100}
                 value={Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}
                 onChange={(e) => onBackgroundOpacityChange?.(parseInt(e.target.value) / 100)}
-                style={{ width: "100%", accentColor: "#8a7f46", cursor: "pointer" }}
+                className="seatmap-editor__panel-range"
               />
-              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>Width</div>
+              <div className="seatmap-editor__panel-grid-2">
+                <div>
+                  <div className="seatmap-editor__panel-label">Width</div>
                   <input
                     type="number"
                     min={1}
@@ -896,11 +800,11 @@ export function PropertyPanel({
                         width: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                       })
                     }
-                    style={inputStyle}
+                    className="seatmap-editor__panel-input"
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={labelStyle}>Height</div>
+                <div>
+                  <div className="seatmap-editor__panel-label">Height</div>
                   <input
                     type="number"
                     min={1}
@@ -911,34 +815,24 @@ export function PropertyPanel({
                         height: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                       })
                     }
-                    style={inputStyle}
+                    className="seatmap-editor__panel-input"
                   />
                 </div>
               </div>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginTop: 8,
-                  color: "#d2cdcb",
-                  fontSize: 12,
-                  fontFamily: "system-ui",
-                  cursor: "pointer",
-                }}
-              >
+              <label className="seatmap-editor__panel-row seatmap-editor__panel-text">
                 <input
                   type="checkbox"
+                  className="seatmap-editor__panel-checkbox"
                   checked={venue.backgroundImageKeepAspectRatio ?? true}
                   onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
                 />
                 Keep aspect ratio
               </label>
-              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                <button onClick={onUploadBackground} style={btnSmall}>
+              <div className="seatmap-editor__panel-row">
+                <button onClick={onUploadBackground} className="seatmap-editor__panel-button">
                   Replace
                 </button>
-                <button onClick={onRemoveBackground} style={btnDanger}>
+                <button onClick={onRemoveBackground} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger">
                   Remove
                 </button>
               </div>
@@ -946,7 +840,7 @@ export function PropertyPanel({
           ) : (
             <button
               onClick={onUploadBackground}
-              style={{ ...btnSmall, marginTop: 6, width: "100%" }}
+              className="seatmap-editor__panel-button seatmap-editor__panel-button--full"
             >
               Upload Image
             </button>

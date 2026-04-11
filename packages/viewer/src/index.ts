@@ -2,10 +2,12 @@ export { SeatmapViewer, SeatmapViewerContent } from "./SeatmapViewer";
 export type {
   SeatmapViewerProps,
   SeatmapViewerContentProps,
+  SeatmapViewerMessages,
   SeatmapCartSeat,
   SeatmapCartPayload,
   SeatmapCartEvent,
 } from "./SeatmapViewer";
+export { defaultSeatmapViewerMessages } from "./SeatmapViewer";
 export type {
   SeatmapViewerStyleSlot,
   SeatmapViewerStyles,

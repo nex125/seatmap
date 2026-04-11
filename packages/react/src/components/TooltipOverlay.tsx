@@ -28,11 +28,11 @@ function DefaultTooltip({ data }: { data: TooltipData }) {
   return (
     <div
       style={{
-        background: "rgba(24, 24, 24, 0.94)",
-        border: "1px solid #353331",
+        background: "var(--seatmap-tooltip-surface, color-mix(in srgb, var(--seatmap-surface-container-low, #181818) 94%, transparent))",
+        border: "1px solid var(--seatmap-tooltip-border, var(--seatmap-outline, #353331))",
         borderRadius: 10,
         padding: "8px 14px",
-        color: "#e5e2e1",
+        color: "var(--seatmap-tooltip-text, var(--seatmap-on-surface, #e5e2e1))",
         fontSize: 13,
         fontFamily: "system-ui",
         pointerEvents: "none",
@@ -45,10 +45,10 @@ function DefaultTooltip({ data }: { data: TooltipData }) {
       <div>
         Row {data.row.label}, Seat {data.seat.label}
       </div>
-      <div style={{ color: "#9a9694", fontSize: 12, marginTop: 2 }}>
+      <div style={{ color: "var(--seatmap-tooltip-muted-text, var(--seatmap-on-surface-variant, #9a9694))", fontSize: 12, marginTop: 2 }}>
         {statusLabel ?? (data.seat.status === AVAILABLE_STATUS_ID ? "Available" : data.seat.status)}
       </div>
-      <div style={{ color: "#9a9694", fontSize: 12, marginTop: 2 }}>
+      <div style={{ color: "var(--seatmap-tooltip-muted-text, var(--seatmap-on-surface-variant, #9a9694))", fontSize: 12, marginTop: 2 }}>
         Price: {priceLabel}
       </div>
     </div>

@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-editor",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -10,10 +10,15 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./theme.css": "./src/SeatmapEditor.css"
   },
+  "sideEffects": [
+    "./src/SeatmapEditor.css"
+  ],
   "files": [
     "dist",
+    "src/SeatmapEditor.css",
     "README.md"
   ],
   "scripts": {

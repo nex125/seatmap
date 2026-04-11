@@ -29,6 +29,11 @@ const SECTION_DOT_RADIUS = 1.4;
 const MAX_SECTION_DOTS = 12000;
 const SECTION_CROSS_SIZE = 2.6;
 
+function easeOutCubic(t: number): number {
+  const p = 1 - t;
+  return 1 - p * p * p;
+}
+
 function getSectionLabelPosition(section: Section): { x: number; y: number } | null {
   const points = section.outline.length > 2
     ? section.outline
@@ -158,6 +163,22 @@ export interface SeatmapCanvasProps {
   showSectionLabels?: boolean;
   /** When false, disables seat hover state updates and tooltip triggers. Default: true. */
   enableSeatHover?: boolean;
+  /** Controls how floaty pan release inertia feels. 0 = tight, 100 = very floaty. Default: 55. */
+  panInertiaJelly?: number;
+  /** Advanced override for pan inertia velocity carry factor. */
+  panInertiaCarry?: number;
+  /** Advanced override for pan inertia friction factor per ~60fps frame. */
+  panInertiaFriction?: number;
+  /** Advanced override for pan inertia stop threshold in px/ms. */
+  panInertiaMinSpeed?: number;
+  /** Controls how floaty pointer scroll wheel zoom feels. 0 = tight, 100 = very floaty. Default: 52. */
+  pointerScrollZoomJelly?: number;
+  /** Advanced override for pointer scroll zoom easing duration in milliseconds. */
+  pointerScrollZoomDurationMs?: number;
+  /** Advanced override for per-frame pointer scroll zoom blend strength in percent. */
+  pointerScrollZoomStrengthPct?: number;
+  /** Advanced override for pointer wheel delta divisor (higher = less sensitive zoom steps). */
+  pointerScrollZoomDeltaDivisor?: number;
   onSeatClick?: (seatId: string, sectionId: string) => void;
   onSeatHover?: (seatId: string | null, sectionId: string | null) => void;
 }
@@ -174,6 +195,14 @@ export function SeatmapCanvas({
   sectionGridMarkerStyle = "dots",
   showSectionLabels = false,
   enableSeatHover = true,
+  panInertiaJelly = 55,
+  panInertiaCarry,
+  panInertiaFriction,
+  panInertiaMinSpeed,
+  pointerScrollZoomJelly = 52,
+  pointerScrollZoomDurationMs,
+  pointerScrollZoomStrengthPct,
+  pointerScrollZoomDeltaDivisor,
   onSeatClick,
   onSeatHover,
 }: SeatmapCanvasProps) {
@@ -183,6 +212,11 @@ export function SeatmapCanvas({
   const textureCacheRef = useRef(new CategoryTextureCache());
   const isPanningRef = useRef(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
+  const panVelocityRef = useRef({ x: 0, y: 0 });
+  const lastPanSampleTimeRef = useRef(0);
+  const inertiaRafRef = useRef<number>(0);
+  const inertiaLastTimeRef = useRef<number>(0);
+  const wheelZoomRafRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const readyRef = useRef(false);
 
@@ -198,6 +232,8 @@ export function SeatmapCanvas({
   const touchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const lastPinchDistRef = useRef<number | null>(null);
   const lastPinchCenterRef = useRef<{ x: number; y: number } | null>(null);
+  const wheelZoomTargetRef = useRef(1);
+  const wheelZoomAnchorRef = useRef<{ x: number; y: number } | null>(null);
 
   // Touch tap detection — handled at the container level, not per-sprite
   const touchTapRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -266,6 +302,62 @@ export function SeatmapCanvas({
       if (!readyRef.current) return;
       renderRef.current();
     });
+  }, []);
+
+  const stopPanInertia = useCallback(() => {
+    if (inertiaRafRef.current) {
+      cancelAnimationFrame(inertiaRafRef.current);
+      inertiaRafRef.current = 0;
+    }
+  }, []);
+
+  const startPanInertia = useCallback(() => {
+    stopPanInertia();
+    const jelly = Math.max(0, Math.min(100, panInertiaJelly)) / 100;
+    const carry = panInertiaCarry !== undefined
+      ? Math.max(0.3, Math.min(0.98, panInertiaCarry))
+      : 0.58 + jelly * 0.28;
+    const baseFriction = panInertiaFriction !== undefined
+      ? Math.max(0.8, Math.min(0.995, panInertiaFriction))
+      : 0.88 + jelly * 0.08; // per ~60fps frame
+    const minSpeed = panInertiaMinSpeed !== undefined
+      ? Math.max(0.001, Math.min(0.05, panInertiaMinSpeed))
+      : 0.012 - jelly * 0.004; // px/ms
+    const startVelocity = {
+      x: panVelocityRef.current.x * carry,
+      y: panVelocityRef.current.y * carry,
+    };
+    if (Math.hypot(startVelocity.x, startVelocity.y) < minSpeed) return;
+
+    let velocity = startVelocity;
+    inertiaLastTimeRef.current = performance.now();
+
+    const tick = () => {
+      const now = performance.now();
+      const dt = Math.min(32, Math.max(8, now - inertiaLastTimeRef.current));
+      inertiaLastTimeRef.current = now;
+
+      const decay = Math.pow(baseFriction, dt / 16.67);
+      velocity = { x: velocity.x * decay, y: velocity.y * decay };
+
+      if (Math.hypot(velocity.x, velocity.y) < minSpeed) {
+        inertiaRafRef.current = 0;
+        return;
+      }
+
+      viewport.pan(velocity.x * dt, velocity.y * dt);
+      inertiaRafRef.current = requestAnimationFrame(tick);
+    };
+
+    inertiaRafRef.current = requestAnimationFrame(tick);
+  }, [stopPanInertia, viewport, panInertiaJelly, panInertiaCarry, panInertiaFriction, panInertiaMinSpeed]);
+
+  const stopWheelZoomJelly = useCallback(() => {
+    if (wheelZoomRafRef.current) {
+      cancelAnimationFrame(wheelZoomRafRef.current);
+      wheelZoomRafRef.current = 0;
+    }
+    wheelZoomTargetRef.current = 1;
   }, []);
 
   const renderSeat = useCallback(
@@ -868,6 +960,8 @@ export function SeatmapCanvas({
       destroyed = true;
       readyRef.current = false;
       cancelAnimationFrame(rafRef.current);
+      stopPanInertia();
+      stopWheelZoomJelly();
       if (appRef.current) {
         appRef.current.destroy(true, { children: true });
         appRef.current = null;
@@ -876,7 +970,7 @@ export function SeatmapCanvas({
       labelTextCacheRef.current.clear();
       textureCacheRef.current.destroy();
     };
-  }, []);
+  }, [stopPanInertia, stopWheelZoomJelly]);
 
   // Rebuild textures only when categories change, fit view only on first venue load
   const prevVenueIdRef = useRef<string | null>(null);
@@ -963,24 +1057,77 @@ export function SeatmapCanvas({
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      stopPanInertia();
+      const zoomJelly = Math.max(0, Math.min(100, pointerScrollZoomJelly)) / 100;
       let dy = e.deltaY;
 
       if (e.deltaMode === 1) dy *= 40;
       else if (e.deltaMode === 2) dy *= 800;
 
       dy = Math.max(-300, Math.min(300, dy));
-      const factor = Math.pow(2, -dy / 600);
+      const deltaDivisor = pointerScrollZoomDeltaDivisor !== undefined
+        ? Math.max(250, Math.min(1400, pointerScrollZoomDeltaDivisor))
+        : 520 + zoomJelly * 380;
+      const factor = Math.pow(2, -dy / deltaDivisor);
 
       const rect = el.getBoundingClientRect();
-      viewport.zoomAt(
-        { x: e.clientX - rect.left, y: e.clientY - rect.top },
-        factor,
-      );
+      wheelZoomAnchorRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      wheelZoomTargetRef.current *= factor;
+      wheelZoomTargetRef.current = Math.max(0.4, Math.min(2.5, wheelZoomTargetRef.current));
+
+      if (wheelZoomRafRef.current) return;
+
+      const startedAt = performance.now();
+      const durationMs = pointerScrollZoomDurationMs !== undefined
+        ? Math.max(60, Math.min(600, pointerScrollZoomDurationMs))
+        : 90 + zoomJelly * 220;
+      const advancedStrength = pointerScrollZoomStrengthPct !== undefined
+        ? Math.max(8, Math.min(55, pointerScrollZoomStrengthPct)) / 100
+        : undefined;
+
+      const animate = (now: number) => {
+        const anchor = wheelZoomAnchorRef.current;
+        if (!anchor) {
+          wheelZoomRafRef.current = 0;
+          wheelZoomTargetRef.current = 1;
+          return;
+        }
+
+        const pending = wheelZoomTargetRef.current;
+        if (Math.abs(pending - 1) < 0.002) {
+          wheelZoomRafRef.current = 0;
+          wheelZoomTargetRef.current = 1;
+          return;
+        }
+
+        const progress = Math.min(1, (now - startedAt) / durationMs);
+        const eased = easeOutCubic(progress);
+        const strength = advancedStrength !== undefined
+          ? advancedStrength
+          : (0.24 - zoomJelly * 0.10) + (0.18 - zoomJelly * 0.08) * eased;
+        const stepFactor = 1 + (pending - 1) * strength;
+        viewport.zoomAt(anchor, stepFactor);
+        wheelZoomTargetRef.current = 1 + (pending - 1) * (1 - strength);
+        wheelZoomRafRef.current = requestAnimationFrame(animate);
+      };
+
+      wheelZoomRafRef.current = requestAnimationFrame(animate);
     };
 
     el.addEventListener("wheel", handleWheel, { passive: false });
-    return () => el.removeEventListener("wheel", handleWheel);
-  }, [viewport]);
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      stopWheelZoomJelly();
+    };
+  }, [
+    viewport,
+    stopPanInertia,
+    stopWheelZoomJelly,
+    pointerScrollZoomJelly,
+    pointerScrollZoomDurationMs,
+    pointerScrollZoomStrengthPct,
+    pointerScrollZoomDeltaDivisor,
+  ]);
 
   // Pan — left-click drag in viewer mode, alt+click/middle-click in editor mode
   const handlePointerDown = useCallback(
@@ -991,16 +1138,20 @@ export function SeatmapCanvas({
         (e.button === 0 && e.altKey) ||
         (e.button === 0 && panOnLeftClick);
       if (shouldPan) {
+        stopPanInertia();
+        stopWheelZoomJelly();
         isPanningRef.current = true;
         if (enableSeatHover && store.getState().hoveredSeatId) {
           store.getState().setHoveredSeat(null);
           onSeatHover?.(null, null);
         }
         lastPointerRef.current = { x: e.clientX, y: e.clientY };
+        panVelocityRef.current = { x: 0, y: 0 };
+        lastPanSampleTimeRef.current = performance.now();
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       }
     },
-    [panOnLeftClick, store, onSeatHover, enableSeatHover],
+    [panOnLeftClick, store, onSeatHover, enableSeatHover, stopPanInertia, stopWheelZoomJelly],
   );
 
   const handlePointerMove = useCallback(
@@ -1010,18 +1161,31 @@ export function SeatmapCanvas({
       const dx = e.clientX - lastPointerRef.current.x;
       const dy = e.clientY - lastPointerRef.current.y;
       lastPointerRef.current = { x: e.clientX, y: e.clientY };
+      const now = performance.now();
+      const dt = Math.max(1, now - lastPanSampleTimeRef.current);
+      lastPanSampleTimeRef.current = now;
+      const nextVelocity = { x: dx / dt, y: dy / dt };
+      panVelocityRef.current = {
+        x: panVelocityRef.current.x * 0.7 + nextVelocity.x * 0.3,
+        y: panVelocityRef.current.y * 0.7 + nextVelocity.y * 0.3,
+      };
       viewport.pan(dx, dy);
     },
     [viewport],
   );
 
   const handlePointerUp = useCallback(() => {
+    if (isPanningRef.current) {
+      startPanInertia();
+    }
     isPanningRef.current = false;
-  }, []);
+  }, [startPanInertia]);
 
   // Touch gesture handling
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
+      stopPanInertia();
+      stopWheelZoomJelly();
       for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
         touchesRef.current.set(t.identifier, { x: t.clientX, y: t.clientY });
@@ -1030,6 +1194,8 @@ export function SeatmapCanvas({
       if (touchesRef.current.size === 1) {
         const [pt] = [...touchesRef.current.values()];
         lastPointerRef.current = { x: pt.x, y: pt.y };
+        panVelocityRef.current = { x: 0, y: 0 };
+        lastPanSampleTimeRef.current = performance.now();
         // Track potential single-finger tap
         touchTapRef.current = { x: pt.x, y: pt.y, time: Date.now() };
       } else {
@@ -1049,7 +1215,7 @@ export function SeatmapCanvas({
         }
       }
     },
-    [],
+    [stopPanInertia, stopWheelZoomJelly],
   );
 
   const handleTouchMove = useCallback(
@@ -1082,6 +1248,14 @@ export function SeatmapCanvas({
         const dx = points[0].x - prev.x;
         const dy = points[0].y - prev.y;
         lastPointerRef.current = { x: points[0].x, y: points[0].y };
+        const now = performance.now();
+        const dt = Math.max(1, now - lastPanSampleTimeRef.current);
+        lastPanSampleTimeRef.current = now;
+        const nextVelocity = { x: dx / dt, y: dy / dt };
+        panVelocityRef.current = {
+          x: panVelocityRef.current.x * 0.7 + nextVelocity.x * 0.3,
+          y: panVelocityRef.current.y * 0.7 + nextVelocity.y * 0.3,
+        };
         viewport.pan(dx, dy);
       } else if (points.length >= 2) {
         const dist = Math.hypot(
@@ -1130,6 +1304,10 @@ export function SeatmapCanvas({
       if (touchesRef.current.size === 1) {
         const [pt] = [...touchesRef.current.values()];
         lastPointerRef.current = { x: pt.x, y: pt.y };
+        panVelocityRef.current = { x: 0, y: 0 };
+        lastPanSampleTimeRef.current = performance.now();
+      } else if (touchesRef.current.size === 0 && !wasTap) {
+        startPanInertia();
       }
 
       // Single-finger tap → hit test via spatial index, pick the closest seat
@@ -1191,7 +1369,7 @@ export function SeatmapCanvas({
       }
       touchTapRef.current = null;
     },
-    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover, isSeatInteractable],
+    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover, isSeatInteractable, startPanInertia],
   );
 
   return (

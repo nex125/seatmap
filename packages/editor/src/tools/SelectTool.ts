@@ -1,5 +1,5 @@
 import type { Viewport, SpatialIndex, CommandHistory } from "@nex125/seatmap-core";
-import { generateId, pointInPolygon } from "@nex125/seatmap-core";
+import { generateId, isDancefloorSection, pointInPolygon } from "@nex125/seatmap-core";
 import type { Vec2 } from "@nex125/seatmap-core";
 import type { Section } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
@@ -93,6 +93,10 @@ export class SelectTool extends BaseTool {
     const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 12);
     const seatHit = this.pickNearestSeatHit(hits, { x: e.worldX, y: e.worldY });
     const sectionHit = hits.find((h) => h.type === "section");
+    const seatSection = seatHit
+      ? venue.sections.find((section) => section.id === seatHit.sectionId) ?? null
+      : null;
+    const treatSeatHitAsSection = Boolean(seatSection && isDancefloorSection(seatSection));
 
     if (this.sectionResizeEnabled) {
       const clickedSection = sectionHit
@@ -139,7 +143,7 @@ export class SelectTool extends BaseTool {
     }
 
     // Mode 1: Dragging selected seats (clicked on one of them)
-    if (seatHit?.seatId && store.getState().selectedSeatIds.has(seatHit.seatId)) {
+    if (seatHit?.seatId && !treatSeatHitAsSection && store.getState().selectedSeatIds.has(seatHit.seatId)) {
       const selectedIds = store.getState().selectedSeatIds;
       const sectionId = seatHit.sectionId;
       const originals = new Map<string, { rowId: string; pos: Vec2 }>();
@@ -168,8 +172,9 @@ export class SelectTool extends BaseTool {
     }
 
     // Mode 2: Dragging a section (clicked on section background, not a seat)
-    if (sectionHit && !seatHit) {
-      const section = venue.sections.find((s) => s.id === sectionHit.sectionId);
+    const sectionToDragId = treatSeatHitAsSection ? seatHit?.sectionId : sectionHit?.sectionId;
+    if (sectionToDragId && (treatSeatHitAsSection || !seatHit)) {
+      const section = venue.sections.find((s) => s.id === sectionToDragId);
       if (section) {
         this.beginSectionDrag(venue, store, section);
         return;
@@ -347,9 +352,13 @@ export class SelectTool extends BaseTool {
       const hits = this.spatialIndex.queryPoint({ x: e.worldX, y: e.worldY }, 12);
       const seatHit = this.pickNearestSeatHit(hits, { x: e.worldX, y: e.worldY });
       const sectionHit = hits.find((h) => h.type === "section");
+      const seatSection = seatHit
+        ? store.getState().venue?.sections.find((section) => section.id === seatHit.sectionId) ?? null
+        : null;
+      const treatSeatHitAsSection = Boolean(seatSection && isDancefloorSection(seatSection));
       const isMulti = e.ctrlKey || e.shiftKey || e.metaKey;
 
-      if (seatHit?.seatId) {
+      if (seatHit?.seatId && !treatSeatHitAsSection) {
         this.resizeTargetSectionId = seatHit.sectionId;
         if (isMulti) {
           store.getState().toggleSeat(seatHit.seatId);
@@ -361,23 +370,29 @@ export class SelectTool extends BaseTool {
           store.getState().setSelection([seatHit.seatId]);
           store.getState().selectSection(seatHit.sectionId);
         }
-      } else if (sectionHit?.sectionId) {
+      } else {
+        const sectionId = treatSeatHitAsSection ? seatHit?.sectionId : sectionHit?.sectionId;
+        if (!sectionId) {
+          if (!isMulti) {
+            if (this.sectionResizeEnabled) {
+              this.resizeTargetSectionId = null;
+            }
+            store.getState().clearSelection();
+          }
+          this.reset();
+          return;
+        }
         if (this.sectionResizeEnabled) {
-          this.resizeTargetSectionId = sectionHit.sectionId;
+          this.resizeTargetSectionId = sectionId;
         } else {
           if (isMulti) {
-            store.getState().toggleSection(sectionHit.sectionId);
+            store.getState().toggleSection(sectionId);
           } else {
             // Selecting a section directly clears seat selection to show Section Config panel
             store.getState().clearSelection();
-            store.getState().selectSection(sectionHit.sectionId);
+            store.getState().selectSection(sectionId);
           }
         }
-      } else if (!isMulti) {
-        if (this.sectionResizeEnabled) {
-          this.resizeTargetSectionId = null;
-        }
-        store.getState().clearSelection();
       }
     }
 

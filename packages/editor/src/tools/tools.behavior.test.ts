@@ -93,6 +93,25 @@ function makeImmediateHistory() {
   } as const;
 }
 
+function withAnimationFrameStubs<T>(run: () => T): T {
+  const globalObj = globalThis as typeof globalThis & {
+    requestAnimationFrame?: (cb: FrameRequestCallback) => number;
+    cancelAnimationFrame?: (id: number) => void;
+  };
+  const originalRaf = globalObj.requestAnimationFrame;
+  const originalCancelRaf = globalObj.cancelAnimationFrame;
+  globalObj.requestAnimationFrame = () => 1;
+  globalObj.cancelAnimationFrame = () => {};
+  try {
+    return run();
+  } finally {
+    if (originalRaf) globalObj.requestAnimationFrame = originalRaf;
+    else Reflect.deleteProperty(globalObj as Record<string, unknown>, "requestAnimationFrame");
+    if (originalCancelRaf) globalObj.cancelAnimationFrame = originalCancelRaf;
+    else Reflect.deleteProperty(globalObj as Record<string, unknown>, "cancelAnimationFrame");
+  }
+}
+
 describe("editor tools behavior", () => {
   test("AddSectionTool creates rectangle section from two clicks", () => {
     const history = makeImmediateHistory();
@@ -261,6 +280,67 @@ describe("editor tools behavior", () => {
     tool.onPointerUp(pointer(0, 0), viewport, store);
 
     expect(store.getState().selectedSeatIds.has(seatId)).toBe(true);
+    expect(store.getState().selectedSectionId).toBe(sectionId);
+  });
+
+  test("SelectTool click on dancefloor keeps section selection for label editing", () => {
+    const history = makeImmediateHistory();
+    const seatId = "dancefloor-seat-1";
+    const sectionId = "dancefloor-1";
+    const spatialIndex = {
+      queryPoint: () => [
+        {
+          type: "seat",
+          sectionId,
+          seatId,
+          minX: -5,
+          minY: -5,
+          maxX: 5,
+          maxY: 5,
+        },
+        {
+          type: "section",
+          sectionId,
+          minX: -100,
+          minY: -100,
+          maxX: 100,
+          maxY: 100,
+        },
+      ],
+      queryRect: () => [],
+    };
+    const tool = new SelectTool(spatialIndex as never, history as never);
+    const venue = makeVenue();
+    venue.sections = [
+      {
+        id: sectionId,
+        label: "Dancefloor",
+        kind: "dancefloor",
+        position: { x: 0, y: 0 },
+        rotation: 0,
+        categoryId: "cat-1",
+        rows: [
+          {
+            id: "row-df",
+            label: "DF",
+            seats: [{ id: seatId, label: "Dancefloor", position: { x: 0, y: 0 }, status: "available", categoryId: "cat-1" }],
+          },
+        ],
+        outline: [
+          { x: -100, y: -100 },
+          { x: 100, y: -100 },
+          { x: 100, y: 100 },
+          { x: -100, y: 100 },
+        ],
+      },
+    ];
+    const store = makeStore(venue);
+    const viewport = new Viewport();
+
+    tool.onPointerDown(pointer(0, 0), viewport, store);
+    tool.onPointerUp(pointer(0, 0), viewport, store);
+
+    expect(store.getState().selectedSeatIds.size).toBe(0);
     expect(store.getState().selectedSectionId).toBe(sectionId);
   });
 
@@ -565,15 +645,46 @@ describe("editor tools behavior", () => {
   });
 
   test("PanTool moves viewport while dragging", () => {
-    const tool = new PanTool();
-    const viewport = new Viewport();
-    viewport.setZoom(2);
+    withAnimationFrameStubs(() => {
+      const tool = new PanTool();
+      const viewport = new Viewport();
+      viewport.setZoom(2);
 
-    tool.onPointerDown(pointer(0, 0));
-    tool.onPointerMove({ ...pointer(0, 0), screenX: 40, screenY: -20 }, viewport);
-    tool.onPointerUp();
+      tool.onPointerDown(pointer(0, 0));
+      tool.onPointerMove({ ...pointer(0, 0), screenX: 40, screenY: -20 }, viewport);
+      tool.onPointerUp(pointer(40, -20), viewport);
 
-    expect(viewport.x).toBe(20);
-    expect(viewport.y).toBe(-10);
+      expect(viewport.x).toBe(20);
+      expect(viewport.y).toBe(-10);
+    });
+  });
+
+  test("PanTool resets advanced-only pan tuning when overrides are unset", () => {
+    const tool = new PanTool() as unknown as {
+      panVelocityBlend: number;
+      panStopDelta: number;
+      panReleaseIdleMs: number;
+      setInertiaOptions: (options: {
+        panVelocityBlend?: number;
+        panStopDelta?: number;
+        panReleaseIdleMs?: number;
+      }) => void;
+    };
+
+    tool.setInertiaOptions({
+      panVelocityBlend: 0.9,
+      panStopDelta: 1.2,
+      panReleaseIdleMs: 250,
+    });
+
+    tool.setInertiaOptions({
+      panVelocityBlend: undefined,
+      panStopDelta: undefined,
+      panReleaseIdleMs: undefined,
+    });
+
+    expect(tool.panVelocityBlend).toBe(0.3);
+    expect(tool.panStopDelta).toBe(0.3);
+    expect(tool.panReleaseIdleMs).toBe(90);
   });
 });

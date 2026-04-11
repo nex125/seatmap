@@ -2,10 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Venue } from "@nex125/seatmap-core";
 import { deserializeVenue, generateId } from "@nex125/seatmap-core";
 import { SeatmapCanvas, SeatmapProvider, TooltipOverlay, useSeatmapContext } from "@nex125/seatmap-react";
-import { SeatmapViewer } from "@nex125/seatmap-viewer";
+import {
+  SeatmapViewer,
+  getSeatmapViewerSharedThemeRootStyle,
+  seatmapViewerSharedThemeClassNames,
+  seatmapViewerSharedThemeRootClassName,
+} from "@nex125/seatmap-viewer";
 import { SeatmapEditor } from "@nex125/seatmap-editor";
 import { sampleVenue } from "./sampleVenue";
 import { generateLargeVenue } from "./generateLargeVenue";
+import "@nex125/seatmap-viewer/theme.css";
+import "@nex125/seatmap-editor/theme.css";
 
 type Tab = "viewer" | "editor";
 type VenueSize = "sample" | "5k" | "25k" | "50k" | `template:${string}`;
@@ -288,61 +295,123 @@ function App() {
   }, [templates]);
 
   const tabBtnBase: React.CSSProperties = {
-    padding: "8px 20px",
-    border: "none",
+    padding: "10px 20px",
+    border: "1px solid var(--ds-border-subtle)",
+    borderRadius: "999px",
     background: "transparent",
-    color: "#9e9e9e",
+    color: "var(--ds-on-surface-variant)",
     cursor: "pointer",
     fontSize: 14,
-    fontFamily: "system-ui",
-    borderBottomWidth: 2,
-    borderBottomStyle: "solid",
-    borderBottomColor: "transparent",
+    fontFamily: "var(--font-body-family), system-ui, sans-serif",
     transition: "all 0.15s",
   };
 
   const activeTabBtn: React.CSSProperties = {
     ...tabBtnBase,
-    color: "#e0e0e0",
-    borderBottomColor: "#4caf50",
+    color: "var(--ds-on-primary)",
+    border: "1px solid var(--ds-primary-border-strong)",
+    background: "var(--ds-primary)",
   };
 
   const selectStyle: React.CSSProperties = {
-    padding: "4px 8px",
-    background: "#2a2a4a",
-    border: "1px solid #3a3a5a",
-    borderRadius: 4,
-    color: "#e0e0e0",
+    padding: "7px 10px",
+    background: "var(--ds-surface-container-low)",
+    border: "1px solid var(--ds-input-border)",
+    borderRadius: "8px",
+    color: "var(--ds-on-surface)",
     fontSize: 13,
-    fontFamily: "system-ui",
+    fontFamily: "var(--font-body-family), system-ui, sans-serif",
     cursor: "pointer",
   };
 
   const panelStyle: React.CSSProperties = {
     margin: 0,
     padding: 12,
-    borderRadius: 8,
-    border: "1px solid #2a2a4a",
-    background: "#14142a",
+    borderRadius: 12,
+    border: "1px solid var(--ds-border-subtle)",
+    background: "var(--ds-surface-container-low)",
+    boxShadow: "var(--ds-shadow-ambient-sm)",
     display: "flex",
     alignItems: "center",
     gap: 12,
     flexWrap: "wrap",
   };
 
+  const editorHostStyle: React.CSSProperties = {
+    "--seatmap-editor-surface-page": "var(--ds-surface)",
+    "--seatmap-editor-surface": "var(--ds-surface-container-low)",
+    "--seatmap-editor-surface-elevated": "var(--ds-surface-container)",
+    "--seatmap-editor-surface-muted": "color-mix(in srgb, var(--ds-surface-container-high) 72%, transparent)",
+    "--seatmap-editor-control-surface": "var(--ds-surface-container-high)",
+    "--seatmap-editor-border": "var(--ds-input-border)",
+    "--seatmap-editor-border-subtle": "var(--ds-border-subtle)",
+    "--seatmap-editor-text": "var(--ds-on-surface)",
+    "--seatmap-editor-text-muted": "var(--ds-on-surface-variant)",
+    "--seatmap-editor-accent": "var(--ds-primary)",
+    "--seatmap-editor-accent-text": "var(--ds-on-primary)",
+    "--seatmap-editor-radius-sm": "8px",
+    "--seatmap-editor-radius-md": "12px",
+    "--seatmap-editor-radius-pill": "999px",
+    "--seatmap-editor-shadow-overlay": "var(--ds-shadow-ambient-sm)",
+    flex: 1,
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 14,
+    border: "1px solid var(--ds-border-subtle)",
+  } as React.CSSProperties;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "#0f0f23", overflow: "hidden" }}>
+    <div
+      style={{
+        "--font-display-family": "Manrope",
+        "--font-body-family": "Inter",
+        "--ds-surface": "#131313",
+        "--ds-surface-container-low": "#181818",
+        "--ds-surface-container": "#1e1e1e",
+        "--ds-surface-container-high": "#242424",
+        "--ds-surface-container-highest": "#2e2e2e",
+        "--ds-surface-container-lowest": "#0f0f0f",
+        "--ds-surface-variant": "#2a2826",
+        "--ds-on-surface": "#e5e2e1",
+        "--ds-on-surface-variant": "#9a9694",
+        "--ds-outline-variant": "#5c5957",
+        "--ds-primary": "#dfcd72",
+        "--ds-on-primary": "#1a1816",
+        "--ds-primary-gradient-end": "#8a7f46",
+        "--ds-secondary": "#9064f6",
+        "--ds-tertiary": "#1f6fe0",
+        "--ds-border-subtle": "color-mix(in srgb, var(--ds-outline-variant) 12%, transparent)",
+        "--ds-input-border": "color-mix(in srgb, var(--ds-outline-variant) 22%, transparent)",
+        "--ds-primary-border-strong": "color-mix(in srgb, var(--ds-primary) 25%, transparent)",
+        "--ds-shadow-ambient-sm": "0 24px 48px -14px rgb(229 226 225 / 0.06)",
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        background:
+          "radial-gradient(1200px circle at 10% -10%, var(--ds-surface-variant) 0%, var(--ds-surface-container-low) 35%, var(--ds-surface) 100%)",
+        color: "var(--ds-on-surface)",
+        overflow: "hidden",
+      } as React.CSSProperties}
+    >
       <header
         style={{
           padding: "0 24px",
-          background: "#1a1a2e",
-          borderBottom: "1px solid #2a2a4a",
+          background: "color-mix(in srgb, var(--ds-surface-container) 92%, transparent)",
+          borderBottom: "1px solid var(--ds-border-subtle)",
           display: "flex",
           alignItems: "center",
           gap: 24,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 16, color: "#e0e0e0", fontFamily: "system-ui", padding: "12px 0" }}>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 16,
+            color: "var(--ds-on-surface)",
+            fontFamily: "var(--font-display-family), system-ui, sans-serif",
+            padding: "12px 0",
+          }}
+        >
           Seatmap Demo
         </h1>
 
@@ -357,7 +426,7 @@ function App() {
 
         {tab === "viewer" && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>Venue:</label>
+            <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>Venue:</label>
             <select value={venueSize} onChange={(e) => setVenueSize(e.target.value as VenueSize)} style={selectStyle}>
               <option value="sample">Small Hall (stage + dancefloor)</option>
               <option value="5k">Large (5,000 seats)</option>
@@ -373,12 +442,12 @@ function App() {
               onClick={handleLoadSchema}
               style={{
                 padding: "4px 12px",
-                background: "#2a2a4a",
-                border: "1px solid #3a3a5a",
-                borderRadius: 4,
-                color: "#e0e0e0",
+                background: "var(--ds-surface-container-low)",
+                border: "1px solid var(--ds-input-border)",
+                borderRadius: 8,
+                color: "var(--ds-on-surface)",
                 fontSize: 13,
-                fontFamily: "system-ui",
+                fontFamily: "var(--font-body-family), system-ui, sans-serif",
                 cursor: "pointer",
               }}
               title="Load a venue JSON exported from the editor"
@@ -388,7 +457,7 @@ function App() {
           </div>
         )}
 
-        <div style={{ marginLeft: "auto", color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+        <div style={{ marginLeft: "auto", color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
           {tab === "viewer"
             ? "Includes preview (hover-only) and separate seat selection (with cart)."
             : editorMode === "template"
@@ -401,10 +470,10 @@ function App() {
         {tab === "viewer" ? (
           <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, gap: 12 }}>
             <div style={panelStyle}>
-              <strong style={{ color: "#e0e0e0", fontFamily: "system-ui", fontSize: 13 }}>
+              <strong style={{ color: "var(--ds-on-surface)", fontFamily: "var(--font-body-family), system-ui, sans-serif", fontSize: 13 }}>
                 Event-style flow
               </strong>
-              <span style={{ color: "#9e9e9e", fontFamily: "system-ui", fontSize: 13 }}>
+              <span style={{ color: "var(--ds-on-surface-variant)", fontFamily: "var(--font-body-family), system-ui, sans-serif", fontSize: 13 }}>
                 Preview is hover-only; seat selection and cart are in a separate viewer.
               </span>
               <button
@@ -416,10 +485,10 @@ function App() {
             </div>
 
             <div style={panelStyle}>
-              <span style={{ color: "#e0e0e0", fontFamily: "system-ui", fontSize: 13 }}>
+              <span style={{ color: "var(--ds-on-surface)", fontFamily: "var(--font-body-family), system-ui, sans-serif", fontSize: 13 }}>
                 Preview map
               </span>
-              <span style={{ color: "#9e9e9e", fontFamily: "system-ui", fontSize: 13 }}>
+              <span style={{ color: "var(--ds-on-surface-variant)", fontFamily: "var(--font-body-family), system-ui, sans-serif", fontSize: 13 }}>
                 Cart hidden, click disabled, hover enabled.
               </span>
             </div>
@@ -434,11 +503,11 @@ function App() {
                       position: "absolute",
                       top: 12,
                       left: 12,
-                      borderRadius: 8,
-                      border: "1px solid #4a4a6a",
-                      background: "#1f1f39",
-                      color: "#ececff",
-                      fontFamily: "system-ui",
+                      borderRadius: 12,
+                      border: "1px solid var(--ds-input-border)",
+                      background: "color-mix(in srgb, var(--ds-surface-container) 92%, transparent)",
+                      color: "var(--ds-on-surface)",
+                      fontFamily: "var(--font-body-family), system-ui, sans-serif",
                       fontSize: 12,
                       padding: 10,
                       minWidth: 170,
@@ -477,10 +546,10 @@ function App() {
             {isSelectionOpen && (
               <>
                 <div style={panelStyle}>
-                  <span style={{ color: "#e0e0e0", fontFamily: "system-ui", fontSize: 13 }}>
+                  <span style={{ color: "var(--ds-on-surface)", fontFamily: "var(--font-body-family), system-ui, sans-serif", fontSize: 13 }}>
                     Seat selection map
                   </span>
-                  <span style={{ color: "#9e9e9e", fontFamily: "system-ui", fontSize: 13 }}>
+                  <span style={{ color: "var(--ds-on-surface-variant)", fontFamily: "var(--font-body-family), system-ui, sans-serif", fontSize: 13 }}>
                     Full viewer with clickable seats and built-in cart.
                   </span>
                 </div>
@@ -488,6 +557,9 @@ function App() {
                   <SeatmapViewer
                     key={`selection-${venueSize}-${viewerVenue.id}`}
                     venue={viewerVenue}
+                    className={seatmapViewerSharedThemeRootClassName}
+                    classNames={seatmapViewerSharedThemeClassNames}
+                    styles={{ root: getSeatmapViewerSharedThemeRootStyle() }}
                     onSelectionChange={setSelectedSeats}
                     onCartEvent={(event) => {
                       setLastCartEventType(event.type);
@@ -518,7 +590,7 @@ function App() {
             {editorMode === "template" ? (
               <>
                 <div style={panelStyle}>
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Load Template:
                     <select
                       value={templateDraft.id}
@@ -532,7 +604,7 @@ function App() {
                       ))}
                     </select>
                   </label>
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Template ID:
                     <input
                       value={templateDraft.id}
@@ -540,7 +612,7 @@ function App() {
                       style={{ ...selectStyle, marginLeft: 8, minWidth: 200 }}
                     />
                   </label>
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Template Name:
                     <input
                       value={templateDraft.name}
@@ -553,7 +625,7 @@ function App() {
                   </button>
                 </div>
 
-                <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                <div style={editorHostStyle}>
                   <SeatmapEditor
                     venue={templateDraft}
                     fetchCategoryPrices={fetchCategoryPrices}
@@ -570,16 +642,16 @@ function App() {
                   justifyContent: "center",
                   flexDirection: "column",
                   textAlign: "center",
-                  color: "#9e9e9e",
+                  color: "var(--ds-on-surface-variant)",
                 }}
               >
-                <strong style={{ color: "#e0e0e0" }}>No templates available</strong>
+                <strong style={{ color: "var(--ds-on-surface)" }}>No templates available</strong>
                 <span>Create a template first, then return to Venue Event Editor.</span>
               </div>
             ) : (
               <>
                 <div style={panelStyle}>
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Event ID:
                     <input
                       value={eventDraft.id}
@@ -587,7 +659,7 @@ function App() {
                       style={{ ...selectStyle, marginLeft: 8, minWidth: 200 }}
                     />
                   </label>
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Event Name:
                     <input
                       value={eventDraft.name}
@@ -601,7 +673,7 @@ function App() {
                 </div>
 
                 <div style={panelStyle}>
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Search Templates:
                     <input
                       value={templateQuery}
@@ -611,7 +683,7 @@ function App() {
                     />
                   </label>
 
-                  <label style={{ color: "#9e9e9e", fontSize: 13, fontFamily: "system-ui" }}>
+                  <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Template:
                     <select
                       value={eventTemplateId}
@@ -631,7 +703,7 @@ function App() {
                   </label>
                 </div>
 
-                <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+                <div style={editorHostStyle}>
                   <SeatmapEditor
                     venue={eventDraft}
                     fetchCategoryPrices={fetchCategoryPrices}
@@ -648,11 +720,11 @@ function App() {
         <footer
           style={{
             padding: "12px 24px",
-            background: "#1a1a2e",
-            borderTop: "1px solid #2a2a4a",
-            color: "#e0e0e0",
+            background: "color-mix(in srgb, var(--ds-surface-container) 92%, transparent)",
+            borderTop: "1px solid var(--ds-border-subtle)",
+            color: "var(--ds-on-surface)",
             fontSize: 13,
-            fontFamily: "system-ui",
+            fontFamily: "var(--font-body-family), system-ui, sans-serif",
             display: "flex",
             gap: 16,
             flexWrap: "wrap",

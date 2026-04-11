@@ -1,0 +1,1697 @@
+.seatmap-editor {
+  --seatmap-surface: var(--ds-surface-container-low, #181818);
+  --seatmap-surface-elevated: var(--ds-surface, #131313);
+  --seatmap-surface-muted: var(--ds-surface-container, rgba(30, 30, 30, 0.82));
+  --seatmap-on-surface: var(--ds-on-surface, #e5e2e1);
+  --seatmap-on-surface-variant: var(--ds-on-surface-variant, #9a9694);
+  --seatmap-outline: var(--ds-input-border, #3a3836);
+  --seatmap-outline-variant: var(--ds-border-subtle, #2b2a29);
+  --seatmap-primary: var(--ds-primary, #dfcd72);
+  --seatmap-on-primary: var(--ds-on-primary, #1a1816);
+  --seatmap-radius-sm: var(--ds-radius-functional, 4px);
+  --seatmap-radius-md: var(--ds-radius-structural, 8px);
+  --seatmap-shadow-raised: var(--ds-shadow-ambient-sm, 0 8px 20px rgba(0, 0, 0, 0.22));
+  --seatmap-focus-ring: color-mix(in srgb, var(--seatmap-primary) 36%, transparent);
+  --seatmap-state-layer-hover: color-mix(in srgb, var(--seatmap-primary) 12%, transparent);
+  --seatmap-state-layer-pressed: color-mix(in srgb, var(--seatmap-primary) 18%, transparent);
+  --seatmap-editor-surface: var(--seatmap-surface);
+  --seatmap-editor-surface-elevated: var(--seatmap-surface-elevated);
+  --seatmap-editor-surface-muted: var(--seatmap-surface-muted);
+  --seatmap-editor-surface-lowest: var(--ds-surface-container-lowest, #0f0f0f);
+  --seatmap-editor-control-surface: var(--ds-surface-container-high, #242424);
+  --seatmap-editor-border: var(--seatmap-outline);
+  --seatmap-editor-border-subtle: var(--seatmap-outline-variant);
+  --seatmap-editor-text: var(--seatmap-on-surface);
+  --seatmap-editor-text-muted: var(--seatmap-on-surface-variant);
+  --seatmap-editor-text-strong: color-mix(in srgb, var(--seatmap-editor-text) 88%, var(--seatmap-editor-text-muted));
+  --seatmap-editor-accent: var(--seatmap-primary);
+  --seatmap-editor-accent-text: var(--seatmap-on-primary);
+  --seatmap-editor-radius-sm: var(--seatmap-radius-sm);
+  --seatmap-editor-radius-md: var(--seatmap-radius-md);
+  --seatmap-editor-radius-pill: var(--ds-radius-pill, 999px);
+  --seatmap-editor-shadow-overlay: var(--seatmap-shadow-raised);
+  --seatmap-editor-overlay-info-stroke: rgba(100, 180, 255, 0.8);
+  --seatmap-editor-overlay-info-fill: rgba(100, 180, 255, 0.1);
+  --seatmap-editor-overlay-success-stroke: rgba(100, 255, 100, 0.8);
+  --seatmap-editor-overlay-warning-stroke: rgba(255, 193, 110, 0.9);
+  --seatmap-editor-overlay-warning-fill: rgba(255, 193, 110, 0.08);
+  --seatmap-editor-overlay-label-bg: rgba(15, 15, 25, 0.9);
+  --seatmap-editor-overlay-label-text: #ffd38a;
+  --seatmap-editor-overlay-label-border: rgba(255, 193, 110, 0.65);
+  --seatmap-editor-scrollbar-size: 11px;
+  --seatmap-editor-scrollbar-track: color-mix(in srgb, var(--seatmap-editor-surface-elevated) 64%, transparent);
+  --seatmap-editor-scrollbar-thumb: color-mix(in srgb, var(--seatmap-editor-border) 90%, var(--seatmap-editor-text) 10%);
+  --seatmap-editor-scrollbar-thumb-hover: color-mix(in srgb, var(--seatmap-editor-border) 80%, var(--seatmap-editor-accent) 20%);
+  --seatmap-editor-scrollbar-thumb-active: color-mix(in srgb, var(--seatmap-editor-border) 72%, var(--seatmap-editor-accent) 28%);
+  --seatmap-editor-sidebar-surface: var(--ds-surface-container-low, #181818);
+  --seatmap-editor-sidebar-separator-wash: color-mix(in srgb, var(--ds-surface-container-lowest, #0f0f0f) 72%, transparent);
+  --seatmap-editor-panel-card-bg: color-mix(in srgb, var(--seatmap-editor-surface-muted) 92%, transparent);
+  --seatmap-editor-toolbar-bg: color-mix(in srgb, var(--seatmap-editor-surface) 84%, transparent);
+  --seatmap-editor-toolbar-separator-wash: color-mix(in srgb, var(--seatmap-editor-border-subtle) 78%, transparent);
+  --seatmap-editor-toolbar-button-hover-bg: color-mix(in srgb, var(--seatmap-editor-control-surface) 72%, var(--seatmap-editor-text) 28%);
+  --seatmap-editor-toolbar-button-hover-border: color-mix(in srgb, var(--seatmap-editor-border) 52%, var(--seatmap-editor-text) 48%);
+  --seatmap-editor-toolbar-button-active-bg: color-mix(in srgb, var(--seatmap-editor-accent) 34%, var(--seatmap-editor-control-surface));
+  --seatmap-editor-toolbar-button-active-border: color-mix(in srgb, var(--seatmap-editor-accent) 58%, var(--seatmap-editor-surface-lowest));
+  --seatmap-editor-toolbar-button-highlight-ring: color-mix(in srgb, var(--seatmap-editor-accent) 50%, transparent);
+  --seatmap-editor-toolbar-button-focus-ring: color-mix(in srgb, var(--seatmap-editor-accent) 36%, transparent);
+  --seatmap-editor-tool-options-bg: color-mix(in srgb, var(--seatmap-editor-surface-elevated) 96%, transparent);
+  --seatmap-editor-tool-options-bridge-bg: color-mix(in srgb, var(--seatmap-editor-surface-elevated) 74%, transparent);
+  --seatmap-editor-tool-options-bridge-top-bg: color-mix(in srgb, var(--seatmap-editor-surface-elevated) 88%, transparent);
+  --seatmap-editor-tool-options-bridge-blur: 14px;
+  --seatmap-editor-tool-options-shell-blur: 8px;
+  --seatmap-editor-option-card-title-subtle: color-mix(in srgb, var(--seatmap-editor-text-muted) 82%, white);
+  --seatmap-editor-option-divider-wash: color-mix(in srgb, var(--seatmap-editor-border-subtle) 80%, transparent);
+  --seatmap-editor-table-row-bg: color-mix(in srgb, var(--seatmap-editor-surface-muted) 92%, transparent);
+  --seatmap-editor-motion-group-divider: color-mix(in srgb, var(--seatmap-editor-text-muted) 62%, var(--seatmap-editor-border-subtle));
+  --seatmap-editor-canvas-edge-shadow: inset 0 -10px 14px -14px rgb(0 0 0 / 0.85);
+  --seatmap-editor-sidebar-edge-shadow: inset 12px 0 18px -20px rgb(0 0 0 / 0.7);
+  --seatmap-editor-background-guide-stroke: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 90%, white 10%);
+  --seatmap-editor-background-guide-shadow: 0 0 0 1px color-mix(in srgb, var(--seatmap-editor-surface-lowest) 76%, var(--seatmap-editor-overlay-info-stroke)) inset;
+  --seatmap-editor-background-handle-fill: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 88%, white 12%);
+  --seatmap-editor-background-handle-stroke: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 45%, var(--seatmap-editor-surface-lowest));
+  --seatmap-editor-hint-surface: color-mix(in srgb, var(--seatmap-editor-surface-lowest) 86%, transparent);
+  --seatmap-editor-hint-border: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 62%, transparent);
+  --seatmap-editor-hint-text: color-mix(in srgb, var(--seatmap-editor-text) 90%, var(--seatmap-editor-overlay-info-stroke));
+  --seatmap-editor-hint-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+  --seatmap-editor-status-success: color-mix(in srgb, var(--ds-tertiary, #1f6fe0) 42%, var(--seatmap-editor-text) 58%);
+  --seatmap-editor-status-error: color-mix(in srgb, var(--seatmap-editor-danger, #ad3f3f) 65%, var(--seatmap-editor-text) 35%);
+  --seatmap-editor-status-idle: color-mix(in srgb, var(--seatmap-editor-text-muted) 82%, var(--seatmap-editor-text) 18%);
+  --seatmap-editor-overlay-row-direction-stroke: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 92%, white 8%);
+  --seatmap-editor-overlay-row-direction-fill: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 28%, transparent);
+  --seatmap-editor-overlay-row-direction-origin-stroke: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 78%, var(--seatmap-editor-surface-lowest));
+  --seatmap-editor-overlay-row-direction-origin-fill: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 35%, transparent);
+  --seatmap-editor-font-body: Inter, system-ui, sans-serif;
+  --seatmap-editor-font-heading: Manrope, Inter, system-ui, sans-serif;
+  --seatmap-editor-type-title-size: var(--ds-heading-sm-size, 1rem);
+  --seatmap-editor-type-body-size: var(--ds-body-sm-size, 0.875rem);
+  --seatmap-editor-type-label-size: var(--ds-label-sm-size, 0.625rem);
+}
+
+.seatmap-editor * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--seatmap-editor-scrollbar-thumb) var(--seatmap-editor-scrollbar-track);
+}
+
+.seatmap-editor *::-webkit-scrollbar {
+  width: var(--seatmap-editor-scrollbar-size);
+  height: var(--seatmap-editor-scrollbar-size);
+}
+
+.seatmap-editor *::-webkit-scrollbar-track {
+  background: var(--seatmap-editor-scrollbar-track);
+}
+
+.seatmap-editor *::-webkit-scrollbar-thumb {
+  background: var(--seatmap-editor-scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.seatmap-editor *::-webkit-scrollbar-thumb:hover {
+  background: var(--seatmap-editor-scrollbar-thumb-hover);
+  background-clip: content-box;
+}
+
+.seatmap-editor *::-webkit-scrollbar-thumb:active {
+  background: var(--seatmap-editor-scrollbar-thumb-active);
+  background-clip: content-box;
+}
+
+.seatmap-editor--root,
+.seatmap-editor__host {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.seatmap-editor__canvas-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.seatmap-editor__toolbar {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--seatmap-editor-toolbar-bg);
+  box-shadow: var(--seatmap-editor-canvas-edge-shadow);
+  backdrop-filter: blur(8px);
+}
+
+.seatmap-editor__toolbar-row {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.seatmap-editor__toolbar-row--primary {
+  padding: 10px 12px;
+  align-items: top;
+  flex-wrap: wrap;
+}
+
+.seatmap-editor__toolbar-divider {
+  width: 8px;
+  height: 24px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--seatmap-editor-toolbar-separator-wash),
+    transparent
+  );
+  margin: 0 4px;
+}
+
+.seatmap-editor__toolbar-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-pill, 999px);
+  background: var(--seatmap-editor-control-surface);
+  color: var(--seatmap-editor-text);
+  cursor: pointer;
+  font-size: var(--seatmap-editor-type-body-size);
+  line-height: 1.1;
+  font-family: var(--seatmap-editor-font-body);
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.seatmap-editor__toolbar-button:hover:not(:disabled) {
+  background: var(--seatmap-editor-toolbar-button-hover-bg);
+  border-color: var(--seatmap-editor-toolbar-button-hover-border);
+}
+
+.seatmap-editor__toolbar-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--seatmap-editor-toolbar-button-focus-ring);
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+}
+
+.seatmap-editor__toolbar-button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.seatmap-editor__toolbar-button.is-active {
+  background: var(--seatmap-editor-toolbar-button-active-bg);
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+  color: var(--seatmap-editor-accent-text);
+}
+
+.seatmap-editor__toolbar-button.is-highlighted {
+  box-shadow: 0 0 0 1px var(--seatmap-editor-toolbar-button-highlight-ring) inset;
+}
+
+.seatmap-editor__toolbar-tool-button {
+  min-width: 94px;
+}
+
+.seatmap-editor__toolbar-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.seatmap-editor__toolbar-button > span:last-child {
+  transform: translateY(0.2px);
+}
+
+.seatmap-editor__tool-options-overlay {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.seatmap-editor__tool-options-overlay::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 14px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--seatmap-editor-tool-options-bridge-top-bg) 0%,
+    color-mix(in srgb, var(--seatmap-editor-tool-options-bridge-top-bg) 82%, transparent) 55%,
+    transparent 100%
+  );
+  backdrop-filter: blur(var(--seatmap-editor-tool-options-bridge-blur));
+}
+
+.seatmap-editor__tool-options-overlay::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -12px;
+  bottom: 0;
+  width: 14px;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--seatmap-editor-tool-options-bridge-bg) 65%,
+    var(--seatmap-editor-tool-options-bridge-bg) 100%
+  );
+  backdrop-filter: blur(var(--seatmap-editor-tool-options-bridge-blur));
+}
+
+.seatmap-editor__tool-options-shell {
+  display: flex;
+  align-items: flex-start;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-md);
+  background: var(--seatmap-editor-tool-options-bg);
+  backdrop-filter: blur(var(--seatmap-editor-tool-options-shell-blur));
+  box-shadow: var(--seatmap-editor-shadow-overlay);
+  pointer-events: auto;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.seatmap-editor__tool-options-title {
+  color: var(--seatmap-editor-text-strong);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-heading);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.seatmap-editor__tool-options-divider {
+  width: 8px;
+  height: 18px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--seatmap-editor-toolbar-separator-wash),
+    transparent
+  );
+}
+
+.seatmap-editor__option-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: calc(var(--seatmap-editor-radius-md) - 2px);
+  background: var(--seatmap-editor-surface-muted);
+}
+
+.seatmap-editor__option-card-title {
+  color: var(--seatmap-editor-text-strong);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-heading);
+  font-weight: 600;
+}
+
+.seatmap-editor__option-card-title--subtle {
+  color: var(--seatmap-editor-option-card-title-subtle);
+  font-size: var(--seatmap-editor-type-label-size);
+  text-transform: uppercase;
+  letter-spacing: 0.25px;
+}
+
+.seatmap-editor__option-card-title--group {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.2px;
+}
+
+.seatmap-editor__option-card-subdivider {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--seatmap-editor-option-divider-wash),
+    transparent
+  );
+}
+
+.seatmap-editor__option-card-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.seatmap-editor__option-card-divider {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--seatmap-editor-option-divider-wash),
+    transparent
+  );
+}
+
+.seatmap-editor__option-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seatmap-editor__option-row--end {
+  justify-content: flex-end;
+}
+
+.seatmap-editor__label {
+  color: var(--seatmap-editor-text-muted);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.seatmap-editor__hint-text {
+  color: var(--seatmap-editor-text-muted);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__toolbar-shortcuts-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 4px 7px;
+  margin-left: auto;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: calc(var(--seatmap-editor-radius-md) - 2px);
+  background: color-mix(in srgb, var(--seatmap-editor-surface-muted) 92%, transparent);
+}
+
+.seatmap-editor__toolbar-shortcuts-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-items: flex-start;
+  gap: 1px;
+  color: var(--seatmap-editor-text-muted);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__toolbar-shortcuts-title {
+  color: var(--seatmap-editor-text-strong);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-heading);
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.seatmap-editor__motion-slider {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seatmap-editor__motion-slider.is-disabled {
+  opacity: 0.55;
+}
+
+.seatmap-editor__motion-slider.is-disabled .seatmap-editor__motion-knob {
+  cursor: not-allowed;
+  border-color: var(--seatmap-editor-border-subtle);
+}
+
+.seatmap-editor__motion-slider.is-disabled .seatmap-editor__motion-knob-indicator {
+  background: var(--seatmap-editor-text-muted);
+}
+
+.seatmap-editor__motion-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.seatmap-editor__motion-slider-value {
+  color: var(--seatmap-editor-text-strong);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
+}
+
+.seatmap-editor__motion-advanced-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.seatmap-editor__motion-knob-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seatmap-editor__motion-control-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seatmap-editor__motion-control-grid.is-knob-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px 4px;
+}
+
+.seatmap-editor__motion-slider--compact-knob {
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.seatmap-editor__motion-slider--compact-knob .seatmap-editor__motion-slider-header {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  width: 100%;
+}
+
+.seatmap-editor__motion-slider--compact-knob .seatmap-editor__label {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seatmap-editor__motion-slider--compact-knob .seatmap-editor__motion-slider-value {
+  min-width: 0;
+  text-align: center;
+}
+
+.seatmap-editor__motion-slider--compact-knob .seatmap-editor__motion-knob {
+  width: 30px;
+  height: 30px;
+}
+
+.seatmap-editor__motion-slider--compact-knob .seatmap-editor__motion-knob::after {
+  inset: 7px;
+}
+
+.seatmap-editor__motion-slider--compact-knob .seatmap-editor__motion-knob-indicator {
+  height: 8px;
+}
+
+.seatmap-editor__motion-slider--label-value-knob {
+  gap: 0;
+}
+
+.seatmap-editor__motion-slider--label-value-knob .seatmap-editor__motion-knob-row--label-value-knob {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 6px;
+}
+
+.seatmap-editor__motion-slider--label-value-knob .seatmap-editor__label {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.seatmap-editor__motion-slider--label-value-knob .seatmap-editor__motion-slider-value {
+  min-width: 40px;
+  text-align: right;
+}
+
+.seatmap-editor__motion-slider-value--knob {
+  min-width: 44px;
+  text-align: left;
+}
+
+.seatmap-editor__motion-knob-right-content {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.seatmap-editor__motion-knob {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: 50%;
+  background: var(--seatmap-editor-control-surface);
+  cursor: ns-resize;
+  flex: 0 0 auto;
+}
+
+.seatmap-editor__motion-knob-ring {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+}
+
+.seatmap-editor__motion-knob-ring--motion {
+  background:
+    conic-gradient(
+      from var(--motion-knob-start-angle, -130deg),
+      var(--seatmap-editor-accent) 0%,
+      var(--seatmap-editor-accent) var(--motion-knob-fill, 0%),
+      color-mix(in srgb, var(--seatmap-editor-border-subtle) 90%, transparent) var(--motion-knob-fill, 0%),
+      color-mix(in srgb, var(--seatmap-editor-border-subtle) 90%, transparent) 100%
+    );
+}
+
+.seatmap-editor__motion-knob-ring--tool {
+  background:
+    conic-gradient(
+      from var(--tool-knob-start-angle, -130deg),
+      var(--seatmap-editor-accent) 0%,
+      var(--seatmap-editor-accent) var(--tool-knob-fill, 0%),
+      color-mix(in srgb, var(--seatmap-editor-border-subtle) 90%, transparent) var(--tool-knob-fill, 0%),
+      color-mix(in srgb, var(--seatmap-editor-border-subtle) 90%, transparent) 100%
+    );
+}
+
+.seatmap-editor__motion-knob::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--seatmap-editor-control-surface);
+}
+
+.seatmap-editor__motion-knob-indicator {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--seatmap-editor-text);
+  transform-origin: 50% 100%;
+  z-index: 1;
+}
+
+.seatmap-editor__option-card--motion {
+  --seatmap-motion-col-width: min(420px, calc((100% - 12px) / 2));
+  --seatmap-motion-compact-knob-row-height: 64px;
+  --seatmap-motion-grid-row-gap: 5px;
+  --seatmap-motion-advanced-max-height: calc(
+    (var(--seatmap-motion-compact-knob-row-height) * 3) + (var(--seatmap-motion-grid-row-gap) * 2)
+  );
+  width: fit-content;
+  max-width: min(980px, 96vw);
+  display: flex;
+  flex-direction: column;
+}
+
+.seatmap-editor__option-card--motion .seatmap-editor__option-card-title--group {
+  width: 100%;
+  align-self: stretch;
+  text-align: left;
+}
+
+.seatmap-editor__option-card--motion .seatmap-editor__option-card-body {
+  max-height: min(54vh, 430px);
+  overflow-y: visible;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.seatmap-editor__motion-layout {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  height: auto;
+  min-height: 0;
+}
+
+.seatmap-editor__motion-column {
+  flex: 0 0 var(--seatmap-motion-col-width);
+  max-width: var(--seatmap-motion-col-width);
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 0;
+}
+
+.seatmap-editor__option-card--motion:not(.is-advanced-open) .seatmap-editor__motion-column--basic {
+  flex: 1 1 100%;
+  max-width: 100%;
+}
+
+.seatmap-editor__option-card--motion.is-advanced-open .seatmap-editor__motion-column {
+  flex: 0 0 var(--seatmap-motion-col-width);
+  max-width: var(--seatmap-motion-col-width);
+}
+
+.seatmap-editor__option-card--motion.is-advanced-open .seatmap-editor__motion-column--basic {
+  overflow-y: auto;
+}
+
+.seatmap-editor__motion-column--basic {
+  padding-right: 2px;
+}
+
+.seatmap-editor__motion-column--advanced {
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: var(--seatmap-motion-advanced-max-height);
+  padding-right: 2px;
+}
+
+.seatmap-editor__motion-column--advanced {
+  border-left: 1px solid var(--seatmap-editor-border-subtle);
+  padding-left: 8px;
+}
+
+.seatmap-editor__motion-column--advanced .seatmap-editor__option-card-divider {
+  background: color-mix(in srgb, var(--seatmap-editor-border-subtle) 68%, white);
+}
+
+.seatmap-editor__motion-column--advanced .seatmap-editor__motion-group-divider {
+  display: none;
+}
+
+.seatmap-editor__motion-advanced-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 6px;
+  padding-bottom: 2px;
+  background: linear-gradient(
+    to top,
+    var(--seatmap-editor-surface-muted) 70%,
+    color-mix(in srgb, var(--seatmap-editor-surface-muted) 40%, transparent)
+  );
+}
+
+.seatmap-editor__motion-basic-actions {
+  width: 100%;
+}
+
+.seatmap-editor__motion-group-divider {
+  width: 90%;
+  height: 1px;
+  min-height: 1px;
+  margin: 0px 5% 0px;
+  border-radius: 1px;
+  background: var(--seatmap-editor-motion-group-divider);
+  opacity: 0.80;
+  flex: 0 0 auto;
+  align-self: left;
+}
+
+@media (max-width: 1080px) {
+  .seatmap-editor__motion-layout {
+    flex-direction: column;
+  }
+
+  .seatmap-editor__option-card--motion .seatmap-editor__option-card-title--group {
+    width: 100%;
+  }
+
+  .seatmap-editor__motion-column {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+
+  .seatmap-editor__motion-column--advanced {
+    border-left: none;
+    border-top: 1px solid var(--seatmap-editor-border-subtle);
+    padding-left: 0;
+    padding-top: 10px;
+  }
+}
+
+.seatmap-editor__row-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.seatmap-editor__row-layout-body {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.seatmap-editor__row-layout-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seatmap-editor__row-layout-separator {
+  width: 1px;
+  align-self: stretch;
+  background: var(--seatmap-editor-border-subtle);
+}
+
+.seatmap-editor__row-presets-table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  table-layout: fixed;
+  font-family: var(--seatmap-editor-font-body);
+  font-size: var(--seatmap-editor-type-label-size);
+}
+
+.seatmap-editor__row-presets-table td {
+  border: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.seatmap-editor__row-presets-table th.seatmap-editor__row-preset-row-label {
+  border: 0;
+  padding: 0 3px 0 0;
+  text-align: right;
+  font-weight: 500;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--seatmap-editor-text-muted, var(--seatmap-editor-text)) 72%, transparent);
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+.seatmap-editor__row-preset-button {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 31px;
+  min-height: 22px;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-sm);
+  background: var(--seatmap-editor-control-surface);
+  color: var(--seatmap-editor-text);
+  padding: 1px 2px;
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+  cursor: pointer;
+}
+
+.seatmap-editor__row-preset-button:hover {
+  border-color: color-mix(in srgb, var(--seatmap-editor-border) 50%, var(--seatmap-editor-text) 50%);
+}
+
+.seatmap-editor__row-preset-button.is-active {
+  background: color-mix(in srgb, var(--seatmap-editor-accent) 30%, var(--seatmap-editor-control-surface));
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+  color: var(--seatmap-editor-accent-text);
+}
+
+.seatmap-editor__segmented-button {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 4px 8px;
+  border-radius: calc(var(--seatmap-editor-radius-md) - 2px);
+  border: 1px solid var(--seatmap-editor-border);
+  background: var(--seatmap-editor-segmented-bg, var(--seatmap-editor-control-surface));
+  color: var(--seatmap-editor-segmented-fg, var(--seatmap-editor-text));
+  cursor: pointer;
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+  font-weight: 600;
+  min-height: 28px;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.seatmap-editor__segmented-button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--seatmap-editor-border) 60%, var(--seatmap-editor-text) 40%);
+}
+
+.seatmap-editor__segmented-button.is-active {
+  --seatmap-editor-segmented-bg: var(--seatmap-editor-accent);
+  --seatmap-editor-segmented-fg: var(--seatmap-editor-accent-text);
+}
+
+.seatmap-editor__segmented-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--seatmap-editor-accent) 35%, transparent);
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+}
+
+.seatmap-editor__input,
+.seatmap-editor__select {
+  padding: 3px 6px;
+  background: var(--seatmap-editor-control-surface);
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-sm);
+  color: var(--seatmap-editor-text);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__input {
+  width: 56px;
+}
+
+.seatmap-editor__input-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.seatmap-editor__input--stepper {
+  width: 44px;
+  text-align: center;
+}
+
+.seatmap-editor__input--stepper::-webkit-outer-spin-button,
+.seatmap-editor__input--stepper::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.seatmap-editor__input--stepper[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.seatmap-editor__stepper-button {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--seatmap-editor-radius-pill);
+  border: 1px solid var(--seatmap-editor-border);
+  background: var(--seatmap-editor-control-surface);
+  color: var(--seatmap-editor-text-strong);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+  font-family: var(--seatmap-editor-font-body);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 130ms ease, background-color 130ms ease, box-shadow 130ms ease;
+}
+
+.seatmap-editor__stepper-button:hover {
+  background: var(--seatmap-editor-toolbar-button-hover-bg);
+  border-color: var(--seatmap-editor-toolbar-button-hover-border);
+}
+
+.seatmap-editor__stepper-button:focus-visible {
+  outline: none;
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+  box-shadow: 0 0 0 2px var(--seatmap-focus-ring);
+}
+
+.seatmap-editor__stepper-button:active {
+  background: color-mix(in srgb, var(--seatmap-editor-control-surface) 82%, var(--seatmap-editor-accent) 18%);
+}
+
+.seatmap-editor__select {
+  padding: 4px 8px;
+  font-size: var(--seatmap-editor-type-body-size);
+  cursor: pointer;
+}
+
+.seatmap-editor__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--seatmap-editor-text);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+  user-select: none;
+}
+
+.seatmap-editor__switch-track {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid var(--seatmap-editor-border);
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.12s ease;
+  background: var(--seatmap-editor-control-surface);
+  cursor: pointer;
+}
+
+.seatmap-editor__switch-track.is-checked {
+  background: var(--seatmap-editor-accent);
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+}
+
+.seatmap-editor__switch-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--seatmap-editor-text);
+  transition: transform 0.12s ease;
+  transform: translateX(0);
+}
+
+.seatmap-editor__switch-track.is-checked .seatmap-editor__switch-thumb {
+  transform: translateX(14px);
+}
+
+.seatmap-editor__sidebar {
+  width: 260px;
+  background: var(--seatmap-editor-sidebar-surface);
+  box-shadow: var(--seatmap-editor-sidebar-edge-shadow);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.seatmap-editor__sidebar-separator {
+  height: 8px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--seatmap-editor-sidebar-separator-wash),
+    transparent
+  );
+  margin: 4px 16px;
+}
+
+.seatmap-editor__canvas-area {
+  flex: 1;
+  position: relative;
+}
+
+.seatmap-editor__overlay-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.seatmap-editor__overlay-svg--polygon {
+  z-index: 10;
+}
+
+.seatmap-editor__overlay-svg--drag {
+  z-index: 14;
+}
+
+.seatmap-editor__overlay-svg--section-resize {
+  z-index: 16;
+}
+
+.seatmap-editor__overlay-svg--row-direction {
+  z-index: 17;
+}
+
+.seatmap-editor__overlay-polygon,
+.seatmap-editor__overlay-polyline {
+  fill: var(--seatmap-editor-overlay-info-fill);
+  stroke: var(--seatmap-editor-overlay-info-stroke);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+
+.seatmap-editor__overlay-close-line {
+  stroke-width: 2;
+  stroke-dasharray: 4 4;
+}
+
+.seatmap-editor__overlay-close-line--active {
+  stroke: var(--seatmap-editor-overlay-success-stroke);
+}
+
+.seatmap-editor__overlay-close-line--inactive {
+  stroke: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 40%, transparent);
+  stroke-width: 1;
+}
+
+.seatmap-editor__overlay-point {
+  fill: var(--seatmap-editor-overlay-info-stroke);
+}
+
+.seatmap-editor__overlay-point--first-active {
+  fill: var(--seatmap-editor-overlay-success-stroke);
+}
+
+.seatmap-editor__overlay-drag-outline {
+  fill: color-mix(in srgb, var(--seatmap-editor-overlay-info-fill) 90%, transparent);
+  stroke: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 90%, white 10%);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+
+.seatmap-editor__overlay-drag-seat {
+  fill: color-mix(in srgb, var(--seatmap-editor-overlay-info-fill) 75%, var(--seatmap-editor-overlay-info-stroke));
+  stroke: color-mix(in srgb, var(--seatmap-editor-overlay-info-stroke) 90%, white 10%);
+  stroke-width: 1.5;
+}
+
+.seatmap-editor__overlay-section-outline {
+  fill: var(--seatmap-editor-overlay-warning-fill);
+  stroke: var(--seatmap-editor-overlay-warning-stroke);
+  stroke-width: 1.5;
+  stroke-dasharray: 7 4;
+}
+
+.seatmap-editor__overlay-section-side {
+  fill: var(--seatmap-editor-overlay-warning-stroke);
+  stroke: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 78%, var(--seatmap-editor-surface-lowest));
+  stroke-width: 1;
+}
+
+.seatmap-editor__overlay-section-corner {
+  fill: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 94%, white 6%);
+  stroke: color-mix(in srgb, var(--seatmap-editor-overlay-warning-stroke) 78%, var(--seatmap-editor-surface-lowest));
+  stroke-width: 1.2;
+}
+
+.seatmap-editor__overlay-row-direction-line {
+  stroke: var(--seatmap-editor-overlay-row-direction-stroke);
+}
+
+.seatmap-editor__overlay-row-direction-arrow {
+  fill: var(--seatmap-editor-overlay-row-direction-stroke);
+}
+
+.seatmap-editor__overlay-row-direction-origin {
+  fill: var(--seatmap-editor-overlay-row-direction-origin-fill);
+  stroke: var(--seatmap-editor-overlay-row-direction-origin-stroke);
+}
+
+.seatmap-editor__overlay-label-box {
+  fill: var(--seatmap-editor-overlay-label-bg);
+  stroke: var(--seatmap-editor-overlay-label-border);
+  stroke-width: 1;
+}
+
+.seatmap-editor__overlay-label-text {
+  fill: var(--seatmap-editor-overlay-label-text);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+  text-anchor: middle;
+}
+
+.seatmap-editor__background-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+.seatmap-editor__background-frame {
+  position: absolute;
+  border: 1px dashed var(--seatmap-editor-background-guide-stroke);
+  box-shadow: var(--seatmap-editor-background-guide-shadow);
+  pointer-events: auto;
+}
+
+.seatmap-editor__background-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--seatmap-editor-background-handle-fill);
+  border: 1px solid var(--seatmap-editor-background-handle-stroke);
+  pointer-events: auto;
+}
+
+.seatmap-editor__hint-bubble {
+  position: absolute;
+  pointer-events: none;
+  z-index: 18;
+  max-width: 280px;
+  background: var(--seatmap-editor-hint-surface);
+  border: 1px solid var(--seatmap-editor-hint-border);
+  border-radius: var(--seatmap-editor-radius-md);
+  color: var(--seatmap-editor-hint-text);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+  padding: 6px 8px;
+  box-shadow: var(--seatmap-editor-hint-shadow);
+}
+
+.seatmap-editor__panel {
+  padding: 16px;
+}
+
+.seatmap-editor__panel-title {
+  margin: 0 0 12px;
+  color: var(--seatmap-editor-text);
+  font-size: var(--seatmap-editor-type-title-size);
+  font-weight: 600;
+  font-family: var(--seatmap-editor-font-heading);
+}
+
+.seatmap-editor__panel-section {
+  margin-bottom: 12px;
+}
+
+.seatmap-editor__panel-section--card {
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: calc(var(--seatmap-editor-radius-md) - 2px);
+  background: var(--seatmap-editor-panel-card-bg);
+}
+
+.seatmap-editor__panel-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.seatmap-editor__panel-label {
+  margin-bottom: 2px;
+  color: var(--seatmap-editor-text-muted);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seatmap-editor__panel-text {
+  color: var(--seatmap-editor-text);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__panel-text--strong {
+  font-weight: 600;
+}
+
+.seatmap-editor__panel-text--mono-min {
+  min-width: 24px;
+}
+
+.seatmap-editor__panel-text--truncate {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seatmap-editor__panel-muted {
+  color: var(--seatmap-editor-text-muted);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__panel-price {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  margin-right: 2px;
+}
+
+.seatmap-editor__panel-muted--small {
+  font-size: var(--seatmap-editor-type-label-size);
+}
+
+.seatmap-editor__panel-input,
+.seatmap-editor__panel-select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  background: var(--seatmap-editor-control-surface);
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-sm);
+  color: var(--seatmap-editor-text);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__panel-input--grow {
+  flex: 1 1 auto;
+}
+
+.seatmap-editor__panel-input:focus-visible,
+.seatmap-editor__panel-select:focus-visible {
+  outline: none;
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--seatmap-editor-accent) 32%, transparent);
+}
+
+.seatmap-editor__panel-select {
+  cursor: pointer;
+}
+
+.seatmap-editor__panel-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-sm);
+  background: var(--seatmap-editor-control-surface);
+  color: var(--seatmap-editor-text);
+  font-family: var(--seatmap-editor-font-body);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-weight: 600;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.seatmap-editor__panel-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--seatmap-editor-control-surface) 86%, var(--seatmap-editor-text) 14%);
+  border-color: color-mix(in srgb, var(--seatmap-editor-border) 58%, var(--seatmap-editor-text) 42%);
+}
+
+.seatmap-editor__panel-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--seatmap-focus-ring);
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+}
+
+.seatmap-editor__panel-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.seatmap-editor__panel-button--danger {
+  border-color: color-mix(in srgb, var(--seatmap-editor-danger, #ad3f3f) 60%, var(--seatmap-editor-surface-lowest));
+  background: color-mix(in srgb, var(--seatmap-editor-danger, #ad3f3f) 30%, var(--seatmap-editor-control-surface));
+  color: var(--seatmap-editor-danger-text, #ffd9df);
+}
+
+.seatmap-editor__panel-button--tiny {
+  padding: 1px 5px;
+  font-size: var(--seatmap-editor-type-label-size);
+}
+
+.seatmap-editor__panel-button--full {
+  width: 100%;
+}
+
+.seatmap-editor__panel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seatmap-editor__panel-row--spaced {
+  margin-top: 10px;
+}
+
+.seatmap-editor__panel-actions-end {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.seatmap-editor__panel-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.seatmap-editor__panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.seatmap-editor__panel-scroll {
+  overflow-y: auto;
+}
+
+.seatmap-editor__panel-scroll--sm {
+  max-height: 200px;
+}
+
+.seatmap-editor__panel-scroll--md {
+  max-height: 220px;
+}
+
+.seatmap-editor__panel-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: var(--seatmap-editor-radius-sm);
+  background: var(--seatmap-editor-control-surface);
+  color: var(--seatmap-editor-text);
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__panel-list-item--interactive {
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+  border: 1px solid transparent;
+}
+
+.seatmap-editor__panel-list-item--interactive-button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+
+.seatmap-editor__panel-list-item--interactive:hover {
+  background: var(--seatmap-editor-toolbar-button-hover-bg);
+  border-color: var(--seatmap-editor-toolbar-button-hover-border);
+}
+
+.seatmap-editor__panel-list-item--interactive:focus-visible {
+  outline: none;
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+  box-shadow: 0 0 0 2px var(--seatmap-editor-toolbar-button-focus-ring);
+}
+
+.seatmap-editor__panel-list-item--interactive.is-active {
+  background: var(--seatmap-editor-toolbar-button-active-bg);
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+}
+
+.seatmap-editor__panel-content-grow {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.seatmap-editor__panel-divider {
+  height: 8px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--seatmap-editor-sidebar-separator-wash),
+    transparent
+  );
+  margin: 14px 0;
+}
+
+.seatmap-editor__panel-img-preview {
+  width: 100%;
+  height: 80px;
+  border-radius: var(--seatmap-editor-radius-sm);
+  border: 1px solid var(--seatmap-editor-border);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.seatmap-editor__panel-img-preview > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.seatmap-editor__panel-checkbox {
+  accent-color: var(--seatmap-editor-accent);
+}
+
+.seatmap-editor__panel-range {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  display: block;
+  box-sizing: border-box;
+  accent-color: var(--seatmap-editor-accent);
+  cursor: pointer;
+}
+
+.seatmap-editor__panel-range--inline {
+  flex: 1 1 auto;
+}
+
+.seatmap-editor__color-picker-shell {
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--seatmap-editor-text-muted) 60%, transparent);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--seatmap-editor-control-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), inset 0 0 0 1px color-mix(in srgb, var(--seatmap-editor-text) 16%, transparent);
+  position: relative;
+}
+
+.seatmap-editor__color-picker-shell--lg {
+  width: 16px;
+  height: 16px;
+}
+
+.seatmap-editor__color-picker-dot {
+  position: absolute;
+  inset: 0;
+}
+
+.seatmap-editor__color-picker-input {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  opacity: 0;
+}
+
+.seatmap-editor__color-picker-input[data-editable="true"] {
+  cursor: pointer;
+}
+
+.seatmap-editor__color-picker-input[data-editable="false"] {
+  cursor: default;
+}
+
+.seatmap-editor__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--seatmap-editor-surface-lowest) 70%, transparent);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.seatmap-editor__modal {
+  width: min(860px, 95vw);
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--seatmap-editor-surface);
+  border: 1px solid color-mix(in srgb, var(--seatmap-editor-border) 70%, transparent);
+  border-radius: calc(var(--seatmap-editor-radius-md) + 2px);
+  padding: 16px;
+}
+
+.seatmap-editor__modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.seatmap-editor__modal-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seatmap-editor__panel-muted--spaced,
+.seatmap-editor__status-line {
+  margin-bottom: 10px;
+}
+
+.seatmap-editor__status-line--success {
+  color: var(--seatmap-editor-status-success);
+}
+
+.seatmap-editor__status-line--error {
+  color: var(--seatmap-editor-status-error);
+}
+
+.seatmap-editor__status-line--idle {
+  color: var(--seatmap-editor-status-idle);
+}
+
+.seatmap-editor__table-grid {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.6fr) minmax(92px, 0.9fr) minmax(88px, 0.8fr) minmax(188px, 1.4fr) minmax(96px, 0.9fr);
+  gap: 8px;
+}
+
+.seatmap-editor__table-head {
+  color: var(--seatmap-editor-text-muted);
+  font-size: var(--seatmap-editor-type-label-size);
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__table-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(160px, 1.6fr) minmax(92px, 0.9fr) minmax(88px, 0.8fr) minmax(188px, 1.4fr) minmax(96px, 0.9fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: calc(var(--seatmap-editor-radius-md) - 2px);
+  background: var(--seatmap-editor-table-row-bg);
+}
+
+.seatmap-editor__table-category-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.seatmap-editor__table-category-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.seatmap-editor__table-category-name {
+  color: var(--seatmap-editor-text);
+  font-size: 13px;
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__table-amount {
+  color: color-mix(in srgb, var(--seatmap-editor-text) 86%, var(--seatmap-editor-text-muted));
+  font-size: 12px;
+  font-family: var(--seatmap-editor-font-body);
+}
+
+.seatmap-editor__table-effective-price {
+  color: var(--seatmap-editor-text);
+  font-size: 12px;
+  font-family: var(--seatmap-editor-font-body);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.seatmap-editor__override-editor {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.seatmap-editor__override-input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 4px 92px 4px 8px;
+  border: 1px solid var(--seatmap-editor-border);
+  border-radius: var(--seatmap-editor-radius-sm);
+  background: var(--seatmap-editor-control-surface);
+  color: var(--seatmap-editor-text);
+  font-size: 12px;
+  font-family: var(--seatmap-editor-font-body);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.seatmap-editor__override-input.is-disabled {
+  color: var(--seatmap-editor-text-muted);
+  background: color-mix(in srgb, var(--seatmap-editor-control-surface) 88%, transparent);
+}
+
+.seatmap-editor__override-actions {
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  gap: 2px;
+}
+
+.seatmap-editor__table-action-button {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--seatmap-editor-radius-sm);
+  border: 1px solid var(--seatmap-editor-border);
+  background: var(--seatmap-editor-control-surface);
+  color: color-mix(in srgb, var(--seatmap-editor-text) 88%, var(--seatmap-editor-text-muted));
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.seatmap-editor__table-action-button:hover:not(:disabled) {
+  border-color: var(--seatmap-editor-toolbar-button-hover-border);
+  background: var(--seatmap-editor-toolbar-button-hover-bg);
+}
+
+.seatmap-editor__table-action-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.seatmap-editor__table-action-button--apply {
+  border-color: var(--seatmap-editor-toolbar-button-active-border);
+  background: color-mix(in srgb, var(--seatmap-editor-accent) 34%, var(--seatmap-editor-control-surface));
+  color: var(--seatmap-editor-accent-text);
+}
+
+.seatmap-editor__table-action-button--reset {
+  border-color: color-mix(in srgb, var(--seatmap-editor-danger, #ad3f3f) 58%, var(--seatmap-editor-surface-lowest));
+  background: color-mix(in srgb, var(--seatmap-editor-danger, #ad3f3f) 34%, var(--seatmap-editor-control-surface));
+  color: var(--seatmap-editor-danger-text, #ffd9df);
+}
+
+.seatmap-editor__orientation-toggle {
+  gap: 8px;
+}
+
+.seatmap-editor__switch-track--wide {
+  width: 46px;
+  height: 24px;
+}
+
+.seatmap-editor__switch-thumb--wide {
+  width: 18px;
+  height: 18px;
+}
+
+.seatmap-editor__orientation-label {
+  font-size: var(--seatmap-editor-type-body-size);
+  font-family: var(--seatmap-editor-font-body);
+  font-weight: 600;
+  color: var(--seatmap-editor-text-muted);
+}
+
+.seatmap-editor__orientation-label.is-active {
+  color: var(--seatmap-editor-accent);
+}
