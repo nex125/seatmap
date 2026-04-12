@@ -186,11 +186,45 @@ docker compose exec seatmap bun run lint
 ```
 
 ```bash
-# bump packages versions
+# bump package versions (dependency order)
 docker compose exec -w /app/packages/core seatmap bun pm version patch
-docker compose exec -w /app/packages/editor seatmap bun pm version patch
 docker compose exec -w /app/packages/react seatmap bun pm version patch
 docker compose exec -w /app/packages/viewer seatmap bun pm version patch
+docker compose exec -w /app/packages/editor seatmap bun pm version patch
+```
+
+### Publishing Packages
+
+Follow these steps in order from `seatmap/`:
+
+1. Start container.
+```bash
+docker compose up -d seatmap
+```
+
+2. Bump versions (`core -> react -> viewer -> editor`).
+```bash
+docker compose exec -w /app/packages/core seatmap bun pm version patch
+docker compose exec -w /app/packages/react seatmap bun pm version patch
+docker compose exec -w /app/packages/viewer seatmap bun pm version patch
+docker compose exec -w /app/packages/editor seatmap bun pm version patch
+```
+
+3. Run prepack checks in the same order.
+```bash
+# prepack runs: clean -> build -> verify:package-exports
+docker compose exec -w /app/packages/core seatmap bun run prepack
+docker compose exec -w /app/packages/react seatmap bun run prepack
+docker compose exec -w /app/packages/viewer seatmap bun run prepack
+docker compose exec -w /app/packages/editor seatmap bun run prepack
+```
+
+4. Publish in the same order.
+```bash
+docker compose exec -w /app/packages/core seatmap npm publish --access public
+docker compose exec -w /app/packages/react seatmap npm publish --access public
+docker compose exec -w /app/packages/viewer seatmap npm publish --access public
+docker compose exec -w /app/packages/editor seatmap npm publish --access public
 ```
 
 ## Project Structure

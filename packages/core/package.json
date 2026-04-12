@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-core",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -21,7 +21,10 @@
     "dev": "tsup --watch",
     "lint": "tsc --noEmit",
     "test": "bun test",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "verify:package-exports": "bun run scripts/verify-package-exports.ts",
+    "prepack": "bun run clean && bun run build && bun run verify:package-exports",
+    "prepublishOnly": "bun run prepack"
   },
   "peerDependencies": {
     "pixi.js": "^8"
