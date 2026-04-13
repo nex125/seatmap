@@ -10,7 +10,7 @@ import { AddRowTool } from "./tools/AddRowTool";
 import { AddSeatTool } from "./tools/AddSeatTool";
 import type { BaseTool, ToolPointerEvent } from "./tools/BaseTool";
 import { Toolbar } from "./panels/Toolbar";
-import { PropertyPanel } from "./panels/PropertyPanel";
+import { PropertyPanel, type VenueIdFieldMode } from "./panels/PropertyPanel";
 import { CategoryManager } from "./panels/CategoryManager";
 import { LayerPanel } from "./panels/LayerPanel";
 import { StatusManager } from "./panels/StatusManager";
@@ -25,6 +25,7 @@ export interface SeatmapEditorProps {
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   translate?: SeatmapEditorTranslate;
   className?: string;
+  venueIdField?: VenueIdFieldMode;
 }
 
 function fitBackgroundToBounds(
@@ -350,11 +351,13 @@ function EditorInner({
   onSave,
   fetchCategoryPrices,
   translate,
+  venueIdField,
 }: {
   onChange?: (venue: Venue) => void;
   onSave?: (venue: Venue, serializedVenue: string) => void;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   translate?: SeatmapEditorTranslate;
+  venueIdField?: VenueIdFieldMode;
 }) {
   const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
     translateEditorText(translate, key, fallback, values);
@@ -2621,6 +2624,7 @@ function EditorInner({
             onBackgroundSizeChange={handleBackgroundSizeChange}
             onBackgroundKeepAspectRatioChange={handleBackgroundKeepAspectRatioChange}
             translate={translate}
+            venueIdField={venueIdField}
           />
           {selectedSeatIds.size === 0 && (
             <>
@@ -2659,11 +2663,25 @@ function EditorInner({
   );
 }
 
-export function SeatmapEditor({ venue, onChange, onSave, fetchCategoryPrices, translate, className }: SeatmapEditorProps) {
+export function SeatmapEditor({
+  venue,
+  onChange,
+  onSave,
+  fetchCategoryPrices,
+  translate,
+  className,
+  venueIdField,
+}: SeatmapEditorProps) {
   return (
     <SeatmapProvider venue={venue}>
       <div className={className ? `seatmap-editor__host ${className}` : "seatmap-editor__host"}>
-        <EditorInner onChange={onChange} onSave={onSave} fetchCategoryPrices={fetchCategoryPrices} translate={translate} />
+        <EditorInner
+          onChange={onChange}
+          onSave={onSave}
+          fetchCategoryPrices={fetchCategoryPrices}
+          translate={translate}
+          venueIdField={venueIdField}
+        />
       </div>
     </SeatmapProvider>
   );

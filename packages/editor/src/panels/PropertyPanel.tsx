@@ -6,6 +6,8 @@ import type { SeatmapStore } from "@nex125/seatmap-react";
 import type { SeatmapEditorTranslate } from "../i18n";
 import { translateEditorText } from "../i18n";
 
+export type VenueIdFieldMode = "editable" | "readonly" | "hidden";
+
 export interface PropertyPanelProps {
   venue: Venue | null;
   selectedSeatIds: Set<string>;
@@ -18,6 +20,7 @@ export interface PropertyPanelProps {
   onBackgroundSizeChange?: (size: { width?: number; height?: number }) => void;
   onBackgroundKeepAspectRatioChange?: (keepAspectRatio: boolean) => void;
   translate?: SeatmapEditorTranslate;
+  venueIdField?: VenueIdFieldMode;
   style?: CSSProperties;
 }
 
@@ -45,6 +48,7 @@ export function PropertyPanel({
   onBackgroundSizeChange,
   onBackgroundKeepAspectRatioChange,
   translate,
+  venueIdField = "editable",
   style,
 }: PropertyPanelProps) {
   const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
@@ -760,14 +764,25 @@ export function PropertyPanel({
             />
           </div>
 
-          <div className="seatmap-editor__panel-section">
-            <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.venueId", "Venue ID")}</div>
-            <input
-              className="seatmap-editor__panel-input"
-              value={venue.id}
-              onChange={(e) => updateVenueId(e.target.value)}
-            />
-          </div>
+          {venueIdField !== "hidden" && (
+            <div className="seatmap-editor__panel-section">
+              <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.venueId", "Venue ID")}</div>
+              {venueIdField === "readonly" ? (
+                <input
+                  className="seatmap-editor__panel-input seatmap-editor__panel-text--mono-min"
+                  value={venue.id}
+                  readOnly
+                  aria-readonly
+                />
+              ) : (
+                <input
+                  className="seatmap-editor__panel-input"
+                  value={venue.id}
+                  onChange={(e) => updateVenueId(e.target.value)}
+                />
+              )}
+            </div>
+          )}
 
           <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--small">
             {t("seatmapEditor.propertyPanel.stats", "Stats: {sections} sections · {seats} seats", {

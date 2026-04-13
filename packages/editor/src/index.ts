@@ -1,5 +1,6 @@
 export { SeatmapEditor } from "./SeatmapEditor";
 export type { SeatmapEditorProps } from "./SeatmapEditor";
+export type { VenueIdFieldMode } from "./panels/PropertyPanel";
 export {
   BaseTool,
   PanTool,

@@ -227,6 +227,23 @@ docker compose exec -w /app/packages/viewer seatmap bun publish --access public
 docker compose exec -w /app/packages/editor seatmap bun publish --access public
 ```
 
+## What to republish (cheatsheet)
+
+Chain order when several layers change: **core → react → viewer / editor** (`viewer` and `editor` do not depend on each other).
+
+**`packages/react` only** (`@nex125/seatmap-react`): bump and publish **react**. **Editor** bundles `seatmap-react` in its dist, so also bump and publish **editor** if editor users should pick up the change. **Viewer** does not bundle it—republish viewer only if you changed viewer; otherwise apps can bump **react** alone.
+
+| You changed only… | Republish |
+|-------------------|-----------|
+| `packages/core` | **core**, then **react**, then **viewer** and **editor** (anything built on the new core) |
+| `packages/react` | **react**; **editor** if editor consumers matter; **viewer** only if viewer code changed |
+| `packages/viewer` | **viewer** |
+| `packages/editor` | **editor** |
+
+If you change npm **`react` / `react-dom` peer ranges**, mirror the same ranges in **react**, **viewer**, and **editor** `package.json`, then publish whichever packages you ship.
+
+After publishes, bump `@nex125/seatmap-*` versions in **events-frontend** / **events-admin-frontend** when those apps should move.
+
 ## Project Structure
 
 ```
