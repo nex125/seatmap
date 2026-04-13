@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 import type { SVGProps } from "react";
+import type { SeatmapEditorTranslate } from "../i18n";
+import { translateEditorText } from "../i18n";
 
 export interface ToolbarProps {
   activeTool: string;
@@ -18,6 +20,7 @@ export interface ToolbarProps {
   onToggleHints: () => void;
   isEditorSettingsOpen: boolean;
   onToggleEditorSettings: () => void;
+  translate?: SeatmapEditorTranslate;
   style?: CSSProperties;
 }
 
@@ -149,11 +152,11 @@ function SettingsIcon(props: IconProps) {
 }
 
 const tools = [
-  { id: "pan", label: "Pan", icon: PanIcon },
-  { id: "select", label: "Select", icon: SelectIcon },
-  { id: "add-section", label: "Section", icon: SectionIcon },
-  { id: "add-row", label: "Row", icon: RowIcon },
-  { id: "add-seat", label: "Seat", icon: SeatIcon },
+  { id: "pan", label: "Pan", labelKey: "seatmapEditor.toolbar.tools.pan", icon: PanIcon },
+  { id: "select", label: "Select", labelKey: "seatmapEditor.toolbar.tools.select", icon: SelectIcon },
+  { id: "add-section", label: "Section", labelKey: "seatmapEditor.toolbar.tools.addSection", icon: SectionIcon },
+  { id: "add-row", label: "Row", labelKey: "seatmapEditor.toolbar.tools.addRow", icon: RowIcon },
+  { id: "add-seat", label: "Seat", labelKey: "seatmapEditor.toolbar.tools.addSeat", icon: SeatIcon },
 ] as const;
 
 export function Toolbar({
@@ -173,8 +176,10 @@ export function Toolbar({
   onToggleHints,
   isEditorSettingsOpen,
   onToggleEditorSettings,
+  translate,
   style,
 }: ToolbarProps) {
+  const t = (key: string, fallback: string) => translateEditorText(translate, key, fallback);
   const getToolbarButtonClassName = (
     isActive = false,
     isHighlighted = false,
@@ -195,10 +200,10 @@ export function Toolbar({
             type="button"
             onClick={() => onToolChange(tool.id)}
             className={`${getToolbarButtonClassName(activeTool === tool.id)} seatmap-editor__toolbar-tool-button`}
-            title={tool.label}
+            title={t(tool.labelKey, tool.label)}
           >
             <tool.icon className="seatmap-editor__toolbar-icon" />
-            <span>{tool.label}</span>
+            <span>{t(tool.labelKey, tool.label)}</span>
           </button>
         ))}
 
@@ -209,78 +214,78 @@ export function Toolbar({
           onClick={onUndo}
           disabled={!canUndo}
           className={getToolbarButtonClassName()}
-          title="Undo (Ctrl+Z)"
+          title={t("seatmapEditor.toolbar.undoTitle", "Undo (Ctrl+Z)")}
         >
           <UndoIcon className="seatmap-editor__toolbar-icon" />
-          <span>Undo</span>
+          <span>{t("seatmapEditor.toolbar.undo", "Undo")}</span>
         </button>
         <button
           type="button"
           onClick={onRedo}
           disabled={!canRedo}
           className={getToolbarButtonClassName()}
-          title="Redo (Ctrl+Shift+Z)"
+          title={t("seatmapEditor.toolbar.redoTitle", "Redo (Ctrl+Shift+Z)")}
         >
           <RedoIcon className="seatmap-editor__toolbar-icon" />
-          <span>Redo</span>
+          <span>{t("seatmapEditor.toolbar.redo", "Redo")}</span>
         </button>
 
         <div className="seatmap-editor__toolbar-divider" />
 
-        <button type="button" onClick={onFitView} className={getToolbarButtonClassName()} title="Fit to view">
+        <button type="button" onClick={onFitView} className={getToolbarButtonClassName()} title={t("seatmapEditor.toolbar.fitTitle", "Fit to view")}>
           <FitIcon className="seatmap-editor__toolbar-icon" />
-          <span>Fit</span>
+          <span>{t("seatmapEditor.toolbar.fit", "Fit")}</span>
         </button>
         <button
           type="button"
           onClick={onToggleGridOptions}
           className={getToolbarButtonClassName(isGridOptionsOpen, gridEnabled)}
-          title="Show grid options"
+          title={t("seatmapEditor.toolbar.gridTitle", "Show grid options")}
         >
           <GridIcon className="seatmap-editor__toolbar-icon" />
-          <span>Grid</span>
+          <span>{t("seatmapEditor.toolbar.grid", "Grid")}</span>
         </button>
         <button
           type="button"
           onClick={onToggleHints}
           className={getToolbarButtonClassName(showHints, showHints)}
-          title="Toggle inline editor hints"
+          title={t("seatmapEditor.toolbar.hintsTitle", "Toggle inline editor hints")}
         >
           <HintIcon className="seatmap-editor__toolbar-icon" />
-          <span>Hints</span>
+          <span>{t("seatmapEditor.toolbar.hints", "Hints")}</span>
         </button>
         <button
           type="button"
           onClick={onToggleEditorSettings}
           className={getToolbarButtonClassName(isEditorSettingsOpen, isEditorSettingsOpen)}
-          title="Editor settings"
+          title={t("seatmapEditor.toolbar.settingsTitle", "Editor settings")}
         >
           <SettingsIcon className="seatmap-editor__toolbar-icon" />
-          <span>Settings</span>
+          <span>{t("seatmapEditor.toolbar.settings", "Settings")}</span>
         </button>
 
         <div className="seatmap-editor__toolbar-divider" />
 
-        <button type="button" onClick={onSave} className={getToolbarButtonClassName()} title="Export venue as JSON">
+        <button type="button" onClick={onSave} className={getToolbarButtonClassName()} title={t("seatmapEditor.toolbar.saveTitle", "Export venue as JSON")}>
           <SaveIcon className="seatmap-editor__toolbar-icon" />
-          <span>Save</span>
+          <span>{t("seatmapEditor.toolbar.save", "Save")}</span>
         </button>
-        <button type="button" onClick={onLoad} className={getToolbarButtonClassName()} title="Import venue from JSON">
+        <button type="button" onClick={onLoad} className={getToolbarButtonClassName()} title={t("seatmapEditor.toolbar.loadTitle", "Import venue from JSON")}>
           <LoadIcon className="seatmap-editor__toolbar-icon" />
-          <span>Load</span>
+          <span>{t("seatmapEditor.toolbar.load", "Load")}</span>
         </button>
         {showHints && (
-          <div className="seatmap-editor__toolbar-shortcuts-panel" aria-label="Keyboard shortcuts">
-            <span className="seatmap-editor__toolbar-shortcuts-title">Keyboard shortcuts</span>
+          <div className="seatmap-editor__toolbar-shortcuts-panel" aria-label={t("seatmapEditor.toolbar.shortcuts.ariaLabel", "Keyboard shortcuts")}>
+            <span className="seatmap-editor__toolbar-shortcuts-title">{t("seatmapEditor.toolbar.shortcuts.title", "Keyboard shortcuts")}</span>
             <div className="seatmap-editor__toolbar-shortcuts-row">
-              <span><kbd>H</kbd> / <kbd>1</kbd> - Pan</span>
-              <span><kbd>V</kbd> / <kbd>2</kbd> - Select</span>
-              <span><kbd>S</kbd> / <kbd>3</kbd> - Add Section</span>
+              <span><kbd>H</kbd> / <kbd>1</kbd> - {t("seatmapEditor.toolbar.tools.pan", "Pan")}</span>
+              <span><kbd>V</kbd> / <kbd>2</kbd> - {t("seatmapEditor.toolbar.tools.select", "Select")}</span>
+              <span><kbd>S</kbd> / <kbd>3</kbd> - {t("seatmapEditor.toolbar.shortcuts.addSection", "Add Section")}</span>
             </div>
             <div className="seatmap-editor__toolbar-shortcuts-row">
-              <span><kbd>R</kbd> / <kbd>4</kbd> - Add Row</span>
-              <span><kbd>A</kbd> / <kbd>5</kbd> - Add Seat</span>
-              <span><kbd>Space</kbd> (toggle) - Toggle Pan</span>
+              <span><kbd>R</kbd> / <kbd>4</kbd> - {t("seatmapEditor.toolbar.shortcuts.addRow", "Add Row")}</span>
+              <span><kbd>A</kbd> / <kbd>5</kbd> - {t("seatmapEditor.toolbar.shortcuts.addSeat", "Add Seat")}</span>
+              <span><kbd>Space</kbd> (toggle) - {t("seatmapEditor.toolbar.shortcuts.togglePan", "Toggle Pan")}</span>
             </div>
           </div>
         )}

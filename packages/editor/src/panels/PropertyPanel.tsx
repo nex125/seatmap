@@ -3,6 +3,8 @@ import type { Venue, Section, PricingCategory, CommandHistory, Row, Seat } from 
 import { generateId, isDancefloorSection, isStageSection } from "@nex125/seatmap-core";
 import { AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
+import type { SeatmapEditorTranslate } from "../i18n";
+import { translateEditorText } from "../i18n";
 
 export interface PropertyPanelProps {
   venue: Venue | null;
@@ -15,6 +17,7 @@ export interface PropertyPanelProps {
   onBackgroundOpacityChange?: (opacity: number) => void;
   onBackgroundSizeChange?: (size: { width?: number; height?: number }) => void;
   onBackgroundKeepAspectRatioChange?: (keepAspectRatio: boolean) => void;
+  translate?: SeatmapEditorTranslate;
   style?: CSSProperties;
 }
 
@@ -41,8 +44,11 @@ export function PropertyPanel({
   onBackgroundOpacityChange,
   onBackgroundSizeChange,
   onBackgroundKeepAspectRatioChange,
+  translate,
   style,
 }: PropertyPanelProps) {
+  const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
+    translateEditorText(translate, key, fallback, values);
   const [selectedSections, setSelectedSections] = useState<Section[]>([]);
 
   useEffect(() => {
@@ -491,7 +497,7 @@ export function PropertyPanel({
   if (!venue) {
     return (
       <div className="seatmap-editor__panel seatmap-editor__panel-muted" style={style}>
-        No venue loaded
+        {t("seatmapEditor.propertyPanel.noVenueLoaded", "No venue loaded")}
       </div>
     );
   }
@@ -534,15 +540,15 @@ export function PropertyPanel({
         <div className="seatmap-editor__panel-section">
           <div className="seatmap-editor__panel-section-header">
             <div className="seatmap-editor__panel-title">
-              Seat Config ({selectedSeatIds.size} selected)
+              {t("seatmapEditor.propertyPanel.seatConfig", "Seat Config ({count} selected)", { count: selectedSeatIds.size })}
             </div>
-            <button onClick={deleteSelectedObjects} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger" title="Delete selected objects">
-              Delete Selected
+            <button onClick={deleteSelectedObjects} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger" title={t("seatmapEditor.propertyPanel.deleteSelectedTitle", "Delete selected objects")}>
+              {t("seatmapEditor.propertyPanel.deleteSelected", "Delete Selected")}
             </button>
           </div>
 
           <div className="seatmap-editor__panel-section">
-            <div className="seatmap-editor__panel-label">Seat Status</div>
+            <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.seatStatus", "Seat Status")}</div>
             <select
               className="seatmap-editor__panel-select"
               value={isMixedSeatStatus ? "__mixed__" : selectedSeatStatusId}
@@ -550,7 +556,7 @@ export function PropertyPanel({
             >
               {isMixedSeatStatus && (
                 <option value="__mixed__" disabled>
-                  Mixed
+                  {t("seatmapEditor.common.mixed", "Mixed")}
                 </option>
               )}
               {venue.seatStatuses.map((status) => (
@@ -560,7 +566,7 @@ export function PropertyPanel({
           </div>
 
           <div className="seatmap-editor__panel-section">
-            <div className="seatmap-editor__panel-label">Selected Seats ({selectedSeatIds.size})</div>
+            <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.selectedSeats", "Selected Seats ({count})", { count: selectedSeatIds.size })}</div>
             <div className="seatmap-editor__panel-list seatmap-editor__panel-scroll seatmap-editor__panel-scroll--sm">
               {Array.from(selectedSeatIds).map((seatId) => {
                 let found: { seat: Seat; row: Row; section: Section } | null = null;
@@ -583,12 +589,12 @@ export function PropertyPanel({
                     className="seatmap-editor__panel-list-item"
                   >
                     <span className="seatmap-editor__panel-text seatmap-editor__panel-content-grow">
-                      {section.label} &middot; Row {row.label}, Seat {seat.label}
+                      {t("seatmapEditor.propertyPanel.seatItem", "{section} · Row {row}, Seat {seat}", { section: section.label, row: row.label, seat: seat.label })}
                     </span>
                     <button
                       onClick={() => deleteSeat(section.id, row.id, seat.id)}
                       className="seatmap-editor__panel-button seatmap-editor__panel-button--danger seatmap-editor__panel-button--tiny"
-                      title="Delete seat"
+                      title={t("seatmapEditor.propertyPanel.deleteSeat", "Delete seat")}
                     >
                       ✕
                     </button>
@@ -605,26 +611,26 @@ export function PropertyPanel({
         <div className="seatmap-editor__panel-section">
           <div className="seatmap-editor__panel-section-header">
             <div className="seatmap-editor__panel-title">
-              Section / Stage / Dancefloor Config{selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : ""}
+              {t("seatmapEditor.propertyPanel.sectionConfig", "Section / Stage / Dancefloor Config{suffix}", { suffix: selectedSections.length > 1 ? ` (${selectedSections.length} selected)` : "" })}
             </div>
-            <button onClick={deleteSelectedObjects} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger" title="Delete selected objects">
-              Delete Selected
+            <button onClick={deleteSelectedObjects} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger" title={t("seatmapEditor.propertyPanel.deleteSelectedTitle", "Delete selected objects")}>
+              {t("seatmapEditor.propertyPanel.deleteSelected", "Delete Selected")}
             </button>
           </div>
 
           {hasMultipleSelectedSections && (
             <div className="seatmap-editor__panel-section seatmap-editor__panel-section--card">
               <div className="seatmap-editor__panel-section">
-                <div className="seatmap-editor__panel-label">Label (apply to all selected)</div>
+                <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.labelApplyAll", "Label (apply to all selected)")}</div>
                 <input
                   className="seatmap-editor__panel-input"
                   value={sharedLabelValue}
-                  placeholder="Mixed labels"
+                  placeholder={t("seatmapEditor.propertyPanel.mixedLabels", "Mixed labels")}
                   onChange={(e) => updateSelectedSectionsLabel(selectedSectionIdsList, e.target.value)}
                 />
               </div>
               <div>
-                <div className="seatmap-editor__panel-label">Category (apply to all selected)</div>
+                <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.categoryApplyAll", "Category (apply to all selected)")}</div>
                 <select
                   className="seatmap-editor__panel-select"
                   value={sharedCategoryValue}
@@ -632,10 +638,10 @@ export function PropertyPanel({
                   disabled={selectedNonStageSections.length === 0}
                 >
                   {selectedNonStageSections.length === 0 && (
-                    <option value="" disabled>Not applicable for stage</option>
+                    <option value="" disabled>{t("seatmapEditor.propertyPanel.notApplicableForStage", "Not applicable for stage")}</option>
                   )}
                   {sharedCategoryValue === "__mixed__" && (
-                    <option value="__mixed__" disabled>Mixed</option>
+                    <option value="__mixed__" disabled>{t("seatmapEditor.common.mixed", "Mixed")}</option>
                   )}
                   {venue.categories.map((cat: PricingCategory) => (
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -643,7 +649,7 @@ export function PropertyPanel({
                 </select>
                 {hasSelectedStage && (
                   <div className="seatmap-editor__panel-label">
-                    Stage selection is excluded from category changes.
+                    {t("seatmapEditor.propertyPanel.stageSelectionExcluded", "Stage selection is excluded from category changes.")}
                   </div>
                 )}
               </div>
@@ -661,7 +667,7 @@ export function PropertyPanel({
               {!hasMultipleSelectedSections && (
                 <>
                   <div className="seatmap-editor__panel-section">
-                    <div className="seatmap-editor__panel-label">Label</div>
+                    <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.label", "Label")}</div>
                     <input
                       className="seatmap-editor__panel-input"
                       value={selectedSection.label}
@@ -670,7 +676,7 @@ export function PropertyPanel({
                   </div>
 
                   <div className="seatmap-editor__panel-section">
-                    <div className="seatmap-editor__panel-label">Category</div>
+                    <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.category", "Category")}</div>
                     <select
                       className="seatmap-editor__panel-select"
                       value={selectedSection.categoryId}
@@ -678,7 +684,7 @@ export function PropertyPanel({
                       disabled={isStageSection(selectedSection)}
                     >
                       {isStageSection(selectedSection) && (
-                        <option value="" disabled>Not applicable for stage</option>
+                        <option value="" disabled>{t("seatmapEditor.propertyPanel.notApplicableForStage", "Not applicable for stage")}</option>
                       )}
                       {venue.categories.map((cat: PricingCategory) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -686,7 +692,7 @@ export function PropertyPanel({
                     </select>
                     {isStageSection(selectedSection) && (
                       <div className="seatmap-editor__panel-label">
-                        Stage does not use pricing category.
+                        {t("seatmapEditor.propertyPanel.stageNoPricingCategory", "Stage does not use pricing category.")}
                       </div>
                     )}
                   </div>
@@ -695,22 +701,21 @@ export function PropertyPanel({
 
               {isStageSection(selectedSection) ? (
                 <div className="seatmap-editor__panel-section seatmap-editor__panel-section--card seatmap-editor__panel-muted">
-                  Stage areas do not support rows or seats.
+                  {t("seatmapEditor.propertyPanel.stageNoRowsSeats", "Stage areas do not support rows or seats.")}
                 </div>
               ) : isDancefloorSection(selectedSection) ? (
                 <div className="seatmap-editor__panel-section seatmap-editor__panel-section--card seatmap-editor__panel-muted">
-                  Dancefloor works as one selectable area seat. Resize the section shape to adjust its footprint.
+                  {t("seatmapEditor.propertyPanel.dancefloorNote", "Dancefloor works as one selectable area seat. Resize the section shape to adjust its footprint.")}
                 </div>
               ) : (
                 <>
                   <div className="seatmap-editor__panel-section">
                     <div className="seatmap-editor__panel-section-header">
                       <div className="seatmap-editor__panel-label">
-                        Rows ({selectedSection.rows.length}) &middot;{" "}
-                        {selectedSection.rows.reduce((t, r) => t + r.seats.length, 0)} seats
+                        {t("seatmapEditor.propertyPanel.rowsMeta", "Rows ({rows}) · {seats} seats", { rows: selectedSection.rows.length, seats: selectedSection.rows.reduce((v, r) => v + r.seats.length, 0) })}
                       </div>
-                      <button onClick={() => addSingleSeat(selectedSection.id)} className="seatmap-editor__panel-button" title="Add a single seat to the last row">
-                        + Seat
+                      <button onClick={() => addSingleSeat(selectedSection.id)} className="seatmap-editor__panel-button" title={t("seatmapEditor.propertyPanel.addSingleSeatTitle", "Add a single seat to the last row")}>
+                        {t("seatmapEditor.propertyPanel.addSeat", "+ Seat")}
                       </button>
                     </div>
                   </div>
@@ -721,12 +726,12 @@ export function PropertyPanel({
                         key={row.id}
                         className="seatmap-editor__panel-list-item"
                       >
-                        <span className="seatmap-editor__panel-text seatmap-editor__panel-text--strong seatmap-editor__panel-text--mono-min">Row {row.label}</span>
-                        <span className="seatmap-editor__panel-muted seatmap-editor__panel-content-grow">{row.seats.length} seats</span>
+                        <span className="seatmap-editor__panel-text seatmap-editor__panel-text--strong seatmap-editor__panel-text--mono-min">{t("seatmapEditor.propertyPanel.rowLabel", "Row {label}", { label: row.label })}</span>
+                        <span className="seatmap-editor__panel-muted seatmap-editor__panel-content-grow">{t("seatmapEditor.propertyPanel.rowSeats", "{count} seats", { count: row.seats.length })}</span>
                         <button
                           onClick={() => deleteRow(selectedSection.id, row.id)}
                           className="seatmap-editor__panel-button seatmap-editor__panel-button--danger seatmap-editor__panel-button--tiny"
-                          title={`Delete row ${row.label}`}
+                          title={t("seatmapEditor.propertyPanel.deleteRow", "Delete row {label}", { label: row.label })}
                         >
                           ✕
                         </button>
@@ -743,11 +748,11 @@ export function PropertyPanel({
       {selectedSections.length === 0 && selectedSeatIds.size === 0 && (
         <div>
           <div className="seatmap-editor__panel-title">
-            Venue Config
+            {t("seatmapEditor.propertyPanel.venueConfig", "Venue Config")}
           </div>
 
           <div className="seatmap-editor__panel-section">
-            <div className="seatmap-editor__panel-label">Venue Name</div>
+            <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.venueName", "Venue Name")}</div>
             <input
               className="seatmap-editor__panel-input"
               value={venue.name}
@@ -756,7 +761,7 @@ export function PropertyPanel({
           </div>
 
           <div className="seatmap-editor__panel-section">
-            <div className="seatmap-editor__panel-label">Venue ID</div>
+            <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.venueId", "Venue ID")}</div>
             <input
               className="seatmap-editor__panel-input"
               value={venue.id}
@@ -765,19 +770,21 @@ export function PropertyPanel({
           </div>
 
           <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--small">
-            Stats: {venue.sections.length} sections &middot;{" "}
-            {venue.sections.reduce((t, s) => t + s.rows.reduce((rt, r) => rt + r.seats.length, 0), 0)} seats
+            {t("seatmapEditor.propertyPanel.stats", "Stats: {sections} sections · {seats} seats", {
+              sections: venue.sections.length,
+              seats: venue.sections.reduce((v, s) => v + s.rows.reduce((rt, r) => rt + r.seats.length, 0), 0),
+            })}
           </div>
 
           <div className="seatmap-editor__panel-divider" />
-          <div className="seatmap-editor__panel-label">Background Image</div>
+          <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.backgroundImage", "Background Image")}</div>
           {venue.backgroundImage ? (
             <div className="seatmap-editor__panel-section">
               <div className="seatmap-editor__panel-img-preview">
-                <img src={venue.backgroundImage} alt="Background" />
+                <img src={venue.backgroundImage} alt={t("seatmapEditor.propertyPanel.backgroundAlt", "Background")} />
               </div>
               <div className="seatmap-editor__panel-label">
-                Opacity: {Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}%
+                {t("seatmapEditor.propertyPanel.opacity", "Opacity")}: {Math.round((venue.backgroundImageOpacity ?? 0.5) * 100)}%
               </div>
               <input
                 type="range"
@@ -789,7 +796,7 @@ export function PropertyPanel({
               />
               <div className="seatmap-editor__panel-grid-2">
                 <div>
-                  <div className="seatmap-editor__panel-label">Width</div>
+                  <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.width", "Width")}</div>
                   <input
                     type="number"
                     min={1}
@@ -804,7 +811,7 @@ export function PropertyPanel({
                   />
                 </div>
                 <div>
-                  <div className="seatmap-editor__panel-label">Height</div>
+                  <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.height", "Height")}</div>
                   <input
                     type="number"
                     min={1}
@@ -826,14 +833,14 @@ export function PropertyPanel({
                   checked={venue.backgroundImageKeepAspectRatio ?? true}
                   onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
                 />
-                Keep aspect ratio
+                {t("seatmapEditor.propertyPanel.keepAspectRatio", "Keep aspect ratio")}
               </label>
               <div className="seatmap-editor__panel-row">
                 <button onClick={onUploadBackground} className="seatmap-editor__panel-button">
-                  Replace
+                  {t("seatmapEditor.propertyPanel.replace", "Replace")}
                 </button>
                 <button onClick={onRemoveBackground} className="seatmap-editor__panel-button seatmap-editor__panel-button--danger">
-                  Remove
+                  {t("seatmapEditor.common.remove", "Remove")}
                 </button>
               </div>
             </div>
@@ -842,7 +849,7 @@ export function PropertyPanel({
               onClick={onUploadBackground}
               className="seatmap-editor__panel-button seatmap-editor__panel-button--full"
             >
-              Upload Image
+              {t("seatmapEditor.propertyPanel.uploadImage", "Upload Image")}
             </button>
           )}
         </div>

@@ -2,11 +2,14 @@ import { useMemo, useState, type CSSProperties } from "react";
 import type { Venue, CommandHistory, SeatStatusDefinition } from "@nex125/seatmap-core";
 import { AVAILABLE_STATUS_ID, generateId } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
+import type { SeatmapEditorTranslate } from "../i18n";
+import { translateEditorText } from "../i18n";
 
 export interface StatusManagerProps {
   venue: Venue | null;
   history: CommandHistory;
   store: SeatmapStore;
+  translate?: SeatmapEditorTranslate;
   style?: CSSProperties;
 }
 
@@ -36,7 +39,8 @@ function replaceStatusInVenue(venue: Venue, statusId: string, replacementStatusI
   };
 }
 
-export function StatusManager({ venue, history, store, style }: StatusManagerProps) {
+export function StatusManager({ venue, history, store, translate, style }: StatusManagerProps) {
+  const t = (key: string, fallback: string) => translateEditorText(translate, key, fallback);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#dfcd72");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -154,7 +158,7 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
   return (
     <div className="seatmap-editor__panel" style={style}>
       <div className="seatmap-editor__panel-title">
-        Seat Statuses
+        {t("seatmapEditor.statusManager.title", "Seat Statuses")}
       </div>
 
       {venue.seatStatuses.map((status) => {
@@ -177,7 +181,7 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
                 disabled={!isEditing}
                 className="seatmap-editor__color-picker-input"
                 data-editable={isEditing ? "true" : "false"}
-                title={isEditing ? "Pick status color" : "Enable edit to change color"}
+                title={isEditing ? t("seatmapEditor.statusManager.pickStatusColor", "Pick status color") : t("seatmapEditor.statusManager.enableEditForColor", "Enable edit to change color")}
               />
             </span>
             {isEditing ? (
@@ -195,22 +199,22 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
             {isEditing ? (
               <>
                 <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  Save
+                  {t("seatmapEditor.common.save", "Save")}
                 </button>
                 <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  Cancel
+                  {t("seatmapEditor.common.cancel", "Cancel")}
                 </button>
               </>
             ) : (
               <>
                 <button onClick={() => startEdit(status)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  Edit
+                  {t("seatmapEditor.common.edit", "Edit")}
                 </button>
                 <button
                   onClick={() => removeStatus(status.id)}
                   className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
                   disabled={status.id === AVAILABLE_STATUS_ID}
-                  title={status.id === AVAILABLE_STATUS_ID ? "Available status cannot be removed" : "Delete status"}
+                  title={status.id === AVAILABLE_STATUS_ID ? t("seatmapEditor.statusManager.availableCannotBeRemoved", "Available status cannot be removed") : t("seatmapEditor.statusManager.deleteStatus", "Delete status")}
                 >
                   ✕
                 </button>
@@ -229,18 +233,18 @@ export function StatusManager({ venue, history, store, style }: StatusManagerPro
             onChange={(e) => setNewColor(e.target.value)}
             className="seatmap-editor__color-picker-input"
             data-editable="true"
-            title="Pick new status color"
+            title={t("seatmapEditor.statusManager.pickNewStatusColor", "Pick new status color")}
           />
         </span>
         <input
-          placeholder="Status name"
+          placeholder={t("seatmapEditor.statusManager.statusName", "Status name")}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addStatus()}
           className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
         />
         <button onClick={addStatus} className="seatmap-editor__panel-button">
-          Add
+          {t("seatmapEditor.common.add", "Add")}
         </button>
       </div>
     </div>

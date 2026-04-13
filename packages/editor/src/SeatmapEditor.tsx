@@ -14,6 +14,8 @@ import { PropertyPanel } from "./panels/PropertyPanel";
 import { CategoryManager } from "./panels/CategoryManager";
 import { LayerPanel } from "./panels/LayerPanel";
 import { StatusManager } from "./panels/StatusManager";
+import type { SeatmapEditorTranslate } from "./i18n";
+import { translateEditorText } from "./i18n";
 import "./SeatmapEditor.css";
 
 export interface SeatmapEditorProps {
@@ -21,6 +23,7 @@ export interface SeatmapEditorProps {
   onChange?: (venue: Venue) => void;
   onSave?: (venue: Venue, serializedVenue: string) => void;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
+  translate?: SeatmapEditorTranslate;
   className?: string;
 }
 
@@ -346,11 +349,15 @@ function EditorInner({
   onChange,
   onSave,
   fetchCategoryPrices,
+  translate,
 }: {
   onChange?: (venue: Venue) => void;
   onSave?: (venue: Venue, serializedVenue: string) => void;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
+  translate?: SeatmapEditorTranslate;
 }) {
+  const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
+    translateEditorText(translate, key, fallback, values);
   const { store, viewport, spatialIndex } = useSeatmapContext();
   const venue = useStore(store, (s) => s.venue);
   const selectedSeatIds = useStore(store, (s) => s.selectedSeatIds);
@@ -763,20 +770,20 @@ function EditorInner({
 
   const sectionHintText = useMemo(() => {
     if (activeToolName === "select" && sectionResizeEnabled) {
-      return "Resize mode: drag inside section to move it, drag corners to resize, drag sides to move edges, click a side to add a polygon point.";
+      return t("seatmapEditor.hints.resizeMode", "Resize mode: drag inside section to move it, drag corners to resize, drag sides to move edges, click a side to add a polygon point.");
     }
     if (activeToolName !== "add-section") return null;
     if (sectionMode === "rectangle") {
       if (addSectionTool.hasPendingDraft()) {
-        return "Click opposite corner to finish. Esc to cancel.";
+        return t("seatmapEditor.hints.rectangleFinish", "Click opposite corner to finish. Esc to cancel.");
       }
-      return "Click first corner to start rectangle.";
+      return t("seatmapEditor.hints.rectangleStart", "Click first corner to start rectangle.");
     }
     if (addSectionTool.hasPendingDraft()) {
-      return "Click to add points. Click first point to close. Esc to cancel.";
+      return t("seatmapEditor.hints.polygonContinue", "Click to add points. Click first point to close. Esc to cancel.");
     }
-    return "Click to place first polygon point.";
-  }, [activeToolName, sectionMode, addSectionTool, sectionResizeEnabled]);
+    return t("seatmapEditor.hints.polygonStart", "Click to place first polygon point.");
+  }, [activeToolName, sectionMode, addSectionTool, sectionResizeEnabled, t]);
   const rowPresetRows = [1, 2, 3, 4];
   const rowPresetSeats = [8, 10, 12, 16];
 
@@ -874,7 +881,7 @@ function EditorInner({
           viewport.fitBounds(venueAABB(loaded));
           historyRef.current.clear();
         } catch {
-          alert("Invalid venue JSON file");
+          alert(t("seatmapEditor.errors.invalidVenueJson", "Invalid venue JSON file"));
         }
       };
       reader.readAsText(file);
@@ -1464,7 +1471,9 @@ function EditorInner({
       y: end.y - Math.sin(displayAngleRad + Math.PI / 6) * arrowSizePx,
     };
     const displayAngleDeg = ((((displayAngleRad * 180) / Math.PI) + 90) % 360 + 360) % 360;
-    const orientationLabel = rowDirectionArrowMode === "row-direction" ? "Row direction" : "Viewer direction";
+    const orientationLabel = rowDirectionArrowMode === "row-direction"
+      ? t("seatmapEditor.orientation.rowDirection", "Row direction")
+      : t("seatmapEditor.orientation.viewerDirection", "Viewer direction");
 
     return (
       <svg
@@ -2540,6 +2549,7 @@ function EditorInner({
         onToggleHints={() => setShowHints((current) => !current)}
         isEditorSettingsOpen={isEditorSettingsOpen}
         onToggleEditorSettings={() => setIsEditorSettingsOpen((current) => !current)}
+        translate={translate}
       />
 
       <div className="seatmap-editor__canvas-layout">
@@ -2610,6 +2620,7 @@ function EditorInner({
             onBackgroundOpacityChange={handleBackgroundOpacityChange}
             onBackgroundSizeChange={handleBackgroundSizeChange}
             onBackgroundKeepAspectRatioChange={handleBackgroundKeepAspectRatioChange}
+            translate={translate}
           />
           {selectedSeatIds.size === 0 && (
             <>
@@ -2619,6 +2630,7 @@ function EditorInner({
                 selectedSeatIds={selectedSeatIds}
                 selectedSectionIds={selectedSectionIds}
                 onSelectSection={handleSelectSection}
+                translate={translate}
               />
               <div className="seatmap-editor__sidebar-separator" />
               <CategoryManager
@@ -2626,6 +2638,7 @@ function EditorInner({
                 history={historyRef.current}
                 store={store}
                 fetchCategoryPrices={fetchCategoryPrices}
+                translate={translate}
               />
             </>
           )}
@@ -2636,6 +2649,7 @@ function EditorInner({
                 venue={venue}
                 history={historyRef.current}
                 store={store}
+                translate={translate}
               />
             </>
           )}
@@ -2645,11 +2659,11 @@ function EditorInner({
   );
 }
 
-export function SeatmapEditor({ venue, onChange, onSave, fetchCategoryPrices, className }: SeatmapEditorProps) {
+export function SeatmapEditor({ venue, onChange, onSave, fetchCategoryPrices, translate, className }: SeatmapEditorProps) {
   return (
     <SeatmapProvider venue={venue}>
       <div className={className ? `seatmap-editor__host ${className}` : "seatmap-editor__host"}>
-        <EditorInner onChange={onChange} onSave={onSave} fetchCategoryPrices={fetchCategoryPrices} />
+        <EditorInner onChange={onChange} onSave={onSave} fetchCategoryPrices={fetchCategoryPrices} translate={translate} />
       </div>
     </SeatmapProvider>
   );

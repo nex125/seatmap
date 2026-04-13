@@ -2,12 +2,15 @@ import { useState, type CSSProperties } from "react";
 import type { Venue, PricingCategory, CommandHistory } from "@nex125/seatmap-core";
 import { generateId, isStageSection } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
+import type { SeatmapEditorTranslate } from "../i18n";
+import { translateEditorText } from "../i18n";
 
 export interface CategoryManagerProps {
   venue: Venue | null;
   history: CommandHistory;
   store: SeatmapStore;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
+  translate?: SeatmapEditorTranslate;
   style?: CSSProperties;
   locale?: string;
   currency?: string;
@@ -48,10 +51,13 @@ export function CategoryManager({
   history,
   store,
   fetchCategoryPrices,
+  translate,
   style,
   locale = "en-US",
   currency = "BYN",
 }: CategoryManagerProps) {
+  const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
+    translateEditorText(translate, key, fallback, values);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#dfcd72");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -218,7 +224,7 @@ export function CategoryManager({
       });
       setSyncStatus("synced");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load prices.";
+      const message = error instanceof Error ? error.message : t("seatmapEditor.categoryManager.failedToLoadPrices", "Failed to load prices.");
       setFetchError(message);
       const currentVenue = store.getState().venue;
       if (currentVenue) {
@@ -335,7 +341,7 @@ export function CategoryManager({
   return (
     <div className="seatmap-editor__panel" style={style}>
       <div className="seatmap-editor__panel-title">
-        Pricing categories
+        {t("seatmapEditor.categoryManager.title", "Pricing categories")}
       </div>
 
       {venue.categories.map((cat: PricingCategory) => {
@@ -358,7 +364,7 @@ export function CategoryManager({
                 disabled={!isEditing}
                 className="seatmap-editor__color-picker-input"
                 data-editable={isEditing ? "true" : "false"}
-                title={isEditing ? "Pick category color" : "Enable edit mode to change color"}
+                title={isEditing ? t("seatmapEditor.categoryManager.pickCategoryColor", "Pick category color") : t("seatmapEditor.categoryManager.enableEditModeForColor", "Enable edit mode to change color")}
               />
             </span>
             {isEditing ? (
@@ -376,10 +382,10 @@ export function CategoryManager({
             {isEditing ? (
               <>
                 <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  Save
+                  {t("seatmapEditor.common.save", "Save")}
                 </button>
                 <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  Cancel
+                  {t("seatmapEditor.common.cancel", "Cancel")}
                 </button>
               </>
             ) : (
@@ -388,13 +394,13 @@ export function CategoryManager({
                   {formatPrice(effectivePrice(cat))}
                 </span>
                 <button onClick={() => startEdit(cat)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  Edit
+                  {t("seatmapEditor.common.edit", "Edit")}
                 </button>
                 <button
                   onClick={() => removeCategory(cat.id)}
                   className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
                   disabled={venue.categories.length <= 1}
-                  title={venue.categories.length <= 1 ? "At least one category is required" : "Delete category"}
+                  title={venue.categories.length <= 1 ? t("seatmapEditor.categoryManager.atLeastOneCategory", "At least one category is required") : t("seatmapEditor.categoryManager.deleteCategory", "Delete category")}
                 >
                   ✕
                 </button>
@@ -413,24 +419,24 @@ export function CategoryManager({
             onChange={(e) => setNewColor(e.target.value)}
             className="seatmap-editor__color-picker-input"
             data-editable="true"
-            title="Pick new category color"
+            title={t("seatmapEditor.categoryManager.pickNewCategoryColor", "Pick new category color")}
           />
         </span>
         <input
-          placeholder="Category name"
+          placeholder={t("seatmapEditor.categoryManager.categoryName", "Category name")}
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addCategory()}
           className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
         />
         <button onClick={addCategory} className="seatmap-editor__panel-button">
-          Add
+          {t("seatmapEditor.common.add", "Add")}
         </button>
       </div>
 
       <div className="seatmap-editor__panel-actions-end">
         <button onClick={openPriceManager} className="seatmap-editor__panel-button">
-          Manage prices
+          {t("seatmapEditor.categoryManager.managePrices", "Manage prices")}
         </button>
       </div>
 
@@ -445,25 +451,25 @@ export function CategoryManager({
           >
             <div className="seatmap-editor__modal-header">
               <div className="seatmap-editor__panel-title">
-                Category prices
+                {t("seatmapEditor.categoryManager.categoryPrices", "Category prices")}
               </div>
               <div className="seatmap-editor__modal-actions">
                 <button
                   onClick={syncPricesFromBackend}
                   disabled={!fetchCategoryPrices || isFetchingPrices}
                   className="seatmap-editor__panel-button"
-                  title={fetchCategoryPrices ? "Load latest prices from backend" : "Backend price sync is not configured"}
+                  title={fetchCategoryPrices ? t("seatmapEditor.categoryManager.loadLatestPrices", "Load latest prices from backend") : t("seatmapEditor.categoryManager.backendSyncNotConfigured", "Backend price sync is not configured")}
                 >
-                  {isFetchingPrices ? "Syncing..." : "Sync with backend"}
+                  {isFetchingPrices ? t("seatmapEditor.categoryManager.syncing", "Syncing...") : t("seatmapEditor.categoryManager.syncWithBackend", "Sync with backend")}
                 </button>
                 <button onClick={() => setIsPriceManagerOpen(false)} className="seatmap-editor__panel-button">
-                  Close
+                  {t("seatmapEditor.common.close", "Close")}
                 </button>
               </div>
             </div>
 
               <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--spaced">
-              Backend prices are read-only. Override temporarily uses a custom category price for this seatmap.
+              {t("seatmapEditor.categoryManager.backendReadOnlyNote", "Backend prices are read-only. Override temporarily uses a custom category price for this seatmap.")}
             </div>
             <div
               className={
@@ -474,14 +480,14 @@ export function CategoryManager({
                     : "seatmap-editor__status-line seatmap-editor__status-line--idle"
               }
             >
-              Sync status:{" "}
+              {t("seatmapEditor.categoryManager.syncStatus", "Sync status:")}{" "}
               {syncStatus === "not-synced"
-                ? "Not synced"
+                ? t("seatmapEditor.categoryManager.status.notSynced", "Not synced")
                 : syncStatus === "syncing"
-                  ? "Syncing..."
+                  ? t("seatmapEditor.categoryManager.status.syncing", "Syncing...")
                   : syncStatus === "synced"
-                    ? "Synced"
-                    : "Error"}
+                    ? t("seatmapEditor.categoryManager.status.synced", "Synced")
+                    : t("seatmapEditor.categoryManager.status.error", "Error")}
             </div>
             {fetchError && (
               <div className="seatmap-editor__status-line seatmap-editor__status-line--error">
@@ -490,11 +496,11 @@ export function CategoryManager({
             )}
 
             <div className="seatmap-editor__table-grid">
-              <div className="seatmap-editor__table-head">Category</div>
-              <div className="seatmap-editor__table-head">Backend</div>
-              <div className="seatmap-editor__table-head">Override</div>
-              <div className="seatmap-editor__table-head">Override price</div>
-              <div className="seatmap-editor__table-head">Effective price</div>
+              <div className="seatmap-editor__table-head">{t("seatmapEditor.categoryManager.table.category", "Category")}</div>
+              <div className="seatmap-editor__table-head">{t("seatmapEditor.categoryManager.table.backend", "Backend")}</div>
+              <div className="seatmap-editor__table-head">{t("seatmapEditor.categoryManager.table.override", "Override")}</div>
+              <div className="seatmap-editor__table-head">{t("seatmapEditor.categoryManager.table.overridePrice", "Override price")}</div>
+              <div className="seatmap-editor__table-head">{t("seatmapEditor.categoryManager.table.effectivePrice", "Effective price")}</div>
 
               {venue.categories.map((category) => (
                 <div
@@ -518,7 +524,7 @@ export function CategoryManager({
                     aria-checked={Boolean(category.isPriceOverridden)}
                     onClick={() => toggleOverride(category.id, !category.isPriceOverridden)}
                     className={`seatmap-editor__switch-track${category.isPriceOverridden ? " is-checked" : ""}`}
-                    title={category.isPriceOverridden ? "Disable override" : "Enable override"}
+                    title={category.isPriceOverridden ? t("seatmapEditor.categoryManager.disableOverride", "Disable override") : t("seatmapEditor.categoryManager.enableOverride", "Enable override")}
                   >
                     <span className="seatmap-editor__switch-thumb" />
                   </button>
@@ -547,7 +553,7 @@ export function CategoryManager({
                           type="button"
                           onClick={() => adjustOverrideDraft(category.id, 0.01)}
                           className="seatmap-editor__table-action-button"
-                          title="Increase override price"
+                          title={t("seatmapEditor.categoryManager.increaseOverridePrice", "Increase override price")}
                         >
                           +
                         </button>
@@ -555,7 +561,7 @@ export function CategoryManager({
                           type="button"
                           onClick={() => adjustOverrideDraft(category.id, -0.01)}
                           className="seatmap-editor__table-action-button"
-                          title="Decrease override price"
+                          title={t("seatmapEditor.categoryManager.decreaseOverridePrice", "Decrease override price")}
                         >
                           -
                         </button>
@@ -564,7 +570,7 @@ export function CategoryManager({
                           onClick={() => commitOverridePrice(category.id)}
                           disabled={!isDraftChanged(category)}
                           className="seatmap-editor__table-action-button seatmap-editor__table-action-button--apply"
-                          title="Apply override price"
+                          title={t("seatmapEditor.categoryManager.applyOverridePrice", "Apply override price")}
                         >
                           ✓
                         </button>
@@ -573,7 +579,7 @@ export function CategoryManager({
                           onClick={() => resetOverrideDraft(category)}
                           disabled={!isDraftChanged(category)}
                           className="seatmap-editor__table-action-button seatmap-editor__table-action-button--reset"
-                          title="Revert override changes"
+                          title={t("seatmapEditor.categoryManager.revertOverrideChanges", "Revert override changes")}
                         >
                           ✕
                         </button>

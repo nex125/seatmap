@@ -1,11 +1,14 @@
 import type { CSSProperties } from "react";
 import type { Venue, Section } from "@nex125/seatmap-core";
+import type { SeatmapEditorTranslate } from "../i18n";
+import { translateEditorText } from "../i18n";
 
 export interface LayerPanelProps {
   venue: Venue | null;
   selectedSeatIds: Set<string>;
   selectedSectionIds: Set<string>;
   onSelectSection: (sectionId: string, options?: { multi?: boolean }) => void;
+  translate?: SeatmapEditorTranslate;
   style?: CSSProperties;
 }
 
@@ -14,8 +17,11 @@ export function LayerPanel({
   selectedSeatIds,
   selectedSectionIds: storeSelectedSectionIds,
   onSelectSection,
+  translate,
   style,
 }: LayerPanelProps) {
+  const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
+    translateEditorText(translate, key, fallback, values);
   if (!venue) return null;
 
   const findSectionForSeat = (seatId: string): string | null => {
@@ -34,13 +40,13 @@ export function LayerPanel({
   return (
     <div className="seatmap-editor__panel" style={style}>
       <div className="seatmap-editor__panel-title">
-        Layers
+        {t("seatmapEditor.layerPanel.title", "Layers")}
       </div>
 
       <div
         className="seatmap-editor__panel-list"
         role="listbox"
-        aria-label="Venue sections"
+        aria-label={t("seatmapEditor.layerPanel.ariaLabel", "Venue sections")}
         aria-multiselectable="true"
       >
         {venue.sections.map((section: Section) => {
@@ -73,7 +79,7 @@ export function LayerPanel({
                   {section.label}
                 </div>
                 <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--small">
-                  {section.rows.length} rows, {seatCount} seats
+                  {t("seatmapEditor.layerPanel.sectionMeta", "{rows} rows, {seats} seats", { rows: section.rows.length, seats: seatCount })}
                 </div>
               </div>
             </button>
@@ -83,7 +89,7 @@ export function LayerPanel({
 
       {venue.sections.length === 0 && (
         <div className="seatmap-editor__panel-muted">
-          No sections yet. Use the Add Section tool.
+          {t("seatmapEditor.layerPanel.empty", "No sections yet. Use the Add Section tool.")}
         </div>
       )}
     </div>
