@@ -141,7 +141,7 @@ export class AddSeatTool extends BaseTool {
         },
       });
     } else {
-      const rowLabel = String.fromCharCode(65 + section.rows.length);
+      const rowLabel = `${section.rows.length + 1}`;
       const newSeat: Seat = {
         id: generateId(),
         label: "1",

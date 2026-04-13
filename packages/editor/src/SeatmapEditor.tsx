@@ -360,6 +360,7 @@ function EditorInner({
   const canvasAreaRef = useRef<HTMLDivElement | null>(null);
   const [isBackgroundResizing, setIsBackgroundResizing] = useState(false);
   const [isBackgroundMoving, setIsBackgroundMoving] = useState(false);
+  const [isAltPressed, setIsAltPressed] = useState(false);
   const backgroundResizeHandleRef = useRef<ResizeHandle>("se");
   const backgroundResizeAnchorRef = useRef<{ x: number; y: number } | null>(null);
   const backgroundMoveOffsetRef = useRef<{ x: number; y: number } | null>(null);
@@ -1272,6 +1273,9 @@ function EditorInner({
   const renderBackgroundResizeOverlay = () => {
     if (!venue?.backgroundImage) return null;
     if (activeToolName !== "select") return null;
+    // Background editing should be explicit so section selection/drag stays primary.
+    const isBackgroundEditActive = isAltPressed || isBackgroundMoving || isBackgroundResizing;
+    if (!isBackgroundEditActive) return null;
 
     const rectWorld = getBackgroundRectInWorld(venue);
     const topLeft = viewport.worldToScreen(rectWorld.x, rectWorld.y);
@@ -1309,10 +1313,13 @@ function EditorInner({
             top: topLeft.y,
             width: Math.max(1, topRight.x - topLeft.x),
             height: Math.max(1, bottomLeft.y - topLeft.y),
-            cursor: isBackgroundMoving ? "grabbing" : "grab",
+            cursor: isBackgroundMoving ? "grabbing" : "default",
           }}
           onPointerDown={(e) => {
             if (e.button !== 0) return;
+            // Allow normal section interactions through the background frame.
+            // Background drag is an explicit Alt+drag gesture.
+            if (!e.altKey) return;
             e.preventDefault();
             e.stopPropagation();
             const currentVenue = store.getState().venue;
@@ -1341,6 +1348,8 @@ function EditorInner({
             }}
             onPointerDown={(e) => {
               if (e.button !== 0) return;
+              // Keep resize handles explicit so they do not interfere with section selection/move.
+              if (!e.altKey) return;
               e.preventDefault();
               e.stopPropagation();
               const currentVenue = store.getState().venue;
@@ -2385,6 +2394,9 @@ function EditorInner({
       );
     };
     const handler = (e: KeyboardEvent) => {
+      if (e.key === "Alt") {
+        setIsAltPressed(true);
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
         e.preventDefault();
         if (e.shiftKey) historyRef.current.redo();
@@ -2412,17 +2424,25 @@ function EditorInner({
       }
     };
     const upHandler = (e: KeyboardEvent) => {
+      if (e.key === "Alt") {
+        setIsAltPressed(false);
+      }
       if (isTyping()) return;
       if (e.key === " ") {
         e.preventDefault();
         setActiveTool(activeToolName === "pan" ? lastNonPanToolNameRef.current : "pan");
       }
     };
+    const blurHandler = () => {
+      setIsAltPressed(false);
+    };
     window.addEventListener("keydown", handler);
     window.addEventListener("keyup", upHandler);
+    window.addEventListener("blur", blurHandler);
     return () => {
       window.removeEventListener("keydown", handler);
       window.removeEventListener("keyup", upHandler);
+      window.removeEventListener("blur", blurHandler);
     };
   }, [setActiveTool, activeToolName, handleDeleteSelectedObjects, addSectionTool]);
 

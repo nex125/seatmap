@@ -941,7 +941,7 @@ export class SelectTool extends BaseTool {
       if (targetRowIndex < 0) {
         destinationRows.push({
           id: generateId(),
-          label: String.fromCharCode(65 + destinationRows.length),
+          label: `${destinationRows.length + 1}`,
           seats: [],
         });
         targetRowIndex = destinationRows.length - 1;

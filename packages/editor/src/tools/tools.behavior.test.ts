@@ -188,7 +188,7 @@ describe("editor tools behavior", () => {
 
     const updated = store.getState().venue!;
     expect(updated.sections[0]!.rows).toHaveLength(1);
-    expect(updated.sections[0]!.rows[0]!.label).toBe("A");
+    expect(updated.sections[0]!.rows[0]!.label).toBe("1");
     expect(updated.sections[0]!.rows[0]!.seats).toHaveLength(10);
   });
 
@@ -220,6 +220,47 @@ describe("editor tools behavior", () => {
     const preview = tool.getPlacementPreview(10, 20, venue);
     expect(preview).not.toBeNull();
     expect(preview!.worldAngleRad).toBeCloseTo(-Math.PI / 4);
+  });
+
+  test("AddRowTool merges inserted rows onto existing row lines", () => {
+    const history = makeImmediateHistory();
+    const sectionId = "section-merge-rows";
+    const spatialIndex = {
+      queryPoint: () => [{ type: "section", sectionId }],
+    };
+    const tool = new AddRowTool(history as never, spatialIndex as never);
+    tool.rowsCount = 2;
+    const venue = makeVenue();
+    venue.sections = [
+      {
+        id: sectionId,
+        label: "S3",
+        kind: "section",
+        position: { x: 0, y: 0 },
+        rotation: 0,
+        categoryId: "cat-1",
+        rows: [],
+        outline: [
+          { x: -600, y: -200 },
+          { x: 600, y: -200 },
+          { x: 600, y: 200 },
+          { x: -600, y: 200 },
+        ],
+      },
+    ];
+    const store = makeStore(venue);
+
+    // First insert creates two rows at y=0 and y=20.
+    tool.onPointerDown(pointer(0, 0), new Viewport(), store);
+    // Second insert on the right should extend the same two rows, not create new rows.
+    tool.onPointerDown(pointer(220, 0), new Viewport(), store);
+
+    const rows = store.getState().venue!.sections[0]!.rows;
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.label).toBe("1");
+    expect(rows[1]!.label).toBe("2");
+    expect(rows[0]!.seats).toHaveLength(20);
+    expect(rows[1]!.seats).toHaveLength(20);
   });
 
   test("SelectTool click selects nearest seat and its section", () => {
@@ -587,7 +628,7 @@ describe("editor tools behavior", () => {
 
     const section = store.getState().venue!.sections[0]!;
     expect(section.rows).toHaveLength(2);
-    expect(section.rows[1]!.label).toBe("B");
+    expect(section.rows[1]!.label).toBe("2");
     expect(section.rows[1]!.seats).toHaveLength(1);
     expect(section.rows[1]!.seats[0]!.position).toEqual({ x: 0, y: 60 });
   });

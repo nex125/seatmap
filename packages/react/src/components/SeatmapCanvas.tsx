@@ -219,6 +219,8 @@ export function SeatmapCanvas({
   const wheelZoomRafRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const readyRef = useRef(false);
+  const isRenderingRef = useRef(false);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // Stable ref that always points to the latest render function
   const renderRef = useRef<() => void>(() => {});
@@ -762,40 +764,45 @@ export function SeatmapCanvas({
     const app = appRef.current;
     const world = worldRef.current;
     if (!app || !world || !venue || !readyRef.current) return;
+    if (isRenderingRef.current) return;
+    isRenderingRef.current = true;
 
-    world.removeChildren();
+    try {
+      world.removeChildren();
 
-    const zoom = viewport.zoom;
-    const lod = getLODLevel(zoom);
+      const zoom = viewport.zoom;
+      const lod = getLODLevel(zoom);
 
-    world.position.set(viewport.x * zoom, viewport.y * zoom);
-    world.scale.set(zoom);
+      world.position.set(viewport.x * zoom, viewport.y * zoom);
+      world.scale.set(zoom);
 
-    // Render background image if loaded (configurable size and position)
-    if (bgTextureRef.current && bgTextureRef.current !== Texture.EMPTY) {
-      const tex = bgTextureRef.current;
-      const imgW = tex.width;
-      const imgH = tex.height;
-      const scale = Math.min(venue.bounds.width / imgW, venue.bounds.height / imgH);
-      const fallbackWidth = imgW * scale;
-      const fallbackHeight = imgH * scale;
-      const scaledW = Math.max(1, venue.backgroundImageWidth ?? fallbackWidth);
-      const scaledH = Math.max(1, venue.backgroundImageHeight ?? fallbackHeight);
+      // Render background image if loaded (configurable size and position)
+      if (bgTextureRef.current && bgTextureRef.current !== Texture.EMPTY) {
+        const tex = bgTextureRef.current;
+        const imgW = tex.width;
+        const imgH = tex.height;
+        const scale = Math.min(venue.bounds.width / imgW, venue.bounds.height / imgH);
+        const fallbackWidth = imgW * scale;
+        const fallbackHeight = imgH * scale;
+        const scaledW = Math.max(1, venue.backgroundImageWidth ?? fallbackWidth);
+        const scaledH = Math.max(1, venue.backgroundImageHeight ?? fallbackHeight);
 
-      const bgSprite = new Sprite(tex);
-      bgSprite.width = scaledW;
-      bgSprite.height = scaledH;
-      const bgX = venue.backgroundImageX ?? ((venue.bounds.width - scaledW) / 2);
-      const bgY = venue.backgroundImageY ?? ((venue.bounds.height - scaledH) / 2);
-      bgSprite.position.set(
-        bgX,
-        bgY,
-      );
-      bgSprite.alpha = venue.backgroundImageOpacity ?? 0.5;
-      world.addChild(bgSprite);
-    }
+        const bgSprite = new Sprite(tex);
+        bgSprite.width = scaledW;
+        bgSprite.height = scaledH;
+        const bgX = venue.backgroundImageX ?? ((venue.bounds.width - scaledW) / 2);
+        const bgY = venue.backgroundImageY ?? ((venue.bounds.height - scaledH) / 2);
+        bgSprite.position.set(
+          bgX,
+          bgY,
+        );
+        bgSprite.alpha = venue.backgroundImageOpacity ?? 0.5;
+        bgSprite.eventMode = "none";
+        bgSprite.zIndex = -1000;
+        world.addChild(bgSprite);
+      }
 
-    if (isGridLinesVisible) {
+      if (isGridLinesVisible) {
       const gridStep = SNAP_GRID_STEP;
       const strokeWidthMinor = 1 / Math.max(zoom, 0.0001);
       const strokeWidthMajor = 1.4 / Math.max(zoom, 0.0001);
@@ -865,30 +872,36 @@ export function SeatmapCanvas({
         minorGrid.stroke({ color: 0x5a5653, width: strokeWidthMinor, alpha: 0.2 });
         majorGrid.stroke({ color: 0x8a7f46, width: strokeWidthMajor, alpha: 0.28 });
       }
-      world.addChild(minorGrid);
-      world.addChild(majorGrid);
+        world.addChild(minorGrid);
+        world.addChild(majorGrid);
+      }
+
+      const visibleAABB = viewport.getVisibleAABB();
+      const visibleItems = spatialIndex.queryViewport(visibleAABB);
+      const visibleSectionIds = new Set(visibleItems.map((item) => item.sectionId));
+
+      for (const section of venue.sections) {
+        if (!visibleSectionIds.has(section.id)) continue;
+        renderSection(world, section, lod, zoom, visibleAABB);
+      }
+
+      for (const ga of venue.gaAreas) {
+        renderGAArea(world, ga);
+      }
+
+      for (const table of venue.tables) {
+        renderTable(world, table);
+      }
+
+      if (!readyRef.current || appRef.current !== app) return;
+      if ((app.renderer as { destroyed?: boolean }).destroyed) return;
+      app.render();
+    } catch (error) {
+      // Prevent Pixi render exceptions from crashing seat interactions.
+      console.error("Seatmap render failed:", error);
+    } finally {
+      isRenderingRef.current = false;
     }
-
-    const visibleAABB = viewport.getVisibleAABB();
-    const visibleItems = spatialIndex.queryViewport(visibleAABB);
-    const visibleSectionIds = new Set(visibleItems.map((item) => item.sectionId));
-
-    for (const section of venue.sections) {
-      if (!visibleSectionIds.has(section.id)) continue;
-      renderSection(world, section, lod, zoom, visibleAABB);
-    }
-
-    for (const ga of venue.gaAreas) {
-      renderGAArea(world, ga);
-    }
-
-    for (const table of venue.tables) {
-      renderTable(world, table);
-    }
-
-    if (!readyRef.current || appRef.current !== app) return;
-    if ((app.renderer as { destroyed?: boolean }).destroyed) return;
-    app.render();
   }, [
     venue,
     viewport,
@@ -914,9 +927,8 @@ export function SeatmapCanvas({
 
     app
       .init({
-        resizeTo: propWidth ? undefined : containerRef.current,
-        width: propWidth,
-        height: propHeight,
+        width: propWidth ?? Math.max(containerRef.current!.clientWidth, 1),
+        height: propHeight ?? Math.max(containerRef.current!.clientHeight, 1),
         background: 0x181818,
         antialias: true,
         autoDensity: true,
@@ -933,12 +945,32 @@ export function SeatmapCanvas({
 
         const worldContainer = new Container();
         worldContainer.label = "world";
+        worldContainer.sortableChildren = true;
         app.stage.addChild(worldContainer);
         worldRef.current = worldContainer;
 
         const w = app.screen.width;
         const h = app.screen.height;
         viewport.setScreenSize(w, h);
+
+        if (!propWidth && !propHeight && containerRef.current) {
+          const resizeToContainer = () => {
+            const el = containerRef.current;
+            const currentApp = appRef.current;
+            if (!el || !currentApp || !readyRef.current) return;
+
+            const nextWidth = Math.max(el.clientWidth, 1);
+            const nextHeight = Math.max(el.clientHeight, 1);
+            currentApp.renderer.resize(nextWidth, nextHeight);
+            viewport.setScreenSize(nextWidth, nextHeight);
+            scheduleRender();
+          };
+
+          resizeObserverRef.current = new ResizeObserver(() => {
+            resizeToContainer();
+          });
+          resizeObserverRef.current.observe(containerRef.current);
+        }
 
         const currentVenue = store.getState().venue;
         if (currentVenue) {
@@ -962,6 +994,10 @@ export function SeatmapCanvas({
       cancelAnimationFrame(rafRef.current);
       stopPanInertia();
       stopWheelZoomJelly();
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
       if (appRef.current) {
         appRef.current.destroy(true, { children: true });
         appRef.current = null;
@@ -970,7 +1006,7 @@ export function SeatmapCanvas({
       labelTextCacheRef.current.clear();
       textureCacheRef.current.destroy();
     };
-  }, [stopPanInertia, stopWheelZoomJelly]);
+  }, [propHeight, propWidth, scheduleRender, stopPanInertia, stopWheelZoomJelly, viewport]);
 
   // Rebuild textures only when categories change, fit view only on first venue load
   const prevVenueIdRef = useRef<string | null>(null);
