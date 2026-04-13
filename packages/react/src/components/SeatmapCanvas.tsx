@@ -1009,7 +1009,8 @@ export function SeatmapCanvas({
   }, [propHeight, propWidth, scheduleRender, stopPanInertia, stopWheelZoomJelly, viewport]);
 
   // Rebuild textures only when categories change, fit view only on first venue load
-  const prevVenueIdRef = useRef<string | null>(null);
+  // Seed with current venue id so first realtime venue update does not trigger an unwanted fit.
+  const prevVenueIdRef = useRef<string | null>(venue?.id ?? null);
   const prevCatJsonRef = useRef<string>("");
   useEffect(() => {
     if (!venue || !appRef.current || !readyRef.current) return;
