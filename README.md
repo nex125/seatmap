@@ -221,10 +221,10 @@ docker compose exec -w /app/packages/editor seatmap bun run prepack
 
 4. Publish in the same order.
 ```bash
-docker compose exec -w /app/packages/core seatmap npm publish --access public
-docker compose exec -w /app/packages/react seatmap npm publish --access public
-docker compose exec -w /app/packages/viewer seatmap npm publish --access public
-docker compose exec -w /app/packages/editor seatmap npm publish --access public
+docker compose exec -w /app/packages/core seatmap bun publish --access public
+docker compose exec -w /app/packages/react seatmap bun publish --access public
+docker compose exec -w /app/packages/viewer seatmap bun publish --access public
+docker compose exec -w /app/packages/editor seatmap bun publish --access public
 ```
 
 ## Project Structure
