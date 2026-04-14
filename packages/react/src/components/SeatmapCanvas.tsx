@@ -981,6 +981,15 @@ export function SeatmapCanvas({
             SEAT_RADIUS,
           );
           viewport.fitBounds(venueAABB(currentVenue));
+
+          // Sync the guard refs so the venue-update effect does not
+          // re-trigger fitBounds / texture rebuild on the first
+          // realtime (SSE) venue change after init.
+          prevVenueIdRef.current = currentVenue.id;
+          prevCatJsonRef.current = JSON.stringify({
+            categories: currentVenue.categories,
+            statuses: currentVenue.seatStatuses,
+          });
         }
 
         readyRef.current = true;
