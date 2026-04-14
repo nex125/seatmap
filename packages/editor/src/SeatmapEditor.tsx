@@ -10,7 +10,7 @@ import { AddRowTool } from "./tools/AddRowTool";
 import { AddSeatTool } from "./tools/AddSeatTool";
 import type { BaseTool, ToolPointerEvent } from "./tools/BaseTool";
 import { Toolbar } from "./panels/Toolbar";
-import { PropertyPanel, type VenueIdFieldMode } from "./panels/PropertyPanel";
+import { PropertyPanel, type VenueIdFieldMode, type VenueNameFieldMode } from "./panels/PropertyPanel";
 import { CategoryManager } from "./panels/CategoryManager";
 import { LayerPanel } from "./panels/LayerPanel";
 import { StatusManager } from "./panels/StatusManager";
@@ -26,6 +26,8 @@ export interface SeatmapEditorProps {
   translate?: SeatmapEditorTranslate;
   className?: string;
   venueIdField?: VenueIdFieldMode;
+  venueNameField?: VenueNameFieldMode;
+  statusManagerMode?: "full" | "compact";
 }
 
 function fitBackgroundToBounds(
@@ -352,12 +354,16 @@ function EditorInner({
   fetchCategoryPrices,
   translate,
   venueIdField,
+  venueNameField,
+  statusManagerMode = "full",
 }: {
   onChange?: (venue: Venue) => void;
   onSave?: (venue: Venue, serializedVenue: string) => void;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   translate?: SeatmapEditorTranslate;
   venueIdField?: VenueIdFieldMode;
+  venueNameField?: VenueNameFieldMode;
+  statusManagerMode?: "full" | "compact";
 }) {
   const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
     translateEditorText(translate, key, fallback, values);
@@ -2625,6 +2631,7 @@ function EditorInner({
             onBackgroundKeepAspectRatioChange={handleBackgroundKeepAspectRatioChange}
             translate={translate}
             venueIdField={venueIdField}
+            venueNameField={venueNameField}
           />
           {selectedSeatIds.size === 0 && (
             <>
@@ -2654,6 +2661,7 @@ function EditorInner({
                 history={historyRef.current}
                 store={store}
                 translate={translate}
+                mode={statusManagerMode}
               />
             </>
           )}
@@ -2671,6 +2679,8 @@ export function SeatmapEditor({
   translate,
   className,
   venueIdField,
+  venueNameField,
+  statusManagerMode,
 }: SeatmapEditorProps) {
   return (
     <SeatmapProvider venue={venue}>
@@ -2681,6 +2691,8 @@ export function SeatmapEditor({
           fetchCategoryPrices={fetchCategoryPrices}
           translate={translate}
           venueIdField={venueIdField}
+          venueNameField={venueNameField}
+          statusManagerMode={statusManagerMode}
         />
       </div>
     </SeatmapProvider>

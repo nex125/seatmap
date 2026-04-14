@@ -10,6 +10,7 @@ export interface StatusManagerProps {
   history: CommandHistory;
   store: SeatmapStore;
   translate?: SeatmapEditorTranslate;
+  mode?: "full" | "compact";
   style?: CSSProperties;
 }
 
@@ -39,13 +40,14 @@ function replaceStatusInVenue(venue: Venue, statusId: string, replacementStatusI
   };
 }
 
-export function StatusManager({ venue, history, store, translate, style }: StatusManagerProps) {
+export function StatusManager({ venue, history, store, translate, mode = "full", style }: StatusManagerProps) {
   const t = (key: string, fallback: string) => translateEditorText(translate, key, fallback);
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("#dfcd72");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [editingColor, setEditingColor] = useState("#dfcd72");
+  const [addFormOpen, setAddFormOpen] = useState(false);
 
   const statusIds = useMemo(() => new Set(venue?.seatStatuses.map((status) => status.id) ?? []), [venue]);
 
@@ -224,29 +226,40 @@ export function StatusManager({ venue, history, store, translate, style }: Statu
         );
       })}
 
-      <div className="seatmap-editor__panel-row seatmap-editor__panel-row--spaced">
-        <span className="seatmap-editor__color-picker-shell seatmap-editor__color-picker-shell--lg">
-          <span aria-hidden="true" className="seatmap-editor__color-picker-dot" style={{ background: newColor }} />
+      {(mode === "full" || addFormOpen) && (
+        <div className="seatmap-editor__panel-row seatmap-editor__panel-row--spaced">
+          <span className="seatmap-editor__color-picker-shell seatmap-editor__color-picker-shell--lg">
+            <span aria-hidden="true" className="seatmap-editor__color-picker-dot" style={{ background: newColor }} />
+            <input
+              type="color"
+              value={newColor}
+              onChange={(e) => setNewColor(e.target.value)}
+              className="seatmap-editor__color-picker-input"
+              data-editable="true"
+              title={t("seatmapEditor.statusManager.pickNewStatusColor", "Pick new status color")}
+            />
+          </span>
           <input
-            type="color"
-            value={newColor}
-            onChange={(e) => setNewColor(e.target.value)}
-            className="seatmap-editor__color-picker-input"
-            data-editable="true"
-            title={t("seatmapEditor.statusManager.pickNewStatusColor", "Pick new status color")}
+            placeholder={t("seatmapEditor.statusManager.statusName", "Status name")}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addStatus()}
+            className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
           />
-        </span>
-        <input
-          placeholder={t("seatmapEditor.statusManager.statusName", "Status name")}
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addStatus()}
-          className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
-        />
-        <button onClick={addStatus} className="seatmap-editor__panel-button">
-          {t("seatmapEditor.common.add", "Add")}
+          <button onClick={addStatus} className="seatmap-editor__panel-button">
+            {t("seatmapEditor.common.add", "Add")}
+          </button>
+        </div>
+      )}
+      {mode === "compact" && !addFormOpen && (
+        <button
+          onClick={() => setAddFormOpen(true)}
+          className="seatmap-editor__panel-button seatmap-editor__panel-button--full"
+          style={{ fontSize: 11 }}
+        >
+          {t("seatmapEditor.statusManager.addCustomStatus", "+ Add custom status")}
         </button>
-      </div>
+      )}
     </div>
   );
 }

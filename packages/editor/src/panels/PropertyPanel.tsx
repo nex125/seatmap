@@ -7,6 +7,7 @@ import type { SeatmapEditorTranslate } from "../i18n";
 import { translateEditorText } from "../i18n";
 
 export type VenueIdFieldMode = "editable" | "readonly" | "hidden";
+export type VenueNameFieldMode = "editable" | "readonly" | "hidden";
 
 export interface PropertyPanelProps {
   venue: Venue | null;
@@ -21,6 +22,7 @@ export interface PropertyPanelProps {
   onBackgroundKeepAspectRatioChange?: (keepAspectRatio: boolean) => void;
   translate?: SeatmapEditorTranslate;
   venueIdField?: VenueIdFieldMode;
+  venueNameField?: VenueNameFieldMode;
   style?: CSSProperties;
 }
 
@@ -49,11 +51,13 @@ export function PropertyPanel({
   onBackgroundKeepAspectRatioChange,
   translate,
   venueIdField = "editable",
+  venueNameField = "editable",
   style,
 }: PropertyPanelProps) {
   const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
     translateEditorText(translate, key, fallback, values);
   const [selectedSections, setSelectedSections] = useState<Section[]>([]);
+  const [bgAdvancedOpen, setBgAdvancedOpen] = useState(false);
 
   useEffect(() => {
     if (!venue) {
@@ -755,14 +759,25 @@ export function PropertyPanel({
             {t("seatmapEditor.propertyPanel.venueConfig", "Venue Config")}
           </div>
 
-          <div className="seatmap-editor__panel-section">
-            <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.venueName", "Venue Name")}</div>
-            <input
-              className="seatmap-editor__panel-input"
-              value={venue.name}
-              onChange={(e) => updateVenueName(e.target.value)}
-            />
-          </div>
+          {venueNameField !== "hidden" && (
+            <div className="seatmap-editor__panel-section">
+              <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.venueName", "Venue Name")}</div>
+              {venueNameField === "readonly" ? (
+                <input
+                  className="seatmap-editor__panel-input seatmap-editor__panel-text--mono-min"
+                  value={venue.name}
+                  readOnly
+                  aria-readonly
+                />
+              ) : (
+                <input
+                  className="seatmap-editor__panel-input"
+                  value={venue.name}
+                  onChange={(e) => updateVenueName(e.target.value)}
+                />
+              )}
+            </div>
+          )}
 
           {venueIdField !== "hidden" && (
             <div className="seatmap-editor__panel-section">
@@ -809,47 +824,60 @@ export function PropertyPanel({
                 onChange={(e) => onBackgroundOpacityChange?.(parseInt(e.target.value) / 100)}
                 className="seatmap-editor__panel-range"
               />
-              <div className="seatmap-editor__panel-grid-2">
-                <div>
-                  <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.width", "Width")}</div>
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={Math.round(venue.backgroundImageWidth ?? venue.bounds.width)}
-                    onChange={(e) =>
-                      onBackgroundSizeChange?.({
-                        width: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                      })
-                    }
-                    className="seatmap-editor__panel-input"
-                  />
-                </div>
-                <div>
-                  <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.height", "Height")}</div>
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={Math.round(venue.backgroundImageHeight ?? venue.bounds.height)}
-                    onChange={(e) =>
-                      onBackgroundSizeChange?.({
-                        height: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                      })
-                    }
-                    className="seatmap-editor__panel-input"
-                  />
-                </div>
-              </div>
-              <label className="seatmap-editor__panel-row seatmap-editor__panel-text">
-                <input
-                  type="checkbox"
-                  className="seatmap-editor__panel-checkbox"
-                  checked={venue.backgroundImageKeepAspectRatio ?? true}
-                  onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
-                />
-                {t("seatmapEditor.propertyPanel.keepAspectRatio", "Keep aspect ratio")}
-              </label>
+              <button
+                onClick={() => setBgAdvancedOpen(!bgAdvancedOpen)}
+                className="seatmap-editor__panel-button seatmap-editor__panel-button--full"
+                style={{ marginTop: 4, fontSize: 11 }}
+              >
+                {bgAdvancedOpen
+                  ? t("seatmapEditor.propertyPanel.hideAdvanced", "▾ Hide advanced")
+                  : t("seatmapEditor.propertyPanel.showAdvanced", "▸ Advanced settings")}
+              </button>
+              {bgAdvancedOpen && (
+                <>
+                  <div className="seatmap-editor__panel-grid-2">
+                    <div>
+                      <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.width", "Width")}</div>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={Math.round(venue.backgroundImageWidth ?? venue.bounds.width)}
+                        onChange={(e) =>
+                          onBackgroundSizeChange?.({
+                            width: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                          })
+                        }
+                        className="seatmap-editor__panel-input"
+                      />
+                    </div>
+                    <div>
+                      <div className="seatmap-editor__panel-label">{t("seatmapEditor.propertyPanel.height", "Height")}</div>
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={Math.round(venue.backgroundImageHeight ?? venue.bounds.height)}
+                        onChange={(e) =>
+                          onBackgroundSizeChange?.({
+                            height: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                          })
+                        }
+                        className="seatmap-editor__panel-input"
+                      />
+                    </div>
+                  </div>
+                  <label className="seatmap-editor__panel-row seatmap-editor__panel-text">
+                    <input
+                      type="checkbox"
+                      className="seatmap-editor__panel-checkbox"
+                      checked={venue.backgroundImageKeepAspectRatio ?? true}
+                      onChange={(e) => onBackgroundKeepAspectRatioChange?.(e.target.checked)}
+                    />
+                    {t("seatmapEditor.propertyPanel.keepAspectRatio", "Keep aspect ratio")}
+                  </label>
+                </>
+              )}
               <div className="seatmap-editor__panel-row">
                 <button onClick={onUploadBackground} className="seatmap-editor__panel-button">
                   {t("seatmapEditor.propertyPanel.replace", "Replace")}
