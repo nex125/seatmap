@@ -2,6 +2,8 @@ import type { Viewport } from "@nex125/seatmap-core";
 import { generateId } from "@nex125/seatmap-core";
 import type { CommandHistory, Row, Section, SectionKind, Seat, Vec2 } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
+import type { SeatmapEditorTranslate } from "../i18n";
+import { translateEditorText } from "../i18n";
 import { BaseTool, type ToolPointerEvent } from "./BaseTool";
 
 const CLOSE_THRESHOLD = 15;
@@ -19,6 +21,7 @@ export class AddSectionTool extends BaseTool {
   points: Vec2[] = [];
   onPointsChange?: (points: Vec2[], closeable: boolean) => void;
   onSectionCreated?: (sectionId: string) => void;
+  translate?: SeatmapEditorTranslate;
 
   constructor(
     private history: CommandHistory,
@@ -127,12 +130,7 @@ export class AddSectionTool extends BaseTool {
 
     const newSection: Section = {
       id: generateId(),
-      label:
-        this.sectionKind === "stage"
-          ? "Stage"
-          : this.sectionKind === "dancefloor"
-            ? "Dancefloor"
-          : `Section ${Date.now().toString(36).slice(-3).toUpperCase()}`,
+      label: this.getDefaultSectionLabel(),
       kind: this.sectionKind,
       position: { x: cx, y: cy },
       rotation: 0,
@@ -173,7 +171,7 @@ export class AddSectionTool extends BaseTool {
   private createDancefloorRows(categoryId: string): Row[] {
     const dancefloorSeat: Seat = {
       id: generateId(DANCEFLOOR_SEAT_ID_SUFFIX),
-      label: "Dancefloor",
+      label: this.t("seatmapEditor.defaults.dancefloorLabel", "Dancefloor"),
       position: { x: 0, y: 0 },
       status: "available",
       categoryId,
@@ -181,10 +179,29 @@ export class AddSectionTool extends BaseTool {
     return [
       {
         id: generateId(DANCEFLOOR_ROW_ID_SUFFIX),
-        label: "DF",
+        label: this.t("seatmapEditor.defaults.dancefloorRowLabel", "DF"),
         seats: [dancefloorSeat],
       },
     ];
+  }
+
+  private getDefaultSectionLabel(): string {
+    if (this.sectionKind === "stage") {
+      return this.t("seatmapEditor.defaults.stageLabel", "Stage");
+    }
+    if (this.sectionKind === "dancefloor") {
+      return this.t("seatmapEditor.defaults.dancefloorLabel", "Dancefloor");
+    }
+
+    return this.t(
+      "seatmapEditor.defaults.sectionLabel",
+      "Section {suffix}",
+      { suffix: Date.now().toString(36).slice(-3).toUpperCase() },
+    );
+  }
+
+  private t(key: string, fallback: string, values?: Record<string, string | number>): string {
+    return translateEditorText(this.translate, key, fallback, values);
   }
 
   private notifyChange(): void {

@@ -189,6 +189,43 @@ describe("editor tools behavior", () => {
     expect(dancefloor.rows[0]!.seats[0]!.label).toBe("Dancefloor");
   });
 
+  test("AddSectionTool uses translated default labels", () => {
+    const history = makeImmediateHistory();
+    const tool = new AddSectionTool(history as never, "cat-1");
+    const store = makeStore(makeVenue());
+
+    tool.translate = (key, values) => {
+      if (key === "seatmapEditor.defaults.stageLabel") return "Сцена";
+      if (key === "seatmapEditor.defaults.dancefloorLabel") return "Танцпол";
+      if (key === "seatmapEditor.defaults.dancefloorRowLabel") return "ТП";
+      if (key === "seatmapEditor.defaults.sectionLabel") return `Секция ${values?.suffix ?? ""}`.trim();
+      return key;
+    };
+
+    tool.setSectionKind("stage");
+    tool.onPointerDown(pointer(0, 0), new Viewport(), store);
+    tool.onPointerDown(pointer(100, 100), new Viewport(), store);
+
+    tool.setSectionKind("dancefloor");
+    tool.setMode("polygon");
+    tool.onPointerDown(pointer(200, 0), new Viewport(), store);
+    tool.onPointerDown(pointer(300, 0), new Viewport(), store);
+    tool.onPointerDown(pointer(300, 100), new Viewport(), store);
+    tool.onPointerDown(pointer(204, 4), new Viewport(), store);
+
+    tool.setSectionKind("section");
+    tool.setMode("rectangle");
+    tool.onPointerDown(pointer(400, 0), new Viewport(), store);
+    tool.onPointerDown(pointer(500, 100), new Viewport(), store);
+
+    const venue = store.getState().venue!;
+    expect(venue.sections[0]!.label).toBe("Сцена");
+    expect(venue.sections[1]!.label).toBe("Танцпол");
+    expect(venue.sections[1]!.rows[0]!.label).toBe("ТП");
+    expect(venue.sections[1]!.rows[0]!.seats[0]!.label).toBe("Танцпол");
+    expect(venue.sections[2]!.label).toMatch(/^Секция [A-Z0-9]{3}$/);
+  });
+
   test("AddRowTool adds seats into a row for the target section", () => {
     const history = makeImmediateHistory();
     const sectionId = "section-1";

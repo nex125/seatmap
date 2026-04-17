@@ -395,6 +395,7 @@ function EditorInner({
   const addSectionTool = useMemo(
     () => {
       const tool = new AddSectionTool(historyRef.current);
+      tool.translate = translate;
       const v = store.getState().venue;
       if (v && v.categories.length > 0) tool.setCategoryId(v.categories[0].id);
       tool.onPointsChange = (pts, closeable) => {
@@ -403,7 +404,7 @@ function EditorInner({
       };
       return tool;
     },
-    [],
+    [store, translate],
   );
   const addRowTool = useMemo(
     () => new AddRowTool(historyRef.current, spatialIndex),
