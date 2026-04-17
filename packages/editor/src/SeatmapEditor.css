@@ -1288,6 +1288,18 @@
   cursor: pointer;
 }
 
+.seatmap-editor__panel-button--with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seatmap-editor__panel-button-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .seatmap-editor__panel-button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--seatmap-editor-control-surface) 86%, var(--seatmap-editor-text) 14%);
   border-color: color-mix(in srgb, var(--seatmap-editor-border) 58%, var(--seatmap-editor-text) 42%);

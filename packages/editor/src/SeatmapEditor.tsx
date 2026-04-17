@@ -114,6 +114,7 @@ type MotionSettings = {
 };
 
 const MOTION_SETTINGS_STORAGE_KEY = "seatmap-editor-motion-settings-v1";
+const SHOW_HINTS_STORAGE_KEY = "seatmap-editor-show-hints-v1";
 const DEFAULT_MOTION_SETTINGS: MotionSettings = {
   sectionDrawJelly: 46,
   fitViewJelly: 52,
@@ -237,6 +238,17 @@ function loadMotionSettings(): MotionSettings {
     };
   } catch {
     return DEFAULT_MOTION_SETTINGS;
+  }
+}
+
+function loadShowHints(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(SHOW_HINTS_STORAGE_KEY);
+    if (raw === null) return false;
+    return raw === "true";
+  } catch {
+    return false;
   }
 }
 
@@ -442,7 +454,7 @@ function EditorInner({
   const [canvasGridStyle, setCanvasGridStyle] = useState<CanvasGridStyle>("solid");
   const [showSectionGrid, setShowSectionGrid] = useState(true);
   const [sectionGridStyle, setSectionGridStyle] = useState<SectionGridStyle>("dots");
-  const [showHints, setShowHints] = useState(true);
+  const [showHints, setShowHints] = useState(() => loadShowHints());
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const motionSettings = useMemo(() => loadMotionSettings(), []);
   const [sectionDrawJelly, setSectionDrawJelly] = useState(motionSettings.sectionDrawJelly);
@@ -518,6 +530,10 @@ function EditorInner({
     pointerScrollZoomStrengthPct,
     pointerScrollZoomDeltaDivisor,
   ]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(SHOW_HINTS_STORAGE_KEY, String(showHints));
+  }, [showHints]);
 
   useEffect(() => {
     panTool.setInertiaOptions({

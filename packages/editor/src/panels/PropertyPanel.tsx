@@ -6,6 +6,7 @@ import type { SeatmapStore } from "@nex125/seatmap-react";
 import type { SeatmapEditorTranslate } from "../i18n";
 import { translateEditorText } from "../i18n";
 import { buildSectionOutlineToFitSeats } from "../utils/sectionFit";
+import { FitIcon, SeatIcon } from "./PanelIcons";
 
 export type VenueIdFieldMode = "editable" | "readonly" | "hidden";
 export type VenueNameFieldMode = "editable" | "readonly" | "hidden";
@@ -760,14 +761,20 @@ export function PropertyPanel({
                       <div className="seatmap-editor__panel-row">
                         <button
                           onClick={() => fitSectionToSeats(selectedSection.id)}
-                          className="seatmap-editor__panel-button"
+                          className="seatmap-editor__panel-button seatmap-editor__panel-button--with-icon"
                           title={t("seatmapEditor.propertyPanel.fitSectionToSeatsTitle", "Fit section outline to seats")}
                           disabled={selectedSection.rows.every((row) => row.seats.length === 0)}
                         >
-                          {t("seatmapEditor.propertyPanel.fitSectionToSeats", "Fit Section")}
+                          <FitIcon className="seatmap-editor__panel-button-icon" />
+                          <span>{t("seatmapEditor.propertyPanel.fitSectionToSeats", "Fit")}</span>
                         </button>
-                        <button onClick={() => addSingleSeat(selectedSection.id)} className="seatmap-editor__panel-button" title={t("seatmapEditor.propertyPanel.addSingleSeatTitle", "Add a single seat to the last row")}>
-                          {t("seatmapEditor.propertyPanel.addSeat", "+ Seat")}
+                        <button
+                          onClick={() => addSingleSeat(selectedSection.id)}
+                          className="seatmap-editor__panel-button seatmap-editor__panel-button--with-icon"
+                          title={t("seatmapEditor.propertyPanel.addSingleSeatTitle", "Add a single seat to the last row")}
+                        >
+                          <SeatIcon className="seatmap-editor__panel-button-icon" />
+                          <span>{t("seatmapEditor.propertyPanel.addSeat", "Add")}</span>
                         </button>
                       </div>
                     </div>
