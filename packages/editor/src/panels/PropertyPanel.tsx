@@ -5,6 +5,7 @@ import { AVAILABLE_STATUS_ID } from "@nex125/seatmap-core";
 import type { SeatmapStore } from "@nex125/seatmap-react";
 import type { SeatmapEditorTranslate } from "../i18n";
 import { translateEditorText } from "../i18n";
+import { buildSectionOutlineToFitSeats } from "../utils/sectionFit";
 
 export type VenueIdFieldMode = "editable" | "readonly" | "hidden";
 export type VenueNameFieldMode = "editable" | "readonly" | "hidden";
@@ -470,6 +471,40 @@ export function PropertyPanel({
     });
   };
 
+  const fitSectionToSeats = (sectionId: string) => {
+    const v = freshVenue(store);
+    if (!v) return;
+    const section = v.sections.find((candidate) => candidate.id === sectionId);
+    if (!section || isSectionSeatLayoutLocked(section)) return;
+
+    const fittedOutline = buildSectionOutlineToFitSeats(section);
+    if (!fittedOutline) return;
+
+    history.execute({
+      description: `Fit section "${section.label}" to seats`,
+      execute: () => {
+        const cur = freshVenue(store);
+        if (!cur) return;
+        setVenue(store, {
+          ...cur,
+          sections: cur.sections.map((candidate) =>
+            candidate.id === sectionId ? { ...candidate, outline: fittedOutline } : candidate,
+          ),
+        });
+      },
+      undo: () => {
+        const cur = freshVenue(store);
+        if (!cur) return;
+        setVenue(store, {
+          ...cur,
+          sections: cur.sections.map((candidate) =>
+            candidate.id === sectionId ? { ...candidate, outline: section.outline } : candidate,
+          ),
+        });
+      },
+    });
+  };
+
   const updateSelectedSeatStatus = (statusId: string) => {
     if (selectedSeatIds.size === 0) return;
     const v = freshVenue(store);
@@ -722,9 +757,19 @@ export function PropertyPanel({
                       <div className="seatmap-editor__panel-label">
                         {t("seatmapEditor.propertyPanel.rowsMeta", "Rows ({rows}) · {seats} seats", { rows: selectedSection.rows.length, seats: selectedSection.rows.reduce((v, r) => v + r.seats.length, 0) })}
                       </div>
-                      <button onClick={() => addSingleSeat(selectedSection.id)} className="seatmap-editor__panel-button" title={t("seatmapEditor.propertyPanel.addSingleSeatTitle", "Add a single seat to the last row")}>
-                        {t("seatmapEditor.propertyPanel.addSeat", "+ Seat")}
-                      </button>
+                      <div className="seatmap-editor__panel-row">
+                        <button
+                          onClick={() => fitSectionToSeats(selectedSection.id)}
+                          className="seatmap-editor__panel-button"
+                          title={t("seatmapEditor.propertyPanel.fitSectionToSeatsTitle", "Fit section outline to seats")}
+                          disabled={selectedSection.rows.every((row) => row.seats.length === 0)}
+                        >
+                          {t("seatmapEditor.propertyPanel.fitSectionToSeats", "Fit Section")}
+                        </button>
+                        <button onClick={() => addSingleSeat(selectedSection.id)} className="seatmap-editor__panel-button" title={t("seatmapEditor.propertyPanel.addSingleSeatTitle", "Add a single seat to the last row")}>
+                          {t("seatmapEditor.propertyPanel.addSeat", "+ Seat")}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

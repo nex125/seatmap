@@ -7,6 +7,7 @@ import { AddSectionTool } from "./AddSectionTool";
 import { PanTool } from "./PanTool";
 import { SelectTool } from "./SelectTool";
 import type { ToolPointerEvent } from "./BaseTool";
+import { buildSectionOutlineToFitSeats, getSectionFitPadding } from "../utils/sectionFit";
 
 type MinimalStoreState = {
   venue: Venue | null;
@@ -113,6 +114,37 @@ function withAnimationFrameStubs<T>(run: () => T): T {
 }
 
 describe("editor tools behavior", () => {
+  test("buildSectionOutlineToFitSeats shrinks section around seat bounds with padding", () => {
+    const outline = buildSectionOutlineToFitSeats({
+      rows: [
+        {
+          id: "row-1",
+          label: "1",
+          seats: [
+            { id: "seat-1", label: "1", position: { x: 10, y: 20 }, status: "available", categoryId: "cat-1" },
+            { id: "seat-2", label: "2", position: { x: 50, y: 20 }, status: "available", categoryId: "cat-1" },
+          ],
+        },
+        {
+          id: "row-2",
+          label: "2",
+          seats: [
+            { id: "seat-3", label: "1", position: { x: 10, y: 60 }, status: "available", categoryId: "cat-1" },
+          ],
+        },
+      ],
+    });
+
+    const padding = getSectionFitPadding();
+
+    expect(outline).toEqual([
+      { x: 10 - padding, y: 20 - padding },
+      { x: 50 + padding, y: 20 - padding },
+      { x: 50 + padding, y: 60 + padding },
+      { x: 10 - padding, y: 60 + padding },
+    ]);
+  });
+
   test("AddSectionTool creates rectangle section from two clicks", () => {
     const history = makeImmediateHistory();
     const tool = new AddSectionTool(history as never, "cat-1");
