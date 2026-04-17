@@ -373,7 +373,7 @@ export function PropertyPanel({
     };
 
     history.execute({
-      description: "Delete selected objects",
+      description: t("seatmapEditor.history.deleteSelected", "Delete selected objects"),
       execute: () => {
         setVenue(store, nextVenue);
         store.getState().clearSelection();

@@ -1568,7 +1568,7 @@ function EditorInner({
     };
 
     historyRef.current.execute({
-      description: "Delete selected objects",
+      description: t("seatmapEditor.history.deleteSelected", "Delete selected objects"),
       execute: () => {
         store.getState().setVenue(nextVenue);
         store.getState().clearSelection();
@@ -1577,7 +1577,7 @@ function EditorInner({
         store.getState().setVenue(previousVenue);
       },
     });
-  }, [store]);
+  }, [store, t]);
 
   const renderActiveToolOptionsOverlay = () => {
     const stopPointerPropagation = (e: React.PointerEvent<HTMLDivElement>) => e.stopPropagation();
@@ -1649,7 +1649,7 @@ function EditorInner({
       const isLabelValueKnobLayout = showKnob && options?.knobLayout === "label-value-knob";
       const knobNamespace = options?.knobNamespace ?? "motion";
       const tooltipText = knobDisabled
-        ? "Disabled while advanced overrides are enabled."
+        ? t("seatmapEditor.toolOptions.motion.knobDisabledWhileAdvanced", "Disabled while advanced overrides are enabled.")
         : hint;
       const commitClampedValue = (raw: number) => {
         const clamped = clampRange(raw, min, max);
@@ -1778,33 +1778,33 @@ function EditorInner({
     );
     const renderGridOptionsCard = () => (
       renderOptionCard(
-        "Grid options",
+        t("seatmapEditor.toolOptions.grid.gridOptionsTitle", "Grid options"),
         <>
-          {renderSwitch("Grid", gridEnabled, () => setGridEnabled((v) => !v))}
+          {renderSwitch(t("seatmapEditor.toolOptions.grid.grid", "Grid"), gridEnabled, () => setGridEnabled((v) => !v))}
           <div className="seatmap-editor__option-card-divider" />
           <div className="seatmap-editor__option-row">
-            {renderSwitch("Canvas grid", showCanvasGrid, () => setShowCanvasGrid((v) => !v))}
+            {renderSwitch(t("seatmapEditor.toolOptions.grid.canvasGrid", "Canvas grid"), showCanvasGrid, () => setShowCanvasGrid((v) => !v))}
             <select
               value={canvasGridStyle}
               onChange={(e) => setCanvasGridStyle(e.target.value as CanvasGridStyle)}
               className="seatmap-editor__select"
               disabled={!gridEnabled || !showCanvasGrid}
             >
-              <option value="solid">Solid</option>
-              <option value="dashed">Dashed</option>
-              <option value="dotted">Dotted</option>
+              <option value="solid">{t("seatmapEditor.toolOptions.grid.canvasStyleSolid", "Solid")}</option>
+              <option value="dashed">{t("seatmapEditor.toolOptions.grid.canvasStyleDashed", "Dashed")}</option>
+              <option value="dotted">{t("seatmapEditor.toolOptions.grid.canvasStyleDotted", "Dotted")}</option>
             </select>
           </div>
           <div className="seatmap-editor__option-row">
-            {renderSwitch("Section grid", showSectionGrid, () => setShowSectionGrid((v) => !v))}
+            {renderSwitch(t("seatmapEditor.toolOptions.grid.sectionGrid", "Section grid"), showSectionGrid, () => setShowSectionGrid((v) => !v))}
             <select
               value={sectionGridStyle}
               onChange={(e) => setSectionGridStyle(e.target.value as SectionGridStyle)}
               className="seatmap-editor__select"
               disabled={!gridEnabled || !showSectionGrid}
             >
-              <option value="dots">Dots</option>
-              <option value="cross">Cross</option>
+              <option value="dots">{t("seatmapEditor.toolOptions.grid.sectionStyleDots", "Dots")}</option>
+              <option value="cross">{t("seatmapEditor.toolOptions.grid.sectionStyleCross", "Cross")}</option>
             </select>
           </div>
         </>,
@@ -1812,37 +1812,37 @@ function EditorInner({
     );
     const renderMotionSettingsCard = () => (
       renderOptionCard(
-        "Editor motion",
+        t("seatmapEditor.toolOptions.motion.editorMotionTitle", "Editor motion"),
         <div className="seatmap-editor__motion-layout">
           <div className="seatmap-editor__motion-column seatmap-editor__motion-column--basic">
-            <span className="seatmap-editor__option-card-title">Basic</span>
+            <span className="seatmap-editor__option-card-title">{t("seatmapEditor.toolOptions.motion.basic", "Basic")}</span>
             <div className="seatmap-editor__motion-control-grid">
               {renderRange(
-                "Section draw zoom jelly",
+                t("seatmapEditor.toolOptions.motion.sectionDrawZoomJelly", "Section draw zoom jelly"),
                 sectionDrawJelly,
                 setSectionDrawJelly,
-                "Controls how floaty auto-focus feels after drawing a section.",
+                t("seatmapEditor.toolOptions.motion.sectionDrawZoomJellyHint", "Controls how floaty auto-focus feels after drawing a section."),
                 { disabled: useAdvancedMotion, displayAsKnob: true, knobLayout: "label-value-knob" },
               )}
               {renderRange(
-                "Fit zoom jelly",
+                t("seatmapEditor.toolOptions.motion.fitZoomJelly", "Fit zoom jelly"),
                 fitViewJelly,
                 setFitViewJelly,
-                "Controls smoothness and duration of Fit action.",
+                t("seatmapEditor.toolOptions.motion.fitZoomJellyHint", "Controls smoothness and duration of Fit action."),
                 { disabled: useAdvancedMotion, displayAsKnob: true, knobLayout: "label-value-knob" },
               )}
               {renderRange(
-                "Canvas pan inertia",
+                t("seatmapEditor.toolOptions.motion.canvasPanInertia", "Canvas pan inertia"),
                 panInertiaJelly,
                 setPanInertiaJelly,
-                "Controls glide amount after you release a pan drag.",
+                t("seatmapEditor.toolOptions.motion.canvasPanInertiaHint", "Controls glide amount after you release a pan drag."),
                 { disabled: useAdvancedMotion, displayAsKnob: true, knobLayout: "label-value-knob" },
               )}
               {renderRange(
-                "Pointer scroll zoom jelly",
+                t("seatmapEditor.toolOptions.motion.pointerScrollZoomJelly", "Pointer scroll zoom jelly"),
                 pointerScrollZoomJelly,
                 setPointerScrollZoomJelly,
-                "Controls how smooth pointer wheel zoom feels.",
+                t("seatmapEditor.toolOptions.motion.pointerScrollZoomJellyHint", "Controls how smooth pointer wheel zoom feels."),
                 { disabled: useAdvancedMotion, displayAsKnob: true, knobLayout: "label-value-knob" },
               )}
             </div>
@@ -1852,24 +1852,24 @@ function EditorInner({
                 className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
                 onClick={handleResetMotionSettings}
               >
-                Reset to defaults
+                {t("seatmapEditor.toolOptions.motion.resetToDefaults", "Reset to defaults")}
               </button>
             </div>
-            {renderSwitch("Use advanced overrides", useAdvancedMotion, () => setUseAdvancedMotion((v) => !v))}
+            {renderSwitch(t("seatmapEditor.toolOptions.motion.useAdvancedOverrides", "Use advanced overrides"), useAdvancedMotion, () => setUseAdvancedMotion((v) => !v))}
           </div>
 
           {useAdvancedMotion && (
             <div className="seatmap-editor__motion-column seatmap-editor__motion-column--advanced">
               <div className="seatmap-editor__motion-advanced-header">
-                <span className="seatmap-editor__option-card-title">Advanced</span>
+                <span className="seatmap-editor__option-card-title">{t("seatmapEditor.toolOptions.motion.advanced", "Advanced")}</span>
               </div>
-              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">Section</span>
+              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">{t("seatmapEditor.toolOptions.motion.subsectionSection", "Section")}</span>
               <div className="seatmap-editor__motion-control-grid is-knob-grid">
                 {renderRange(
-                  "Draw duration",
+                  t("seatmapEditor.toolOptions.motion.drawDuration", "Draw duration"),
                   sectionDrawDurationMs,
                   setSectionDrawDurationMs,
-                  "Animation duration in milliseconds.",
+                  t("seatmapEditor.toolOptions.motion.drawDurationHint", "Animation duration in milliseconds."),
                   {
                     min: 100,
                     max: 3000,
@@ -1880,10 +1880,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Center pull",
+                  t("seatmapEditor.toolOptions.motion.centerPull", "Center pull"),
                   sectionDrawCenterPullPct,
                   setSectionDrawCenterPullPct,
-                  "How strongly section draw focus moves toward section center.",
+                  t("seatmapEditor.toolOptions.motion.centerPullHint", "How strongly section draw focus moves toward section center."),
                   {
                     min: 0,
                     max: 100,
@@ -1894,10 +1894,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Zoom boost",
+                  t("seatmapEditor.toolOptions.motion.zoomBoost", "Zoom boost"),
                   sectionDrawZoomBoostPct,
                   setSectionDrawZoomBoostPct,
-                  "Additional zoom applied during section draw focus.",
+                  t("seatmapEditor.toolOptions.motion.zoomBoostHint", "Additional zoom applied during section draw focus."),
                   {
                     min: 0,
                     max: 50,
@@ -1908,10 +1908,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Overshoot",
+                  t("seatmapEditor.toolOptions.motion.sectionOvershoot", "Overshoot"),
                   sectionDrawOvershootPct,
                   setSectionDrawOvershootPct,
-                  "Spring amount near the end of section auto-focus.",
+                  t("seatmapEditor.toolOptions.motion.sectionOvershootHint", "Spring amount near the end of section auto-focus."),
                   {
                     min: 0,
                     max: 180,
@@ -1924,13 +1924,13 @@ function EditorInner({
               </div>
               <div className="seatmap-editor__motion-group-divider" />
 
-              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">Fit</span>
+              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">{t("seatmapEditor.toolOptions.motion.subsectionFit", "Fit")}</span>
               <div className="seatmap-editor__motion-control-grid is-knob-grid">
                 {renderRange(
-                  "Duration",
+                  t("seatmapEditor.toolOptions.motion.fitDuration", "Duration"),
                   fitViewDurationMs,
                   setFitViewDurationMs,
-                  "Animation duration for Fit action.",
+                  t("seatmapEditor.toolOptions.motion.fitDurationHint", "Animation duration for Fit action."),
                   {
                     min: 100,
                     max: 3000,
@@ -1941,10 +1941,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Overshoot",
+                  t("seatmapEditor.toolOptions.motion.fitOvershoot", "Overshoot"),
                   fitViewOvershootPct,
                   setFitViewOvershootPct,
-                  "Spring amount near the end of Fit movement.",
+                  t("seatmapEditor.toolOptions.motion.fitOvershootHint", "Spring amount near the end of Fit movement."),
                   {
                     min: 0,
                     max: 180,
@@ -1957,13 +1957,13 @@ function EditorInner({
               </div>
               <div className="seatmap-editor__motion-group-divider" />
 
-              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">Pan</span>
+              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">{t("seatmapEditor.toolOptions.motion.subsectionPan", "Pan")}</span>
               <div className="seatmap-editor__motion-control-grid is-knob-grid">
                 {renderRange(
-                  "Inertia carry",
+                  t("seatmapEditor.toolOptions.motion.inertiaCarry", "Inertia carry"),
                   panInertiaCarryPct,
                   setPanInertiaCarryPct,
-                  "Velocity retained at pan release.",
+                  t("seatmapEditor.toolOptions.motion.inertiaCarryHint", "Velocity retained at pan release."),
                   {
                     min: 0,
                     max: 95,
@@ -1974,10 +1974,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Inertia friction",
+                  t("seatmapEditor.toolOptions.motion.inertiaFriction", "Inertia friction"),
                   panInertiaFrictionPct,
                   setPanInertiaFrictionPct,
-                  "Per-frame damping (higher = longer glide).",
+                  t("seatmapEditor.toolOptions.motion.inertiaFrictionHint", "Per-frame damping (higher = longer glide)."),
                   {
                     min: 70,
                     max: 99,
@@ -1988,10 +1988,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Stop speed",
+                  t("seatmapEditor.toolOptions.motion.stopSpeed", "Stop speed"),
                   panInertiaMinSpeedMilli,
                   setPanInertiaMinSpeedMilli,
-                  "Stop threshold in px/ms x1000.",
+                  t("seatmapEditor.toolOptions.motion.stopSpeedHint", "Stop threshold in px/ms x1000."),
                   {
                     min: 1,
                     max: 50,
@@ -2002,10 +2002,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Velocity blend",
+                  t("seatmapEditor.toolOptions.motion.velocityBlend", "Velocity blend"),
                   panVelocityBlendPct,
                   setPanVelocityBlendPct,
-                  "How quickly release velocity follows latest drag samples.",
+                  t("seatmapEditor.toolOptions.motion.velocityBlendHint", "How quickly release velocity follows latest drag samples."),
                   {
                     min: 5,
                     max: 95,
@@ -2016,10 +2016,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Stop delta",
+                  t("seatmapEditor.toolOptions.motion.stopDelta", "Stop delta"),
                   panStopDeltaMilli,
                   setPanStopDeltaMilli,
-                  "Treat movement below this px x1000 as stopped while dragging.",
+                  t("seatmapEditor.toolOptions.motion.stopDeltaHint", "Treat movement below this px x1000 as stopped while dragging."),
                   {
                     min: 0,
                     max: 4000,
@@ -2030,10 +2030,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Release idle",
+                  t("seatmapEditor.toolOptions.motion.releaseIdle", "Release idle"),
                   panReleaseIdleMs,
                   setPanReleaseIdleMs,
-                  "If pointer pauses this long before release, inertia is dropped.",
+                  t("seatmapEditor.toolOptions.motion.releaseIdleHint", "If pointer pauses this long before release, inertia is dropped."),
                   {
                     min: 0,
                     max: 400,
@@ -2046,13 +2046,13 @@ function EditorInner({
               </div>
               <div className="seatmap-editor__motion-group-divider" />
 
-              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">Pointer scroll zoom</span>
+              <span className="seatmap-editor__option-card-title seatmap-editor__option-card-title--subtle">{t("seatmapEditor.toolOptions.motion.subsectionPointerScrollZoom", "Pointer scroll zoom")}</span>
               <div className="seatmap-editor__motion-control-grid is-knob-grid">
                 {renderRange(
-                  "Duration",
+                  t("seatmapEditor.toolOptions.motion.pointerScrollDuration", "Duration"),
                   pointerScrollZoomDurationMs,
                   setPointerScrollZoomDurationMs,
-                  "Wheel zoom easing duration.",
+                  t("seatmapEditor.toolOptions.motion.pointerScrollDurationHint", "Wheel zoom easing duration."),
                   {
                     min: 60,
                     max: 600,
@@ -2063,10 +2063,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Strength",
+                  t("seatmapEditor.toolOptions.motion.pointerScrollStrength", "Strength"),
                   pointerScrollZoomStrengthPct,
                   setPointerScrollZoomStrengthPct,
-                  "Per-frame zoom blend amount (higher = snappier response).",
+                  t("seatmapEditor.toolOptions.motion.pointerScrollStrengthHint", "Per-frame zoom blend amount (higher = snappier response)."),
                   {
                     min: 8,
                     max: 55,
@@ -2077,10 +2077,10 @@ function EditorInner({
                   },
                 )}
                 {renderRange(
-                  "Sensitivity",
+                  t("seatmapEditor.toolOptions.motion.pointerScrollSensitivity", "Sensitivity"),
                   pointerScrollZoomDeltaDivisor,
                   setPointerScrollZoomDeltaDivisor,
-                  "Wheel delta divisor (higher = less sensitive).",
+                  t("seatmapEditor.toolOptions.motion.pointerScrollSensitivityHint", "Wheel delta divisor (higher = less sensitive)."),
                   {
                     min: 250,
                     max: 1400,
@@ -2096,9 +2096,9 @@ function EditorInner({
                   type="button"
                   className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
                   onClick={handleApplyAdvancedToBasic}
-                  title="Recalculate basic knobs from advanced settings"
+                  title={t("seatmapEditor.toolOptions.motion.applyToBasicTitle", "Recalculate basic knobs from advanced settings")}
                 >
-                  Apply to basic
+                  {t("seatmapEditor.toolOptions.motion.applyToBasic", "Apply to basic")}
                 </button>
               </div>
             </div>
@@ -2111,67 +2111,67 @@ function EditorInner({
     if (activeToolName === "add-section") {
       return renderOverlay(
         <>
-          <span className="seatmap-editor__tool-options-title">Tool Options</span>
+          <span className="seatmap-editor__tool-options-title">{t("seatmapEditor.toolOptions.title", "Tool Options")}</span>
           <div className="seatmap-editor__tool-options-divider" />
-            {renderOptionCard("Section", (
+            {renderOptionCard(t("seatmapEditor.toolOptions.sectionKind.section", "Section"), (
               <div className="seatmap-editor__option-row">
                 <button
                   onClick={() => handleSectionToolVariantChange("section", "rectangle")}
                   className={`seatmap-editor__segmented-button${sectionKind === "section" && sectionMode === "rectangle" ? " is-active" : ""}`}
                 >
-                  Rectangle
+                  {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
                 </button>
                 <button
                   onClick={() => handleSectionToolVariantChange("section", "polygon")}
                   className={`seatmap-editor__segmented-button${sectionKind === "section" && sectionMode === "polygon" ? " is-active" : ""}`}
                 >
-                  Polygon
+                  {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
                 </button>
               </div>
             ))}
-            {renderOptionCard("Stage", (
+            {renderOptionCard(t("seatmapEditor.toolOptions.sectionKind.stage", "Stage"), (
               <div className="seatmap-editor__option-row">
                 <button
                   onClick={() => handleSectionToolVariantChange("stage", "rectangle")}
                   className={`seatmap-editor__segmented-button${sectionKind === "stage" && sectionMode === "rectangle" ? " is-active" : ""}`}
                 >
-                  Rectangle
+                  {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
                 </button>
                 <button
                   onClick={() => handleSectionToolVariantChange("stage", "polygon")}
                   className={`seatmap-editor__segmented-button${sectionKind === "stage" && sectionMode === "polygon" ? " is-active" : ""}`}
                 >
-                  Polygon
+                  {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
                 </button>
               </div>
             ))}
-            {renderOptionCard("Dancefloor", (
+            {renderOptionCard(t("seatmapEditor.toolOptions.sectionKind.dancefloor", "Dancefloor"), (
               <div className="seatmap-editor__option-row">
                 <button
                   onClick={() => handleSectionToolVariantChange("dancefloor", "rectangle")}
                   className={`seatmap-editor__segmented-button${sectionKind === "dancefloor" && sectionMode === "rectangle" ? " is-active" : ""}`}
                 >
-                  Rectangle
+                  {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
                 </button>
                 <button
                   onClick={() => handleSectionToolVariantChange("dancefloor", "polygon")}
                   className={`seatmap-editor__segmented-button${sectionKind === "dancefloor" && sectionMode === "polygon" ? " is-active" : ""}`}
                 >
-                  Polygon
+                  {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
                 </button>
               </div>
             ))}
-            {renderOptionCard("Section resize", (
+            {renderOptionCard(t("seatmapEditor.toolOptions.sectionResize.title", "Section resize"), (
               <button
                 onClick={() => handleToggleSectionResize(true)}
                 className={`seatmap-editor__segmented-button${sectionResizeEnabled ? " is-active" : ""}`}
-                title="Enable section corner/side resizing"
+                title={t("seatmapEditor.toolOptions.sectionResize.enableTitle", "Enable section corner/side resizing")}
               >
-                {sectionResizeEnabled ? "Resize On" : "Resize Off"}
+                {sectionResizeEnabled ? t("seatmapEditor.toolOptions.sectionResize.resizeOn", "Resize On") : t("seatmapEditor.toolOptions.sectionResize.resizeOff", "Resize Off")}
               </button>
             ))}
-            {renderOptionCard("Auto focus", (
-              renderSwitch("Zoom to new section", autoFocusNewSection, () =>
+            {renderOptionCard(t("seatmapEditor.toolOptions.autoFocus.title", "Auto focus"), (
+              renderSwitch(t("seatmapEditor.toolOptions.autoFocus.zoomToNewSection", "Zoom to new section"), autoFocusNewSection, () =>
                 setAutoFocusNewSection((current) => !current),
               )
             ))}
@@ -2184,14 +2184,14 @@ function EditorInner({
     if (activeToolName === "select") {
       return renderOverlay(
         <>
-          <span className="seatmap-editor__tool-options-title">Tool Options</span>
+          <span className="seatmap-editor__tool-options-title">{t("seatmapEditor.toolOptions.title", "Tool Options")}</span>
           <div className="seatmap-editor__tool-options-divider" />
-          {renderOptionCard("Section resize", (
+          {renderOptionCard(t("seatmapEditor.toolOptions.sectionResize.title", "Section resize"), (
               <button
                 onClick={() => handleToggleSectionResize(false)}
                 className={`seatmap-editor__segmented-button${sectionResizeEnabled ? " is-active" : ""}`}
               >
-                {sectionResizeEnabled ? "Resize On" : "Resize Off"}
+                {sectionResizeEnabled ? t("seatmapEditor.toolOptions.sectionResize.resizeOn", "Resize On") : t("seatmapEditor.toolOptions.sectionResize.resizeOff", "Resize Off")}
               </button>
           ))}
           {isGridOptionsOpen && renderGridOptionsCard()}
@@ -2204,7 +2204,7 @@ function EditorInner({
       if (!isGridOptionsOpen && !isEditorSettingsOpen) return null;
       return renderOverlay(
         <>
-          <span className="seatmap-editor__tool-options-title">Tool Options</span>
+          <span className="seatmap-editor__tool-options-title">{t("seatmapEditor.toolOptions.title", "Tool Options")}</span>
           <div className="seatmap-editor__tool-options-divider" />
           {isGridOptionsOpen && renderGridOptionsCard()}
           {isEditorSettingsOpen && renderMotionSettingsCard()}
@@ -2214,13 +2214,13 @@ function EditorInner({
 
     return renderOverlay(
       <>
-        <span className="seatmap-editor__tool-options-title">Tool Options</span>
+        <span className="seatmap-editor__tool-options-title">{t("seatmapEditor.toolOptions.title", "Tool Options")}</span>
         <div className="seatmap-editor__tool-options-divider" />
-        {renderOptionCard("Row layout", (
+        {renderOptionCard(t("seatmapEditor.toolOptions.rowLayout.title", "Row layout"), (
           <div className="seatmap-editor__row-layout-body">
             <div className="seatmap-editor__row-layout-controls">
               <label className="seatmap-editor__label seatmap-editor__option-row">
-                  Seats:
+                  {t("seatmapEditor.toolOptions.rowLayout.seatsLabel", "Seats:")}
                   <div className="seatmap-editor__input-stepper">
                     <input
                       type="number"
@@ -2235,7 +2235,7 @@ function EditorInner({
                     <button
                       type="button"
                       className="seatmap-editor__stepper-button"
-                      aria-label="Increase seats per row"
+                      aria-label={t("seatmapEditor.toolOptions.rowLayout.increaseSeatsPerRowAria", "Increase seats per row")}
                       onClick={() => handleSeatsPerRowChange(seatsPerRow + 1)}
                     >
                       +
@@ -2243,7 +2243,7 @@ function EditorInner({
                     <button
                       type="button"
                       className="seatmap-editor__stepper-button"
-                      aria-label="Decrease seats per row"
+                      aria-label={t("seatmapEditor.toolOptions.rowLayout.decreaseSeatsPerRowAria", "Decrease seats per row")}
                       onClick={() => handleSeatsPerRowChange(seatsPerRow - 1)}
                     >
                       -
@@ -2252,7 +2252,7 @@ function EditorInner({
               </label>
 
               <label className="seatmap-editor__label seatmap-editor__option-row">
-                  Rows:
+                  {t("seatmapEditor.toolOptions.rowLayout.rowsLabel", "Rows:")}
                   <div className="seatmap-editor__input-stepper">
                     <input
                         type="number"
@@ -2267,7 +2267,7 @@ function EditorInner({
                     <button
                       type="button"
                       className="seatmap-editor__stepper-button"
-                      aria-label="Increase rows"
+                      aria-label={t("seatmapEditor.toolOptions.rowLayout.increaseRowsAria", "Increase rows")}
                       onClick={() => handleRowsCountChange(rowsCount + 1)}
                     >
                       +
@@ -2275,7 +2275,7 @@ function EditorInner({
                     <button
                       type="button"
                       className="seatmap-editor__stepper-button"
-                      aria-label="Decrease rows"
+                      aria-label={t("seatmapEditor.toolOptions.rowLayout.decreaseRowsAria", "Decrease rows")}
                       onClick={() => handleRowsCountChange(rowsCount - 1)}
                     >
                       -
@@ -2284,7 +2284,7 @@ function EditorInner({
               </label>
 
               <div className="seatmap-editor__option-card-title">
-                  Total seats to add: {seatsPerRow * Math.max(1, rowsCount)}
+                  {t("seatmapEditor.toolOptions.rowLayout.totalSeatsToAdd", "Total seats to add: {total}", { total: seatsPerRow * Math.max(1, rowsCount) })}
               </div>
             </div>
             <div className="seatmap-editor__row-layout-separator" />
@@ -2321,13 +2321,13 @@ function EditorInner({
           </div>
         ))}
 
-        {renderOptionCard("Orientation", (
+        {renderOptionCard(t("seatmapEditor.toolOptions.orientation.cardTitle", "Orientation"), (
           <>
           <div className="seatmap-editor__option-row seatmap-editor__orientation-toggle">
               <span
                 className={`seatmap-editor__orientation-label${rowDirectionArrowMode === "viewer-direction" ? " is-active" : ""}`}
               >
-                Viewer direction
+                {t("seatmapEditor.orientation.viewerDirection", "Viewer direction")}
               </span>
               <button
                 type="button"
@@ -2339,7 +2339,7 @@ function EditorInner({
                   )
                 }
                 className={`seatmap-editor__switch-track seatmap-editor__switch-track--wide${rowDirectionArrowMode === "row-direction" ? " is-checked" : ""}`}
-                title="Toggle arrow orientation mode"
+                title={t("seatmapEditor.toolOptions.orientation.toggleModeTitle", "Toggle arrow orientation mode")}
               >
                 <span
                   className="seatmap-editor__switch-thumb seatmap-editor__switch-thumb--wide"
@@ -2354,15 +2354,15 @@ function EditorInner({
               <span
                 className={`seatmap-editor__orientation-label${rowDirectionArrowMode === "row-direction" ? " is-active" : ""}`}
               >
-                Row direction
+                {t("seatmapEditor.orientation.rowDirection", "Row direction")}
               </span>
           </div>
 
           {renderRange(
-            "Orientation",
+            t("seatmapEditor.toolOptions.orientation.knobLabel", "Orientation"),
             rowOrientationKnobDeg,
             handleRowOrientationKnobChange,
-            "Drag vertically on the knob to set row orientation.",
+            t("seatmapEditor.toolOptions.orientation.knobHint", "Drag vertically on the knob to set row orientation."),
             {
               min: 0,
               max: 359,
@@ -2377,7 +2377,7 @@ function EditorInner({
                 <button
                   onClick={handleRotateRowOrientationQuarterTurn}
                   className="seatmap-editor__segmented-button"
-                  title="Rotate row direction by 90 degrees"
+                  title={t("seatmapEditor.toolOptions.orientation.rotateQuarterTitle", "Rotate row direction by 90 degrees")}
                 >
                   +90°
                 </button>
@@ -2387,8 +2387,8 @@ function EditorInner({
 
           <div className="seatmap-editor__hint-text">
               {rowDirectionArrowMode === "row-direction"
-                ? "Arrow: row direction (viewer +90°)"
-                : "Arrow: viewer direction (0° = up, 90° = right)"}
+                ? t("seatmapEditor.toolOptions.orientation.hintRowDirection", "Arrow: row direction (viewer +90°)")
+                : t("seatmapEditor.toolOptions.orientation.hintViewerDirection", "Arrow: viewer direction (0° = up, 90° = right)")}
           </div>
           </>
         ))}

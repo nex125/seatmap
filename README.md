@@ -185,14 +185,6 @@ docker compose exec seatmap bun run build
 docker compose exec seatmap bun run lint
 ```
 
-```bash
-# bump package versions (dependency order)
-docker compose exec -w /app/packages/core seatmap bun pm version patch
-docker compose exec -w /app/packages/react seatmap bun pm version patch
-docker compose exec -w /app/packages/viewer seatmap bun pm version patch
-docker compose exec -w /app/packages/editor seatmap bun pm version patch
-```
-
 ### Publishing Packages
 
 Follow these steps in order from `seatmap/`:
