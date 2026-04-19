@@ -28,6 +28,10 @@ const SECTION_DOT_ALPHA = 0.4;
 const SECTION_DOT_RADIUS = 1.4;
 const MAX_SECTION_DOTS = 12000;
 const SECTION_CROSS_SIZE = 2.6;
+const SECTION_LABEL_BOUNDS_PADDING = 18;
+const SECTION_LABEL_COLLISION_PADDING_PX = 10;
+const SECTION_LABEL_MIN_SCALE_OVERVIEW = 0.42;
+const SECTION_LABEL_MIN_SCALE_SECTION = 0.5;
 
 function easeOutCubic(t: number): number {
   const p = 1 - t;
@@ -80,6 +84,44 @@ function isWorldPointVisible(point: { x: number; y: number }, visibleAABB: AABB,
     point.y >= visibleAABB.minY - margin &&
     point.y <= visibleAABB.maxY + margin
   );
+}
+
+function intersectsAABB(a: AABB, b: AABB): boolean {
+  return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
+}
+
+function getSectionLabelScale(
+  labelWidth: number,
+  labelHeight: number,
+  localBounds: { minX: number; minY: number; maxX: number; maxY: number },
+  lod: LODLevel,
+): number | null {
+  const maxWidth = Math.max(0, localBounds.maxX - localBounds.minX - SECTION_LABEL_BOUNDS_PADDING * 2);
+  const maxHeight = Math.max(0, localBounds.maxY - localBounds.minY - SECTION_LABEL_BOUNDS_PADDING * 2);
+  if (maxWidth <= 0 || maxHeight <= 0) return null;
+
+  const widthScale = maxWidth / Math.max(labelWidth, 1);
+  const heightScale = maxHeight / Math.max(labelHeight, 1);
+  const scale = Math.min(1, widthScale, heightScale);
+  const minScale = lod === LODLevel.Overview ? SECTION_LABEL_MIN_SCALE_OVERVIEW : SECTION_LABEL_MIN_SCALE_SECTION;
+  return scale >= minScale ? scale : null;
+}
+
+function getLabelWorldAABB(
+  center: { x: number; y: number },
+  worldWidth: number,
+  worldHeight: number,
+  zoom: number,
+): AABB {
+  const padding = SECTION_LABEL_COLLISION_PADDING_PX / Math.max(zoom, 0.0001);
+  const halfWidth = worldWidth / 2 + padding;
+  const halfHeight = worldHeight / 2 + padding;
+  return {
+    minX: center.x - halfWidth,
+    maxX: center.x + halfWidth,
+    minY: center.y - halfHeight,
+    maxY: center.y + halfHeight,
+  };
 }
 
 function drawRoundedPolygonPath(
@@ -544,7 +586,7 @@ export function SeatmapCanvas({
   );
 
   const renderSection = useCallback(
-    (parent: Container, section: Section, lod: LODLevel, zoom: number, visibleAABB: AABB) => {
+    (parent: Container, section: Section, lod: LODLevel, zoom: number, visibleAABB: AABB, occupiedLabelBoxes: AABB[]) => {
       const sectionContainer = new Container();
       sectionContainer.label = `section-${section.id}`;
       const attachSectionZoomInteraction = (graphics: Graphics) => {
@@ -748,7 +790,7 @@ export function SeatmapCanvas({
         const sectionLabelVisible = sectionLabelWorld
           ? isWorldPointVisible(sectionLabelWorld, visibleAABB, 30 / Math.max(zoom, 0.0001))
           : false;
-        if ((shouldShowFixedAreaLabel || (canShowOverviewLabel && sectionLabelVisible)) && labelPos && section.label.trim().length > 0) {
+        if ((shouldShowFixedAreaLabel || (canShowOverviewLabel && sectionLabelVisible)) && bounds && labelPos && section.label.trim().length > 0) {
           const sectionLabelKey = `section:${section.id}:${lod}:${section.label}`;
           let sectionLabel = labelTextCacheRef.current.get(sectionLabelKey);
           if (!sectionLabel) {
@@ -767,11 +809,24 @@ export function SeatmapCanvas({
             sectionLabel.eventMode = "none";
             labelTextCacheRef.current.set(sectionLabelKey, sectionLabel);
           }
-          sectionLabel.anchor.set(0.5);
-          sectionLabel.position.set(labelPos.x, labelPos.y);
-          sectionLabel.rotation = -section.rotation;
-          sectionLabel.alpha = lod === LODLevel.Overview ? 1 : 0.95;
-          sectionContainer.addChild(sectionLabel);
+          const labelScale = getSectionLabelScale(sectionLabel.width, sectionLabel.height, bounds, lod);
+          const labelWorldBox = labelScale && sectionLabelWorld
+            ? getLabelWorldAABB(sectionLabelWorld, sectionLabel.width * labelScale, sectionLabel.height * labelScale, zoom)
+            : null;
+          const overlapsExistingLabel = !shouldShowFixedAreaLabel && labelWorldBox
+            ? occupiedLabelBoxes.some((box) => intersectsAABB(box, labelWorldBox))
+            : false;
+          if (!labelScale || !labelWorldBox || overlapsExistingLabel) {
+            sectionLabel.removeFromParent();
+          } else {
+            sectionLabel.anchor.set(0.5);
+            sectionLabel.position.set(labelPos.x, labelPos.y);
+            sectionLabel.rotation = -section.rotation;
+            sectionLabel.scale.set(labelScale);
+            sectionLabel.alpha = lod === LODLevel.Overview ? 1 : 0.95;
+            sectionContainer.addChild(sectionLabel);
+            occupiedLabelBoxes.push(labelWorldBox);
+          }
         }
       }
 
@@ -933,10 +988,11 @@ export function SeatmapCanvas({
       const visibleAABB = viewport.getVisibleAABB();
       const visibleItems = spatialIndex.queryViewport(visibleAABB);
       const visibleSectionIds = new Set(visibleItems.map((item) => item.sectionId));
+      const occupiedLabelBoxes: AABB[] = [];
 
       for (const section of venue.sections) {
         if (!visibleSectionIds.has(section.id)) continue;
-        renderSection(world, section, lod, zoom, visibleAABB);
+        renderSection(world, section, lod, zoom, visibleAABB, occupiedLabelBoxes);
       }
 
       for (const ga of venue.gaAreas) {
