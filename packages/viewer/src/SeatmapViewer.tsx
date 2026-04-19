@@ -14,6 +14,8 @@ export interface SeatmapCartSeat {
   categoryId: string;
   categoryName: string;
   unitPrice: number;
+  baseUnitPrice: number;
+  serviceFee: number;
 }
 
 interface SeatDetails extends SeatmapCartSeat {
@@ -56,6 +58,10 @@ export interface SeatmapViewerMessages {
   uncategorizedCategoryName: string;
   sectionFallbackLabel: string;
   tableLabel: (tableLabel: string) => string;
+  tooltipSeatLabel: (rowLabel: string, seatLabel: string) => string;
+  tooltipStatusAvailable: string;
+  tooltipPriceLabel: (price: string) => string;
+  tooltipPriceUnavailable: string;
   legendAriaLabel: string;
   legendStatusesTitle: string;
   legendPricesTitle: string;
@@ -65,10 +71,12 @@ export interface SeatmapViewerMessages {
   cartCloseLabel: string;
   cartEmptyState: string;
   cartGroupMeta: (count: number, unitPrice: string) => string;
+  cartGroupFee: (basePrice: string, serviceFee: string, serviceFeePercent: string | null) => string;
   cartRemoveOneAriaLabel: (categoryName: string) => string;
   cartAddOneAriaLabel: (categoryName: string) => string;
   cartRemoveSeatTitle: string;
   cartRemoveSeatAriaLabel: (seatLabel: string) => string;
+  cartServiceFeeSummary: (serviceFeeTotal: string) => string;
   cartSummary: (count: number, totalCost: string) => string;
   cartProceedButton: string;
 }
@@ -77,6 +85,10 @@ export const defaultSeatmapViewerMessages: SeatmapViewerMessages = {
   uncategorizedCategoryName: "Uncategorized",
   sectionFallbackLabel: "Section",
   tableLabel: (tableLabel) => `Table ${tableLabel}`,
+  tooltipSeatLabel: (rowLabel, seatLabel) => `Row ${rowLabel}, Seat ${seatLabel}`,
+  tooltipStatusAvailable: "Available",
+  tooltipPriceLabel: (price) => `Price: ${price}`,
+  tooltipPriceUnavailable: "Price unavailable",
   legendAriaLabel: "Seatmap legend",
   legendStatusesTitle: "Seat statuses",
   legendPricesTitle: "Prices",
@@ -86,20 +98,59 @@ export const defaultSeatmapViewerMessages: SeatmapViewerMessages = {
   cartCloseLabel: "Close cart",
   cartEmptyState: "No seats selected yet.",
   cartGroupMeta: (count, unitPrice) => `${count} tickets - ${unitPrice} each`,
+  cartGroupFee: (basePrice, serviceFee, serviceFeePercent) =>
+    serviceFeePercent
+      ? `Base ${basePrice} + service fee ${serviceFee} (${serviceFeePercent})`
+      : `Base ${basePrice} + service fee ${serviceFee}`,
   cartRemoveOneAriaLabel: (categoryName) => `Remove one seat from ${categoryName}`,
   cartAddOneAriaLabel: (categoryName) => `Add one seat to ${categoryName}`,
   cartRemoveSeatTitle: "Remove seat",
   cartRemoveSeatAriaLabel: (seatLabel) => `Remove seat ${seatLabel}`,
+  cartServiceFeeSummary: (serviceFeeTotal) => `Service fee included: ${serviceFeeTotal}`,
   cartSummary: (count, totalCost) => `${count} seats - Total ${totalCost}`,
   cartProceedButton: "Proceed",
 };
 
-function getEffectiveCategoryPrice(category: PricingCategory | undefined): number {
-  if (!category) return 0;
-  if (category.isPriceOverridden && Number.isFinite(category.overriddenPrice)) {
-    return category.overriddenPrice ?? 0;
+function getCategoryPriceBreakdown(category: PricingCategory | undefined): {
+  unitPrice: number;
+  baseUnitPrice: number;
+  serviceFee: number;
+} {
+  if (!category) {
+    return { unitPrice: 0, baseUnitPrice: 0, serviceFee: 0 };
   }
-  return Number.isFinite(category.backendPrice) ? (category.backendPrice as number) : 0;
+
+  const baseUnitPrice = Number.isFinite(category.basePrice) ? (category.basePrice as number) : 0;
+  const serviceFee = Number.isFinite(category.serviceFee) ? (category.serviceFee as number) : 0;
+
+  if (category.isPriceOverridden && Number.isFinite(category.overriddenPrice)) {
+    return {
+      unitPrice: category.overriddenPrice ?? 0,
+      baseUnitPrice,
+      serviceFee,
+    };
+  }
+
+  if (Number.isFinite(category.backendPrice)) {
+    return {
+      unitPrice: category.backendPrice as number,
+      baseUnitPrice,
+      serviceFee,
+    };
+  }
+
+  return {
+    unitPrice: baseUnitPrice + serviceFee,
+    baseUnitPrice,
+    serviceFee,
+  };
+}
+
+function formatPercent(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function formatMoney(value: number, locale: string, currency: string): string {
@@ -107,6 +158,63 @@ function formatMoney(value: number, locale: string, currency: string): string {
     style: "currency",
     currency,
   }).format(value);
+}
+
+function DefaultSeatmapViewerTooltip({
+  data,
+  locale,
+  currency,
+  messages,
+}: {
+  data: TooltipData;
+  locale: string;
+  currency: string;
+  messages: SeatmapViewerMessages;
+}) {
+  const statusLabel =
+    data.statusName ??
+    (data.seat.status === AVAILABLE_STATUS_ID ? messages.tooltipStatusAvailable : data.seat.status);
+  const priceLabel =
+    typeof data.price === "number"
+      ? messages.tooltipPriceLabel(formatMoney(data.price, locale, currency))
+      : messages.tooltipPriceUnavailable;
+
+  return (
+    <div
+      style={{
+        background: "var(--seatmap-tooltip-surface, color-mix(in srgb, var(--seatmap-surface-container-low, #181818) 94%, transparent))",
+        border: "1px solid var(--seatmap-tooltip-border, var(--seatmap-outline, #353331))",
+        borderRadius: 10,
+        padding: "8px 14px",
+        color: "var(--seatmap-tooltip-text, var(--seatmap-on-surface, #e5e2e1))",
+        fontSize: 13,
+        fontFamily: "system-ui",
+        pointerEvents: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{data.section.label}</div>
+      <div>{messages.tooltipSeatLabel(data.row.label, data.seat.label)}</div>
+      <div
+        style={{
+          color: "var(--seatmap-tooltip-muted-text, var(--seatmap-on-surface-variant, #9a9694))",
+          fontSize: 12,
+          marginTop: 2,
+        }}
+      >
+        {statusLabel}
+      </div>
+      <div
+        style={{
+          color: "var(--seatmap-tooltip-muted-text, var(--seatmap-on-surface-variant, #9a9694))",
+          fontSize: 12,
+          marginTop: 2,
+        }}
+      >
+        {priceLabel}
+      </div>
+    </div>
+  );
 }
 
 function TrashIcon() {
@@ -172,6 +280,7 @@ export function SeatmapViewerContent({
       for (const row of section.rows) {
         for (const seat of row.seats) {
           const category = categoryMap.get(seat.categoryId);
+          const priceBreakdown = getCategoryPriceBreakdown(category);
           next.set(seat.id, {
             seatId: seat.id,
             seatLabel: seat.label,
@@ -180,7 +289,9 @@ export function SeatmapViewerContent({
             sectionLabel: section.label,
             categoryId: seat.categoryId,
             categoryName: category?.name ?? messages.uncategorizedCategoryName,
-            unitPrice: getEffectiveCategoryPrice(category),
+            unitPrice: priceBreakdown.unitPrice,
+            baseUnitPrice: priceBreakdown.baseUnitPrice,
+            serviceFee: priceBreakdown.serviceFee,
             status: seat.status,
             x: section.position.x + seat.position.x * cos - seat.position.y * sin,
             y: section.position.y + seat.position.x * sin + seat.position.y * cos,
@@ -192,15 +303,18 @@ export function SeatmapViewerContent({
     for (const table of venue.tables) {
       for (const seat of table.seats) {
         const category = categoryMap.get(seat.categoryId);
+        const priceBreakdown = getCategoryPriceBreakdown(category);
         next.set(seat.id, {
           seatId: seat.id,
           seatLabel: seat.label,
           rowLabel: null,
           sectionId: table.id,
-            sectionLabel: messages.tableLabel(table.label),
+          sectionLabel: messages.tableLabel(table.label),
           categoryId: seat.categoryId,
           categoryName: category?.name ?? messages.uncategorizedCategoryName,
-          unitPrice: getEffectiveCategoryPrice(category),
+          unitPrice: priceBreakdown.unitPrice,
+          baseUnitPrice: priceBreakdown.baseUnitPrice,
+          serviceFee: priceBreakdown.serviceFee,
           status: seat.status,
           x: table.position.x + seat.position.x,
           y: table.position.y + seat.position.y,
@@ -258,15 +372,41 @@ export function SeatmapViewerContent({
         categoryId: seat.categoryId,
         categoryName: seat.categoryName,
         unitPrice: seat.unitPrice,
+        baseUnitPrice: seat.baseUnitPrice,
+        serviceFee: seat.serviceFee,
       })),
     [selectedSeats],
   );
 
   const totalSelectedSeats = useMemo(() => cartSeats.length, [cartSeats]);
   const totalCost = useMemo(() => cartSeats.reduce((sum, seat) => sum + seat.unitPrice, 0), [cartSeats]);
+  const totalServiceFee = useMemo(() => cartSeats.reduce((sum, seat) => sum + seat.serviceFee, 0), [cartSeats]);
+  const effectiveTooltipRenderer = useCallback(
+    (data: TooltipData) => {
+      if (renderTooltip) {
+        return renderTooltip(data);
+      }
+
+      return (
+        <DefaultSeatmapViewerTooltip
+          data={data}
+          locale={locale}
+          currency={currency}
+          messages={messages}
+        />
+      );
+    },
+    [currency, locale, messages, renderTooltip],
+  );
 
   const groupedSeatsList = useMemo(() => {
-    const grouped = new Map<string, { categoryName: string; unitPrice: number; seats: SeatmapCartSeat[] }>();
+    const grouped = new Map<string, {
+      categoryName: string;
+      unitPrice: number;
+      baseUnitPrice: number;
+      serviceFee: number;
+      seats: SeatmapCartSeat[];
+    }>();
     for (const seat of cartSeats) {
       const existing = grouped.get(seat.categoryId);
       if (existing) {
@@ -275,6 +415,8 @@ export function SeatmapViewerContent({
         grouped.set(seat.categoryId, {
           categoryName: seat.categoryName,
           unitPrice: seat.unitPrice,
+          baseUnitPrice: seat.baseUnitPrice,
+          serviceFee: seat.serviceFee,
           seats: [seat],
         });
       }
@@ -284,6 +426,8 @@ export function SeatmapViewerContent({
       categoryId: string;
       categoryName: string;
       unitPrice: number;
+      baseUnitPrice: number;
+      serviceFee: number;
       seats: SeatmapCartSeat[];
       availableToAdd: number;
     }> = [];
@@ -305,6 +449,8 @@ export function SeatmapViewerContent({
         categoryId: category.id,
         categoryName: group.categoryName,
         unitPrice: group.unitPrice,
+        baseUnitPrice: group.baseUnitPrice,
+        serviceFee: group.serviceFee,
         seats: group.seats,
         availableToAdd: availableToAddByCategory.get(category.id) ?? 0,
       });
@@ -316,6 +462,8 @@ export function SeatmapViewerContent({
         categoryId,
         categoryName: group.categoryName,
         unitPrice: group.unitPrice,
+        baseUnitPrice: group.baseUnitPrice,
+        serviceFee: group.serviceFee,
         seats: group.seats,
         availableToAdd: availableToAddByCategory.get(categoryId) ?? 0,
       });
@@ -547,6 +695,18 @@ export function SeatmapViewerContent({
                   >
                     {messages.cartGroupMeta(group.seats.length, formatMoney(group.unitPrice, locale, currency))}
                   </div>
+                  {group.serviceFee > 0 && (
+                    <div
+                      className={mergeClassNames("seatmap-viewer__cart-group-meta-base", classNames.cartGroupMeta)}
+                      style={styles.cartGroupMeta}
+                    >
+                      {messages.cartGroupFee(
+                        formatMoney(group.baseUnitPrice, locale, currency),
+                        formatMoney(group.serviceFee, locale, currency),
+                        group.baseUnitPrice > 0 ? formatPercent(group.serviceFee / group.baseUnitPrice, locale) : null,
+                      )}
+                    </div>
+                  )}
                   <div className={mergeClassNames("seatmap-viewer__cart-quantity-row-base", classNames.cartQuantityRow)} style={styles.cartQuantityRow}>
                     <div className="seatmap-viewer__cart-quantity-controls">
                       <button
@@ -622,7 +782,8 @@ export function SeatmapViewerContent({
               className={mergeClassNames("seatmap-viewer__cart-summary-base", classNames.cartSummary)}
               style={styles.cartSummary}
             >
-              {messages.cartSummary(totalSelectedSeats, formatMoney(totalCost, locale, currency))}
+              {totalServiceFee > 0 && <div>{messages.cartServiceFeeSummary(formatMoney(totalServiceFee, locale, currency))}</div>}
+              <div>{messages.cartSummary(totalSelectedSeats, formatMoney(totalCost, locale, currency))}</div>
             </div>
             <button
               type="button"
@@ -637,7 +798,7 @@ export function SeatmapViewerContent({
         </aside>
       )}
 
-      {showLabels && <TooltipOverlay renderTooltip={renderTooltip} />}
+      {showLabels && <TooltipOverlay renderTooltip={effectiveTooltipRenderer} />}
     </div>
   );
 }

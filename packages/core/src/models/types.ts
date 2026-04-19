@@ -28,6 +28,9 @@ export interface PricingCategory {
   name: string;
   color: string;
   backendPrice?: number;
+  basePrice?: number;
+  serviceFee?: number;
+  saleLimit?: number;
   isPriceOverridden?: boolean;
   overriddenPrice?: number;
 }

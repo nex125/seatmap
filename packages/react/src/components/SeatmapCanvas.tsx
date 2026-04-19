@@ -306,6 +306,15 @@ export function SeatmapCanvas({
     });
   }, []);
 
+  const focusSection = useCallback(
+    (section: Section) => {
+      store.getState().selectSection(section.id);
+      zoomToSection(section);
+      scheduleRender();
+    },
+    [scheduleRender, store, zoomToSection],
+  );
+
   const stopPanInertia = useCallback(() => {
     if (inertiaRafRef.current) {
       cancelAnimationFrame(inertiaRafRef.current);
@@ -538,6 +547,32 @@ export function SeatmapCanvas({
     (parent: Container, section: Section, lod: LODLevel, zoom: number, visibleAABB: AABB) => {
       const sectionContainer = new Container();
       sectionContainer.label = `section-${section.id}`;
+      const attachSectionZoomInteraction = (graphics: Graphics) => {
+        if (!panOnLeftClick) {
+          graphics.eventMode = "none";
+          return;
+        }
+
+        graphics.eventMode = "static";
+        graphics.cursor = "pointer";
+
+        let downPos: { x: number; y: number } | null = null;
+        graphics.on("pointerdown", (ev) => {
+          if (ev.pointerType === "touch") return;
+          downPos = { x: ev.globalX, y: ev.globalY };
+        });
+        graphics.on("pointerup", (ev) => {
+          if (!downPos) return;
+          const dist = Math.hypot(ev.globalX - downPos.x, ev.globalY - downPos.y);
+          downPos = null;
+          if (dist < 6) {
+            focusSection(section);
+          }
+        });
+        graphics.on("pointerupoutside", () => {
+          downPos = null;
+        });
+      };
 
       const catColor = getCategoryColor(section.categoryId);
       if (isSectionDotsVisible && lod !== LODLevel.Overview) {
@@ -620,24 +655,7 @@ export function SeatmapCanvas({
           }
         }
 
-        if (panOnLeftClick) {
-          g.eventMode = "static";
-          g.cursor = "pointer";
-
-          let downPos: { x: number; y: number } | null = null;
-          g.on("pointerdown", (ev) => {
-            downPos = { x: ev.globalX, y: ev.globalY };
-          });
-          g.on("pointerup", (ev) => {
-            if (!downPos) return;
-            const dist = Math.hypot(ev.globalX - downPos.x, ev.globalY - downPos.y);
-            downPos = null;
-            if (dist < 6) {
-              zoomToSection(section);
-            }
-          });
-          g.on("pointerupoutside", () => { downPos = null; });
-        }
+        attachSectionZoomInteraction(g);
 
         sectionContainer.addChild(g);
       } else if (lod === LODLevel.Section) {
@@ -646,7 +664,25 @@ export function SeatmapCanvas({
           drawRoundedPolygonPath(bg, section.outline, 8);
           bg.fill({ color: catColor, alpha: 0.3 });
           bg.stroke({ color: catColor, width: 2, alpha: 0.6, join: "round" });
+          attachSectionZoomInteraction(bg);
           sectionContainer.addChild(bg);
+        } else {
+          const seats = section.rows.flatMap((r) => r.seats);
+          if (seats.length > 0) {
+            const xs = seats.map((s) => s.position.x);
+            const ys = seats.map((s) => s.position.y);
+            const pad = 15;
+            const sectionHitTarget = new Graphics();
+            sectionHitTarget.rect(
+              Math.min(...xs) - pad,
+              Math.min(...ys) - pad,
+              Math.max(...xs) - Math.min(...xs) + pad * 2,
+              Math.max(...ys) - Math.min(...ys) + pad * 2,
+            );
+            sectionHitTarget.fill({ color: 0xffffff, alpha: 0.001 });
+            attachSectionZoomInteraction(sectionHitTarget);
+            sectionContainer.addChild(sectionHitTarget);
+          }
         }
         for (const row of section.rows) {
           if (row.seats.length < 2) continue;
@@ -664,7 +700,25 @@ export function SeatmapCanvas({
           drawRoundedPolygonPath(bg, section.outline, 8);
           bg.fill({ color: catColor, alpha: 0.15 });
           bg.stroke({ color: catColor, width: 1.5, alpha: 0.5, join: "round" });
+          attachSectionZoomInteraction(bg);
           sectionContainer.addChild(bg);
+        } else {
+          const seats = section.rows.flatMap((r) => r.seats);
+          if (seats.length > 0) {
+            const xs = seats.map((s) => s.position.x);
+            const ys = seats.map((s) => s.position.y);
+            const pad = 10;
+            const sectionHitTarget = new Graphics();
+            sectionHitTarget.rect(
+              Math.min(...xs) - pad,
+              Math.min(...ys) - pad,
+              Math.max(...xs) - Math.min(...xs) + pad * 2,
+              Math.max(...ys) - Math.min(...ys) + pad * 2,
+            );
+            sectionHitTarget.fill({ color: 0xffffff, alpha: 0.001 });
+            attachSectionZoomInteraction(sectionHitTarget);
+            sectionContainer.addChild(sectionHitTarget);
+          }
         }
         if (isAreaSeatSection(section)) {
           const areaSeat = section.rows.flatMap((row) => row.seats)[0];
@@ -749,8 +803,8 @@ export function SeatmapCanvas({
       parent.addChild(sectionContainer);
     },
     [
+      focusSection,
       getCategoryColor,
-      zoomToSection,
       renderSeat,
       renderDancefloorSeatArea,
       isSectionDotsVisible,
@@ -1405,6 +1459,26 @@ export function SeatmapCanvas({
             }
           }
         } else {
+          const sectionHits = hits.filter((hit) => hit.type === "section");
+          if (sectionHits.length > 0) {
+            const v = store.getState().venue;
+            if (!v) return;
+
+            const targetSection = sectionHits
+              .map((hit) => v.sections.find((section) => section.id === hit.sectionId))
+              .filter((section): section is Section => Boolean(section))
+              .sort((a, b) => {
+                const aSeats = a.rows.reduce((sum, row) => sum + row.seats.length, 0);
+                const bSeats = b.rows.reduce((sum, row) => sum + row.seats.length, 0);
+                return aSeats - bSeats;
+              })[0];
+
+            if (targetSection) {
+              focusSection(targetSection);
+              return;
+            }
+          }
+
           // Tapped empty space — dismiss tooltip
           if (enableSeatHover && store.getState().hoveredSeatId) {
             store.getState().setHoveredSeat(null);
@@ -1415,7 +1489,7 @@ export function SeatmapCanvas({
       }
       touchTapRef.current = null;
     },
-    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover, isSeatInteractable, startPanInertia],
+    [viewport, spatialIndex, store, onSeatClick, onSeatHover, scheduleRender, enableSeatHover, isSeatInteractable, startPanInertia, focusSection],
   );
 
   return (

@@ -167,10 +167,16 @@ export function normalizeVenue(venue: Venue): Venue {
   const allowedStatuses = new Set(clonedStatuses.map((status) => status.id));
   const categories = venue.categories.map((category) => {
     const hasBackendPrice = Number.isFinite(category.backendPrice);
+    const hasBasePrice = Number.isFinite(category.basePrice);
+    const hasServiceFee = Number.isFinite(category.serviceFee);
+    const hasSaleLimit = Number.isFinite(category.saleLimit);
     const hasOverriddenPrice = Number.isFinite(category.overriddenPrice);
     return {
       ...category,
       backendPrice: hasBackendPrice ? category.backendPrice : undefined,
+      basePrice: hasBasePrice ? category.basePrice : undefined,
+      serviceFee: hasServiceFee ? category.serviceFee : undefined,
+      saleLimit: hasSaleLimit ? category.saleLimit : undefined,
       overriddenPrice: hasOverriddenPrice ? category.overriddenPrice : undefined,
       isPriceOverridden:
         Boolean(category.isPriceOverridden) && hasOverriddenPrice,
