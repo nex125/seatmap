@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-viewer",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -32,8 +32,8 @@
     "prepublishOnly": "bun run prepack"
   },
   "dependencies": {
-    "@nex125/seatmap-core": "*",
-    "@nex125/seatmap-react": "*"
+    "@nex125/seatmap-core": "^0.1.15",
+    "@nex125/seatmap-react": "^0.1.18"
   },
   "peerDependencies": {
     "react": "^19",
@@ -41,12 +41,12 @@
     "pixi.js": "^8"
   },
   "devDependencies": {
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "react": "^19",
-    "react-dom": "^19",
-    "pixi.js": "^8",
-    "tsup": "^8.4.0",
-    "typescript": "~5.9.3"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "pixi.js": "^8.18.1",
+    "tsup": "^8.5.1",
+    "typescript": "~6.0.3"
   }
 }

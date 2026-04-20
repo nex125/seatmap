@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-core",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -31,12 +31,12 @@
   },
   "devDependencies": {
     "@types/rbush": "^4.0.0",
-    "pixi.js": "^8",
-    "tsup": "^8.4.0",
-    "typescript": "~5.9.3"
+    "pixi.js": "^8.18.1",
+    "tsup": "^8.5.1",
+    "typescript": "~6.0.3"
   },
   "dependencies": {
     "rbush": "^4.0.1",
-    "uuid": "^13.0.0"
+    "uuid": "^14.0.0"
   }
 }
