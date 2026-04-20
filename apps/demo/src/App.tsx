@@ -123,7 +123,7 @@ function PreviewSeatmapCanvas() {
 }
 
 function App() {
-  const [tab, setTab] = useState<Tab>("viewer");
+  const [tab, setTab] = useState<Tab>("editor");
   const [venueSize, setVenueSize] = useState<VenueSize>("sample");
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [isSelectionOpen, setIsSelectionOpen] = useState(false);
@@ -590,6 +590,9 @@ function App() {
             {editorMode === "template" ? (
               <>
                 <div style={panelStyle}>
+                  <span style={{ color: "var(--ds-on-surface)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
+                    Check the section tool in the editor toolbar. It now has separate shape and type controls.
+                  </span>
                   <label style={{ color: "var(--ds-on-surface-variant)", fontSize: 13, fontFamily: "var(--font-body-family), system-ui, sans-serif" }}>
                     Load Template:
                     <select

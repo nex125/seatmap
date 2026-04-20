@@ -375,7 +375,10 @@ export function CategoryManager({
                 className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
               />
             ) : (
-              <div className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate">
+              <div
+                className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate"
+                title={cat.name}
+              >
                 {cat.name}
               </div>
             )}
@@ -513,7 +516,7 @@ export function CategoryManager({
                       aria-hidden="true"
                       style={{ background: category.color }}
                     />
-                    <span className="seatmap-editor__table-category-name">{category.name}</span>
+                    <span className="seatmap-editor__table-category-name" title={category.name}>{category.name}</span>
                   </div>
                   <span className="seatmap-editor__table-amount">
                     {formatPrice(category.backendPrice)}

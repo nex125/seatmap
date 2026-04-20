@@ -14,6 +14,7 @@ import { PropertyPanel, type VenueIdFieldMode, type VenueNameFieldMode } from ".
 import { CategoryManager } from "./panels/CategoryManager";
 import { LayerPanel } from "./panels/LayerPanel";
 import { StatusManager } from "./panels/StatusManager";
+import { DancefloorIcon, PolygonShapeIcon, RectangleShapeIcon, SectionAreaIcon, StageIcon } from "./panels/PanelIcons";
 import type { SeatmapEditorTranslate } from "./i18n";
 import { translateEditorText } from "./i18n";
 import "./SeatmapEditor.css";
@@ -396,6 +397,7 @@ function EditorInner({
   const historyRef = useRef(new CommandHistory());
   const fitViewRafRef = useRef<number>(0);
   const applyMotionSyncRafRef = useRef<number>(0);
+  const rowOrientationRafRef = useRef<number>(0);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -690,17 +692,58 @@ function EditorInner({
   );
   const handleRowOrientationChange = useCallback(
     (deg: number) => {
+      if (rowOrientationRafRef.current) {
+        cancelAnimationFrame(rowOrientationRafRef.current);
+        rowOrientationRafRef.current = 0;
+      }
       const normalized = ((Math.round(deg) % 360) + 360) % 360;
       setRowOrientationDeg(normalized);
       addRowTool.rowOrientationDeg = normalized;
     },
     [addRowTool],
   );
+  const animateRowOrientationTo = useCallback(
+    (targetDeg: number) => {
+      if (rowOrientationRafRef.current) {
+        cancelAnimationFrame(rowOrientationRafRef.current);
+        rowOrientationRafRef.current = 0;
+      }
+
+      const startDeg = rowOrientationDeg;
+      const startedAt = performance.now();
+      const durationMs = 220;
+      const easeOutCubicLocal = (t: number) => 1 - (1 - t) * (1 - t) * (1 - t);
+
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - startedAt) / durationMs);
+        const eased = easeOutCubicLocal(progress);
+        const nextDeg = startDeg + (targetDeg - startDeg) * eased;
+        const normalized = ((Math.round(nextDeg) % 360) + 360) % 360;
+        setRowOrientationDeg(normalized);
+        addRowTool.rowOrientationDeg = normalized;
+
+        if (progress < 1) {
+          rowOrientationRafRef.current = requestAnimationFrame(tick);
+          return;
+        }
+        rowOrientationRafRef.current = 0;
+      };
+
+      rowOrientationRafRef.current = requestAnimationFrame(tick);
+    },
+    [addRowTool, rowOrientationDeg],
+  );
   const handleRotateRowOrientationQuarterTurn = useCallback(
     () => {
-      handleRowOrientationChange(rowOrientationDeg + 90);
+      animateRowOrientationTo(rowOrientationDeg + 90);
     },
-    [handleRowOrientationChange, rowOrientationDeg],
+    [animateRowOrientationTo, rowOrientationDeg],
+  );
+  const handleRotateRowOrientationNegativeQuarterTurn = useCallback(
+    () => {
+      animateRowOrientationTo(rowOrientationDeg - 90);
+    },
+    [animateRowOrientationTo, rowOrientationDeg],
   );
   const rowOrientationKnobDeg = useMemo(
     () => (
@@ -717,14 +760,6 @@ function EditorInner({
     },
     [rowDirectionArrowMode, handleRowOrientationChange],
   );
-  const handleSectionToolVariantChange = useCallback(
-    (kind: SectionKind, mode: SectionCreationMode) => {
-      setSectionKind(kind);
-      setSectionMode(mode);
-    },
-    [],
-  );
-
   useEffect(() => {
     addSectionTool.setMode(sectionMode);
   }, [addSectionTool, sectionMode]);
@@ -971,6 +1006,12 @@ function EditorInner({
     if (applyMotionSyncRafRef.current) {
       cancelAnimationFrame(applyMotionSyncRafRef.current);
       applyMotionSyncRafRef.current = 0;
+    }
+  }, []);
+  useEffect(() => () => {
+    if (rowOrientationRafRef.current) {
+      cancelAnimationFrame(rowOrientationRafRef.current);
+      rowOrientationRafRef.current = 0;
     }
   }, []);
 
@@ -2130,56 +2171,79 @@ function EditorInner({
         <>
           <span className="seatmap-editor__tool-options-title">{t("seatmapEditor.toolOptions.title", "Tool Options")}</span>
           <div className="seatmap-editor__tool-options-divider" />
-            {renderOptionCard(t("seatmapEditor.toolOptions.sectionKind.section", "Section"), (
-              <div className="seatmap-editor__option-row">
-                <button
-                  onClick={() => handleSectionToolVariantChange("section", "rectangle")}
-                  className={`seatmap-editor__segmented-button${sectionKind === "section" && sectionMode === "rectangle" ? " is-active" : ""}`}
-                >
-                  {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
-                </button>
-                <button
-                  onClick={() => handleSectionToolVariantChange("section", "polygon")}
-                  className={`seatmap-editor__segmented-button${sectionKind === "section" && sectionMode === "polygon" ? " is-active" : ""}`}
-                >
-                  {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
-                </button>
-              </div>
-            ))}
-            {renderOptionCard(t("seatmapEditor.toolOptions.sectionKind.stage", "Stage"), (
-              <div className="seatmap-editor__option-row">
-                <button
-                  onClick={() => handleSectionToolVariantChange("stage", "rectangle")}
-                  className={`seatmap-editor__segmented-button${sectionKind === "stage" && sectionMode === "rectangle" ? " is-active" : ""}`}
-                >
-                  {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
-                </button>
-                <button
-                  onClick={() => handleSectionToolVariantChange("stage", "polygon")}
-                  className={`seatmap-editor__segmented-button${sectionKind === "stage" && sectionMode === "polygon" ? " is-active" : ""}`}
-                >
-                  {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
-                </button>
-              </div>
-            ))}
-            {renderOptionCard(t("seatmapEditor.toolOptions.sectionKind.dancefloor", "Dancefloor"), (
-              <div className="seatmap-editor__option-row">
-                <button
-                  onClick={() => handleSectionToolVariantChange("dancefloor", "rectangle")}
-                  className={`seatmap-editor__segmented-button${sectionKind === "dancefloor" && sectionMode === "rectangle" ? " is-active" : ""}`}
-                >
-                  {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
-                </button>
-                <button
-                  onClick={() => handleSectionToolVariantChange("dancefloor", "polygon")}
-                  className={`seatmap-editor__segmented-button${sectionKind === "dancefloor" && sectionMode === "polygon" ? " is-active" : ""}`}
-                >
-                  {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
-                </button>
+            {renderOptionCard(t("seatmapEditor.toolOptions.sectionMode.title", "Section"), (
+              <div className="seatmap-editor__section-tool-options">
+                <div className="seatmap-editor__option-stack">
+                  <span className="seatmap-editor__label">{t("seatmapEditor.toolOptions.shape.title", "Shape")}</span>
+                  <div className="seatmap-editor__option-row seatmap-editor__section-shape-toggle">
+                    <span
+                      className={`seatmap-editor__section-shape-label${sectionMode === "rectangle" ? " is-active" : ""}`}
+                    >
+                      <RectangleShapeIcon className="seatmap-editor__section-shape-label-icon" />
+                      {t("seatmapEditor.toolOptions.shape.rectangle", "Rectangle")}
+                    </span>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={sectionMode === "polygon"}
+                      onClick={() =>
+                        setSectionMode((mode) => (mode === "rectangle" ? "polygon" : "rectangle"))
+                      }
+                      className={`seatmap-editor__switch-track seatmap-editor__switch-track--wide${sectionMode === "polygon" ? " is-checked" : ""}`}
+                      title={t("seatmapEditor.toolOptions.shape.toggleTitle", "Toggle section shape")}
+                    >
+                      <span
+                        className="seatmap-editor__switch-thumb seatmap-editor__switch-thumb--wide"
+                        style={{
+                          transform:
+                            sectionMode === "polygon"
+                              ? "translateX(22px)"
+                              : "translateX(0)",
+                        }}
+                      />
+                    </button>
+                    <span
+                      className={`seatmap-editor__section-shape-label${sectionMode === "polygon" ? " is-active" : ""}`}
+                    >
+                      <PolygonShapeIcon className="seatmap-editor__section-shape-label-icon" />
+                      {t("seatmapEditor.toolOptions.shape.polygon", "Polygon")}
+                    </span>
+                  </div>
+                </div>
+                <div className="seatmap-editor__option-stack">
+                  <span className="seatmap-editor__label">{t("seatmapEditor.toolOptions.sectionKind.title", "Type")}</span>
+                  <div className="seatmap-editor__option-row seatmap-editor__option-row--wrap">
+                    <button
+                      type="button"
+                      onClick={() => setSectionKind("section")}
+                      className={`seatmap-editor__segmented-button${sectionKind === "section" ? " is-active" : ""}`}
+                    >
+                      <SectionAreaIcon className="seatmap-editor__segmented-button-icon" />
+                      {t("seatmapEditor.toolOptions.sectionKind.section", "Section")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSectionKind("stage")}
+                      className={`seatmap-editor__segmented-button${sectionKind === "stage" ? " is-active" : ""}`}
+                    >
+                      <StageIcon className="seatmap-editor__segmented-button-icon" />
+                      {t("seatmapEditor.toolOptions.sectionKind.stage", "Stage")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSectionKind("dancefloor")}
+                      className={`seatmap-editor__segmented-button${sectionKind === "dancefloor" ? " is-active" : ""}`}
+                    >
+                      <DancefloorIcon className="seatmap-editor__segmented-button-icon" />
+                      {t("seatmapEditor.toolOptions.sectionKind.dancefloor", "Dancefloor")}
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
             {renderOptionCard(t("seatmapEditor.toolOptions.sectionResize.title", "Section resize"), (
               <button
+                type="button"
                 onClick={() => handleToggleSectionResize(true)}
                 className={`seatmap-editor__segmented-button${sectionResizeEnabled ? " is-active" : ""}`}
                 title={t("seatmapEditor.toolOptions.sectionResize.enableTitle", "Enable section corner/side resizing")}
@@ -2252,18 +2316,18 @@ function EditorInner({
                     <button
                       type="button"
                       className="seatmap-editor__stepper-button"
-                      aria-label={t("seatmapEditor.toolOptions.rowLayout.increaseSeatsPerRowAria", "Increase seats per row")}
-                      onClick={() => handleSeatsPerRowChange(seatsPerRow + 1)}
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      className="seatmap-editor__stepper-button"
                       aria-label={t("seatmapEditor.toolOptions.rowLayout.decreaseSeatsPerRowAria", "Decrease seats per row")}
                       onClick={() => handleSeatsPerRowChange(seatsPerRow - 1)}
                     >
                       -
+                    </button>
+                    <button
+                      type="button"
+                      className="seatmap-editor__stepper-button"
+                      aria-label={t("seatmapEditor.toolOptions.rowLayout.increaseSeatsPerRowAria", "Increase seats per row")}
+                      onClick={() => handleSeatsPerRowChange(seatsPerRow + 1)}
+                    >
+                      +
                     </button>
                   </div>
               </label>
@@ -2284,18 +2348,18 @@ function EditorInner({
                     <button
                       type="button"
                       className="seatmap-editor__stepper-button"
-                      aria-label={t("seatmapEditor.toolOptions.rowLayout.increaseRowsAria", "Increase rows")}
-                      onClick={() => handleRowsCountChange(rowsCount + 1)}
-                    >
-                      +
-                    </button>
-                    <button
-                      type="button"
-                      className="seatmap-editor__stepper-button"
                       aria-label={t("seatmapEditor.toolOptions.rowLayout.decreaseRowsAria", "Decrease rows")}
                       onClick={() => handleRowsCountChange(rowsCount - 1)}
                     >
                       -
+                    </button>
+                    <button
+                      type="button"
+                      className="seatmap-editor__stepper-button"
+                      aria-label={t("seatmapEditor.toolOptions.rowLayout.increaseRowsAria", "Increase rows")}
+                      onClick={() => handleRowsCountChange(rowsCount + 1)}
+                    >
+                      +
                     </button>
                   </div>
               </label>
@@ -2391,21 +2455,30 @@ function EditorInner({
               knobNamespace: "tool",
               valuePlacement: "knob",
               knobRightContent: (
-                <button
-                  onClick={handleRotateRowOrientationQuarterTurn}
-                  className="seatmap-editor__segmented-button"
-                  title={t("seatmapEditor.toolOptions.orientation.rotateQuarterTitle", "Rotate row direction by 90 degrees")}
-                >
-                  +90°
-                </button>
+                <div className="seatmap-editor__option-row">
+                  <button
+                    onClick={handleRotateRowOrientationNegativeQuarterTurn}
+                    className="seatmap-editor__segmented-button"
+                    title={t("seatmapEditor.toolOptions.orientation.rotateNegativeQuarterTitle", "Rotate row direction by -90 degrees")}
+                  >
+                    -90°
+                  </button>
+                  <button
+                    onClick={handleRotateRowOrientationQuarterTurn}
+                    className="seatmap-editor__segmented-button"
+                    title={t("seatmapEditor.toolOptions.orientation.rotateQuarterTitle", "Rotate row direction by 90 degrees")}
+                  >
+                    +90°
+                  </button>
+                </div>
               ),
             },
           )}
 
           <div className="seatmap-editor__hint-text">
               {rowDirectionArrowMode === "row-direction"
-                ? t("seatmapEditor.toolOptions.orientation.hintRowDirection", "Arrow: row direction (viewer +90°)")
-                : t("seatmapEditor.toolOptions.orientation.hintViewerDirection", "Arrow: viewer direction (0° = up, 90° = right)")}
+                ? t("seatmapEditor.toolOptions.orientation.hintRowDirection", "Arrow: row direction")
+                : t("seatmapEditor.toolOptions.orientation.hintViewerDirection", "Arrow: viewer direction")}
           </div>
           </>
         ))}
