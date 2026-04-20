@@ -52,6 +52,7 @@ export function StatusManager({ venue, history, store, translate, mode = "full",
   const statusIds = useMemo(() => new Set(venue?.seatStatuses.map((status) => status.id) ?? []), [venue]);
 
   if (!venue) return null;
+  const shouldScrollStatuses = venue.seatStatuses.length > 3;
 
   const addStatus = () => {
     const trimmedName = newName.trim();
@@ -163,68 +164,72 @@ export function StatusManager({ venue, history, store, translate, mode = "full",
         {t("seatmapEditor.statusManager.title", "Seat Statuses")}
       </div>
 
-      {venue.seatStatuses.map((status) => {
-        const isEditing = editingId === status.id;
-        return (
-          <div
-            key={status.id}
-            className="seatmap-editor__panel-list-item"
-          >
-            <span className="seatmap-editor__color-picker-shell">
-              <span
-                aria-hidden="true"
-                className="seatmap-editor__color-picker-dot"
-                style={{ background: isEditing ? editingColor : status.color }}
-              />
-              <input
-                type="color"
-                value={isEditing ? editingColor : status.color}
-                onChange={(e) => isEditing && setEditingColor(e.target.value)}
-                disabled={!isEditing}
-                className="seatmap-editor__color-picker-input"
-                data-editable={isEditing ? "true" : "false"}
-                title={isEditing ? t("seatmapEditor.statusManager.pickStatusColor", "Pick status color") : t("seatmapEditor.statusManager.enableEditForColor", "Enable edit to change color")}
-              />
-            </span>
-            {isEditing ? (
-              <input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
-              />
-            ) : (
-              <div className="seatmap-editor__panel-text seatmap-editor__panel-content-grow">
-                {status.name}
+      <div className={shouldScrollStatuses ? "seatmap-editor__panel-scroll seatmap-editor__panel-scroll--statuses" : undefined}>
+        <div className="seatmap-editor__panel-list">
+          {venue.seatStatuses.map((status) => {
+            const isEditing = editingId === status.id;
+            return (
+              <div
+                key={status.id}
+                className="seatmap-editor__panel-list-item"
+              >
+                <span className="seatmap-editor__color-picker-shell">
+                  <span
+                    aria-hidden="true"
+                    className="seatmap-editor__color-picker-dot"
+                    style={{ background: isEditing ? editingColor : status.color }}
+                  />
+                  <input
+                    type="color"
+                    value={isEditing ? editingColor : status.color}
+                    onChange={(e) => isEditing && setEditingColor(e.target.value)}
+                    disabled={!isEditing}
+                    className="seatmap-editor__color-picker-input"
+                    data-editable={isEditing ? "true" : "false"}
+                    title={isEditing ? t("seatmapEditor.statusManager.pickStatusColor", "Pick status color") : t("seatmapEditor.statusManager.enableEditForColor", "Enable edit to change color")}
+                  />
+                </span>
+                {isEditing ? (
+                  <input
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveEdit()}
+                    className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
+                  />
+                ) : (
+                  <div className="seatmap-editor__panel-text seatmap-editor__panel-content-grow">
+                    {status.name}
+                  </div>
+                )}
+                {isEditing ? (
+                  <>
+                    <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                      {t("seatmapEditor.common.save", "Save")}
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                      {t("seatmapEditor.common.cancel", "Cancel")}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => startEdit(status)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                      {t("seatmapEditor.common.edit", "Edit")}
+                    </button>
+                    <button
+                      onClick={() => removeStatus(status.id)}
+                      className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
+                      disabled={status.id === AVAILABLE_STATUS_ID}
+                      title={status.id === AVAILABLE_STATUS_ID ? t("seatmapEditor.statusManager.availableCannotBeRemoved", "Available status cannot be removed") : t("seatmapEditor.statusManager.deleteStatus", "Delete status")}
+                    >
+                      ✕
+                    </button>
+                  </>
+                )}
               </div>
-            )}
-            {isEditing ? (
-              <>
-                <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  {t("seatmapEditor.common.save", "Save")}
-                </button>
-                <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  {t("seatmapEditor.common.cancel", "Cancel")}
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => startEdit(status)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  {t("seatmapEditor.common.edit", "Edit")}
-                </button>
-                <button
-                  onClick={() => removeStatus(status.id)}
-                  className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
-                  disabled={status.id === AVAILABLE_STATUS_ID}
-                  title={status.id === AVAILABLE_STATUS_ID ? t("seatmapEditor.statusManager.availableCannotBeRemoved", "Available status cannot be removed") : t("seatmapEditor.statusManager.deleteStatus", "Delete status")}
-                >
-                  ✕
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+        </div>
+      </div>
 
       {(mode === "full" || addFormOpen) && (
         <div className="seatmap-editor__panel-row seatmap-editor__panel-row--spaced">

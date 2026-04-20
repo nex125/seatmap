@@ -22,7 +22,7 @@ import "./SeatmapEditor.css";
 export interface SeatmapEditorProps {
   venue?: Venue;
   onChange?: (venue: Venue) => void;
-  onSave?: (venue: Venue, serializedVenue: string) => void;
+  onSave?: (venue: Venue, serializedVenue: string) => void | Promise<void>;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   translate?: SeatmapEditorTranslate;
   className?: string;
@@ -92,6 +92,7 @@ type CanvasGridStyle = "solid" | "dashed" | "dotted";
 type SectionGridStyle = "dots" | "cross";
 type RowDirectionArrowMode = "row-direction" | "viewer-direction";
 type MotionSettings = {
+  autosaveIntervalSeconds: number;
   sectionDrawJelly: number;
   fitViewJelly: number;
   panInertiaJelly: number;
@@ -117,6 +118,7 @@ type MotionSettings = {
 const MOTION_SETTINGS_STORAGE_KEY = "seatmap-editor-motion-settings-v1";
 const SHOW_HINTS_STORAGE_KEY = "seatmap-editor-show-hints-v1";
 const DEFAULT_MOTION_SETTINGS: MotionSettings = {
+  autosaveIntervalSeconds: 120,
   sectionDrawJelly: 46,
   fitViewJelly: 52,
   panInertiaJelly: 55,
@@ -154,6 +156,11 @@ function loadMotionSettings(): MotionSettings {
     if (!raw) return DEFAULT_MOTION_SETTINGS;
     const parsed = JSON.parse(raw) as Partial<MotionSettings>;
     return {
+      autosaveIntervalSeconds: clampRange(
+        Number(parsed.autosaveIntervalSeconds ?? DEFAULT_MOTION_SETTINGS.autosaveIntervalSeconds),
+        60,
+        3600,
+      ),
       sectionDrawJelly: clampPercent(Number(parsed.sectionDrawJelly ?? DEFAULT_MOTION_SETTINGS.sectionDrawJelly)),
       fitViewJelly: clampPercent(Number(parsed.fitViewJelly ?? DEFAULT_MOTION_SETTINGS.fitViewJelly)),
       panInertiaJelly: clampPercent(Number(parsed.panInertiaJelly ?? DEFAULT_MOTION_SETTINGS.panInertiaJelly)),
@@ -371,7 +378,7 @@ function EditorInner({
   statusManagerMode = "full",
 }: {
   onChange?: (venue: Venue) => void;
-  onSave?: (venue: Venue, serializedVenue: string) => void;
+  onSave?: (venue: Venue, serializedVenue: string) => void | Promise<void>;
   fetchCategoryPrices?: (categoryIds: string[]) => Promise<Record<string, number>>;
   translate?: SeatmapEditorTranslate;
   venueIdField?: VenueIdFieldMode;
@@ -459,6 +466,7 @@ function EditorInner({
   const [showHints, setShowHints] = useState(() => loadShowHints());
   const [isEditorSettingsOpen, setIsEditorSettingsOpen] = useState(false);
   const motionSettings = useMemo(() => loadMotionSettings(), []);
+  const [autosaveIntervalSeconds, setAutosaveIntervalSeconds] = useState(motionSettings.autosaveIntervalSeconds);
   const [sectionDrawJelly, setSectionDrawJelly] = useState(motionSettings.sectionDrawJelly);
   const [fitViewJelly, setFitViewJelly] = useState(motionSettings.fitViewJelly);
   const [panInertiaJelly, setPanInertiaJelly] = useState(motionSettings.panInertiaJelly);
@@ -479,6 +487,9 @@ function EditorInner({
   const [pointerScrollZoomDurationMs, setPointerScrollZoomDurationMs] = useState(motionSettings.pointerScrollZoomDurationMs);
   const [pointerScrollZoomStrengthPct, setPointerScrollZoomStrengthPct] = useState(motionSettings.pointerScrollZoomStrengthPct);
   const [pointerScrollZoomDeltaDivisor, setPointerScrollZoomDeltaDivisor] = useState(motionSettings.pointerScrollZoomDeltaDivisor);
+  const lastSavedSerializedRef = useRef<string | null>(null);
+  const isDirtyRef = useRef(false);
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const [seatsPerRow, setSeatsPerRow] = useState(10);
   const [rowsCount, setRowsCount] = useState(1);
   const [rowOrientationDeg, setRowOrientationDeg] = useState(0);
@@ -488,6 +499,7 @@ function EditorInner({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const payload: MotionSettings = {
+      autosaveIntervalSeconds,
       sectionDrawJelly,
       fitViewJelly,
       panInertiaJelly,
@@ -511,6 +523,7 @@ function EditorInner({
     };
     window.localStorage.setItem(MOTION_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
   }, [
+    autosaveIntervalSeconds,
     sectionDrawJelly,
     fitViewJelly,
     panInertiaJelly,
@@ -581,6 +594,33 @@ function EditorInner({
     setPointerScrollZoomStrengthPct(DEFAULT_MOTION_SETTINGS.pointerScrollZoomStrengthPct);
     setPointerScrollZoomDeltaDivisor(DEFAULT_MOTION_SETTINGS.pointerScrollZoomDeltaDivisor);
   }, []);
+
+  useEffect(() => {
+    const initialVenue = store.getState().venue;
+    lastSavedSerializedRef.current = initialVenue ? serializeVenue(initialVenue) : null;
+    isDirtyRef.current = false;
+
+    const unsubscribe = store.subscribe((state, previousState) => {
+      if (state.venue === previousState.venue) return;
+
+      if (!state.venue) {
+        lastSavedSerializedRef.current = null;
+        isDirtyRef.current = false;
+        return;
+      }
+
+      const serializedVenue = serializeVenue(state.venue);
+      if (state.venueUpdateOrigin === "external") {
+        lastSavedSerializedRef.current = serializedVenue;
+        isDirtyRef.current = false;
+        return;
+      }
+
+      isDirtyRef.current = serializedVenue !== lastSavedSerializedRef.current;
+    });
+
+    return unsubscribe;
+  }, [store]);
 
   const animateBasicKnobValues = useCallback((
     targets: {
@@ -914,17 +954,56 @@ function EditorInner({
     return unsub;
   }, [viewport]);
 
-  const handleSave = useCallback(() => {
-    const v = store.getState().venue;
-    if (!v) return;
-    const json = serializeVenue(v);
-    onChange?.(v);
-    if (onSave) {
-      onSave(v, json);
-      return;
+  const performSave = useCallback(async (mode: "manual" | "autosave") => {
+    if (savePromiseRef.current) {
+      return savePromiseRef.current;
     }
-    console.log(v);
+
+    const v = store.getState().venue;
+    if (!v) return false;
+    const json = serializeVenue(v);
+    const saveTask = (async () => {
+      onChange?.(v);
+      if (onSave) {
+        await onSave(v, json);
+      } else if (mode === "manual") {
+        console.log(v);
+      } else {
+        return false;
+      }
+
+      lastSavedSerializedRef.current = json;
+      const latestVenue = store.getState().venue;
+      isDirtyRef.current = latestVenue ? serializeVenue(latestVenue) !== json : false;
+      return true;
+    })()
+      .catch(() => false)
+      .finally(() => {
+        savePromiseRef.current = null;
+      });
+
+    savePromiseRef.current = saveTask;
+    return saveTask;
   }, [store, onChange, onSave]);
+
+  const handleSave = useCallback(() => {
+    void performSave("manual");
+  }, [performSave]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!onSave) return;
+
+    const intervalMs = autosaveIntervalSeconds * 1000;
+    const intervalId = window.setInterval(() => {
+      if (!isDirtyRef.current || savePromiseRef.current) return;
+      void performSave("autosave");
+    }, intervalMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [autosaveIntervalSeconds, onSave, performSave]);
 
   const handleLoad = useCallback(() => {
     const input = document.createElement("input");
@@ -1868,6 +1947,39 @@ function EditorInner({
         </>,
       )
     );
+    const renderAutosaveSettingsCard = () => (
+      renderOptionCard(
+        t("seatmapEditor.toolOptions.autosave.title", "Autosave"),
+        <div className="seatmap-editor__option-stack">
+          <span className="seatmap-editor__label">
+            {t("seatmapEditor.toolOptions.autosave.intervalLabel", "Autosave period")}
+          </span>
+          <div className="seatmap-editor__option-row">
+            <input
+              type="number"
+              min={1}
+              max={60}
+              step={1}
+              value={Math.round(autosaveIntervalSeconds / 60)}
+              onChange={(e) => {
+                const nextMinutes = clampRange(Number(e.target.value) || 1, 1, 60);
+                setAutosaveIntervalSeconds(nextMinutes * 60);
+              }}
+              className="seatmap-editor__input seatmap-editor__input--wide"
+              disabled={!onSave}
+            />
+            <span className="seatmap-editor__hint-text">
+              {t("seatmapEditor.toolOptions.autosave.minutes", "minutes")}
+            </span>
+          </div>
+          <span className="seatmap-editor__hint-text">
+            {onSave
+              ? t("seatmapEditor.toolOptions.autosave.hint", "Saves only when the layout has unsaved changes.")
+              : t("seatmapEditor.toolOptions.autosave.unavailable", "Autosave is available when an external save handler is configured.")}
+          </span>
+        </div>,
+      )
+    );
     const renderMotionSettingsCard = () => (
       renderOptionCard(
         t("seatmapEditor.toolOptions.motion.editorMotionTitle", "Editor motion"),
@@ -2257,6 +2369,7 @@ function EditorInner({
               )
             ))}
             {isGridOptionsOpen && renderGridOptionsCard()}
+            {isEditorSettingsOpen && renderAutosaveSettingsCard()}
             {isEditorSettingsOpen && renderMotionSettingsCard()}
         </>
       );
@@ -2276,6 +2389,7 @@ function EditorInner({
               </button>
           ))}
           {isGridOptionsOpen && renderGridOptionsCard()}
+          {isEditorSettingsOpen && renderAutosaveSettingsCard()}
           {isEditorSettingsOpen && renderMotionSettingsCard()}
         </>
       );
@@ -2288,6 +2402,7 @@ function EditorInner({
           <span className="seatmap-editor__tool-options-title">{t("seatmapEditor.toolOptions.title", "Tool Options")}</span>
           <div className="seatmap-editor__tool-options-divider" />
           {isGridOptionsOpen && renderGridOptionsCard()}
+          {isEditorSettingsOpen && renderAutosaveSettingsCard()}
           {isEditorSettingsOpen && renderMotionSettingsCard()}
         </>
       );

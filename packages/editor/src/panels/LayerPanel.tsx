@@ -23,6 +23,7 @@ export function LayerPanel({
   const t = (key: string, fallback: string, values?: Record<string, string | number>) =>
     translateEditorText(translate, key, fallback, values);
   if (!venue) return null;
+  const shouldScrollSections = venue.sections.length > 3;
 
   const findSectionForSeat = (seatId: string): string | null => {
     for (const section of venue.sections) {
@@ -43,48 +44,50 @@ export function LayerPanel({
         {t("seatmapEditor.layerPanel.title", "Layers")}
       </div>
 
-      <div
-        className="seatmap-editor__panel-list"
-        role="listbox"
-        aria-label={t("seatmapEditor.layerPanel.ariaLabel", "Venue sections")}
-        aria-multiselectable="true"
-      >
-        {venue.sections.map((section: Section) => {
-          const seatCount = section.rows.reduce((t, r) => t + r.seats.length, 0);
-          const isActive = storeSelectedSectionIds.has(section.id) || section.id === selectedSectionIdFromSeats;
-          const catColor =
-            venue.categories.find((c) => c.id === section.categoryId)?.color
-            ?? "var(--seatmap-editor-text-muted, #666)";
+      <div className={shouldScrollSections ? "seatmap-editor__panel-scroll seatmap-editor__panel-scroll--sections" : undefined}>
+        <div
+          className="seatmap-editor__panel-list"
+          role="listbox"
+          aria-label={t("seatmapEditor.layerPanel.ariaLabel", "Venue sections")}
+          aria-multiselectable="true"
+        >
+          {venue.sections.map((section: Section) => {
+            const seatCount = section.rows.reduce((t, r) => t + r.seats.length, 0);
+            const isActive = storeSelectedSectionIds.has(section.id) || section.id === selectedSectionIdFromSeats;
+            const catColor =
+              venue.categories.find((c) => c.id === section.categoryId)?.color
+              ?? "var(--seatmap-editor-text-muted, #666)";
 
-          return (
-            <button
-              key={section.id}
-              type="button"
-              role="option"
-              aria-selected={isActive}
-              onClick={(event) =>
-                onSelectSection(section.id, {
-                  multi: event.ctrlKey || event.metaKey,
-                })
-              }
-              className={`seatmap-editor__panel-list-item seatmap-editor__panel-list-item--interactive seatmap-editor__panel-list-item--interactive-button${isActive ? " is-active" : ""}`}
-            >
-              <div
-                className="seatmap-editor__table-category-swatch"
-                aria-hidden="true"
-                style={{ background: catColor }}
-              />
-              <div className="seatmap-editor__panel-content-grow">
-                <div className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate">
-                  {section.label}
+            return (
+              <button
+                key={section.id}
+                type="button"
+                role="option"
+                aria-selected={isActive}
+                onClick={(event) =>
+                  onSelectSection(section.id, {
+                    multi: event.ctrlKey || event.metaKey,
+                  })
+                }
+                className={`seatmap-editor__panel-list-item seatmap-editor__panel-list-item--interactive seatmap-editor__panel-list-item--interactive-button${isActive ? " is-active" : ""}`}
+              >
+                <div
+                  className="seatmap-editor__table-category-swatch"
+                  aria-hidden="true"
+                  style={{ background: catColor }}
+                />
+                <div className="seatmap-editor__panel-content-grow">
+                  <div className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate">
+                    {section.label}
+                  </div>
+                  <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--small">
+                    {t("seatmapEditor.layerPanel.sectionMeta", "{rows} rows, {seats} seats", { rows: section.rows.length, seats: seatCount })}
+                  </div>
                 </div>
-                <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--small">
-                  {t("seatmapEditor.layerPanel.sectionMeta", "{rows} rows, {seats} seats", { rows: section.rows.length, seats: seatCount })}
-                </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {venue.sections.length === 0 && (

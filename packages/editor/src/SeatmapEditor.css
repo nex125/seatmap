@@ -958,6 +958,10 @@
   width: 56px;
 }
 
+.seatmap-editor__input--wide {
+  width: 72px;
+}
+
 .seatmap-editor__input-stepper {
   display: inline-flex;
   align-items: center;
@@ -1440,6 +1444,21 @@
 
 .seatmap-editor__panel-scroll--md {
   max-height: 220px;
+}
+
+.seatmap-editor__panel-scroll--sections {
+  max-height: 188px;
+  margin-bottom: 10px;
+}
+
+.seatmap-editor__panel-scroll--categories {
+  max-height: 184px;
+  margin-bottom: 10px;
+}
+
+.seatmap-editor__panel-scroll--statuses {
+  max-height: 140px;
+  margin-bottom: 10px;
 }
 
 .seatmap-editor__panel-list-item {

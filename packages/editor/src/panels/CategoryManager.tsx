@@ -50,7 +50,6 @@ export function CategoryManager({
   venue,
   history,
   store,
-  fetchCategoryPrices,
   translate,
   style,
   locale = "en-US",
@@ -64,12 +63,10 @@ export function CategoryManager({
   const [editingName, setEditingName] = useState("");
   const [editingColor, setEditingColor] = useState("#dfcd72");
   const [isPriceManagerOpen, setIsPriceManagerOpen] = useState(false);
-  const [isFetchingPrices, setIsFetchingPrices] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [syncStatus, setSyncStatus] = useState<"not-synced" | "syncing" | "synced" | "failed">("not-synced");
   const [overridePriceDrafts, setOverridePriceDrafts] = useState<Record<string, string>>({});
 
   if (!venue) return null;
+  const shouldScrollCategories = venue.categories.length > 4;
 
   const formatPrice = (price?: number) =>
     new Intl.NumberFormat(locale, {
@@ -91,8 +88,6 @@ export function CategoryManager({
       initialDrafts[category.id] = Number.isFinite(value) ? String(value) : "";
     }
     setOverridePriceDrafts(initialDrafts);
-    setFetchError(null);
-    setSyncStatus("not-synced");
     setIsPriceManagerOpen(true);
   };
 
@@ -189,57 +184,6 @@ export function CategoryManager({
         store.getState().setVenue(previousVenue);
       },
     });
-  };
-
-  const syncPricesFromBackend = async () => {
-    if (!fetchCategoryPrices) return;
-    setFetchError(null);
-    setIsFetchingPrices(true);
-    setSyncStatus("syncing");
-    try {
-      const currentVenue = store.getState().venue;
-      if (!currentVenue) return;
-      const categoryIds = currentVenue.categories.map((category) => category.id);
-      const backendPrices = await fetchCategoryPrices(categoryIds);
-      const previousVenue = currentVenue;
-      const nextVenue: Venue = {
-        ...currentVenue,
-        categories: currentVenue.categories.map((category) => {
-          const nextPrice = backendPrices[category.id];
-          return { ...category, backendPrice: Number.isFinite(nextPrice) ? nextPrice : 0 };
-        }),
-      };
-      history.execute({
-        description: "Sync prices from backend",
-        execute: () => {
-          const cur = store.getState().venue;
-          if (!cur) return;
-          store.getState().setVenue(nextVenue);
-        },
-        undo: () => {
-          const cur = store.getState().venue;
-          if (!cur) return;
-          store.getState().setVenue(previousVenue);
-        },
-      });
-      setSyncStatus("synced");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t("seatmapEditor.categoryManager.failedToLoadPrices", "Failed to load prices.");
-      setFetchError(message);
-      const currentVenue = store.getState().venue;
-      if (currentVenue) {
-        store.getState().setVenue({
-          ...currentVenue,
-          categories: currentVenue.categories.map((category) => ({
-            ...category,
-            backendPrice: 0,
-          })),
-        });
-      }
-      setSyncStatus("failed");
-    } finally {
-      setIsFetchingPrices(false);
-    }
   };
 
   const toggleOverride = (categoryId: string, enabled: boolean) => {
@@ -344,74 +288,78 @@ export function CategoryManager({
         {t("seatmapEditor.categoryManager.title", "Pricing categories")}
       </div>
 
-      {venue.categories.map((cat: PricingCategory) => {
-        const isEditing = editingId === cat.id;
-        return (
-          <div
-            key={cat.id}
-            className="seatmap-editor__panel-list-item"
-          >
-            <span className="seatmap-editor__color-picker-shell">
-              <span
-                aria-hidden="true"
-                className="seatmap-editor__color-picker-dot"
-                style={{ background: isEditing ? editingColor : cat.color }}
-              />
-              <input
-                type="color"
-                value={isEditing ? editingColor : cat.color}
-                onChange={(e) => isEditing && setEditingColor(e.target.value)}
-                disabled={!isEditing}
-                className="seatmap-editor__color-picker-input"
-                data-editable={isEditing ? "true" : "false"}
-                title={isEditing ? t("seatmapEditor.categoryManager.pickCategoryColor", "Pick category color") : t("seatmapEditor.categoryManager.enableEditModeForColor", "Enable edit mode to change color")}
-              />
-            </span>
-            {isEditing ? (
-              <input
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveEdit()}
-                className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
-              />
-            ) : (
+      <div className={shouldScrollCategories ? "seatmap-editor__panel-scroll seatmap-editor__panel-scroll--categories" : undefined}>
+        <div className="seatmap-editor__panel-list">
+          {venue.categories.map((cat: PricingCategory) => {
+            const isEditing = editingId === cat.id;
+            return (
               <div
-                className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate"
-                title={cat.name}
+                key={cat.id}
+                className="seatmap-editor__panel-list-item"
               >
-                {cat.name}
-              </div>
-            )}
-            {isEditing ? (
-              <>
-                <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  {t("seatmapEditor.common.save", "Save")}
-                </button>
-                <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  {t("seatmapEditor.common.cancel", "Cancel")}
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="seatmap-editor__panel-muted seatmap-editor__panel-price">
-                  {formatPrice(effectivePrice(cat))}
+                <span className="seatmap-editor__color-picker-shell">
+                  <span
+                    aria-hidden="true"
+                    className="seatmap-editor__color-picker-dot"
+                    style={{ background: isEditing ? editingColor : cat.color }}
+                  />
+                  <input
+                    type="color"
+                    value={isEditing ? editingColor : cat.color}
+                    onChange={(e) => isEditing && setEditingColor(e.target.value)}
+                    disabled={!isEditing}
+                    className="seatmap-editor__color-picker-input"
+                    data-editable={isEditing ? "true" : "false"}
+                    title={isEditing ? t("seatmapEditor.categoryManager.pickCategoryColor", "Pick category color") : t("seatmapEditor.categoryManager.enableEditModeForColor", "Enable edit mode to change color")}
+                  />
                 </span>
-                <button onClick={() => startEdit(cat)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
-                  {t("seatmapEditor.common.edit", "Edit")}
-                </button>
-                <button
-                  onClick={() => removeCategory(cat.id)}
-                  className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
-                  disabled={venue.categories.length <= 1}
-                  title={venue.categories.length <= 1 ? t("seatmapEditor.categoryManager.atLeastOneCategory", "At least one category is required") : t("seatmapEditor.categoryManager.deleteCategory", "Delete category")}
-                >
-                  ✕
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })}
+                {isEditing ? (
+                  <input
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveEdit()}
+                    className="seatmap-editor__panel-input seatmap-editor__panel-input--grow"
+                  />
+                ) : (
+                  <div
+                    className="seatmap-editor__panel-text seatmap-editor__panel-text--truncate"
+                    title={cat.name}
+                  >
+                    {cat.name}
+                  </div>
+                )}
+                {isEditing ? (
+                  <>
+                    <button onClick={saveEdit} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                      {t("seatmapEditor.common.save", "Save")}
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                      {t("seatmapEditor.common.cancel", "Cancel")}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="seatmap-editor__panel-muted seatmap-editor__panel-price">
+                      {formatPrice(effectivePrice(cat))}
+                    </span>
+                    <button onClick={() => startEdit(cat)} className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny">
+                      {t("seatmapEditor.common.edit", "Edit")}
+                    </button>
+                    <button
+                      onClick={() => removeCategory(cat.id)}
+                      className="seatmap-editor__panel-button seatmap-editor__panel-button--tiny"
+                      disabled={venue.categories.length <= 1}
+                      title={venue.categories.length <= 1 ? t("seatmapEditor.categoryManager.atLeastOneCategory", "At least one category is required") : t("seatmapEditor.categoryManager.deleteCategory", "Delete category")}
+                    >
+                      ✕
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="seatmap-editor__panel-row seatmap-editor__panel-row--spaced">
         <span className="seatmap-editor__color-picker-shell seatmap-editor__color-picker-shell--lg">
@@ -457,46 +405,15 @@ export function CategoryManager({
                 {t("seatmapEditor.categoryManager.categoryPrices", "Category prices")}
               </div>
               <div className="seatmap-editor__modal-actions">
-                <button
-                  onClick={syncPricesFromBackend}
-                  disabled={!fetchCategoryPrices || isFetchingPrices}
-                  className="seatmap-editor__panel-button"
-                  title={fetchCategoryPrices ? t("seatmapEditor.categoryManager.loadLatestPrices", "Load latest prices from backend") : t("seatmapEditor.categoryManager.backendSyncNotConfigured", "Backend price sync is not configured")}
-                >
-                  {isFetchingPrices ? t("seatmapEditor.categoryManager.syncing", "Syncing...") : t("seatmapEditor.categoryManager.syncWithBackend", "Sync with backend")}
-                </button>
                 <button onClick={() => setIsPriceManagerOpen(false)} className="seatmap-editor__panel-button">
                   {t("seatmapEditor.common.close", "Close")}
                 </button>
               </div>
             </div>
 
-              <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--spaced">
+            <div className="seatmap-editor__panel-muted seatmap-editor__panel-muted--spaced">
               {t("seatmapEditor.categoryManager.backendReadOnlyNote", "Backend prices are read-only. Override temporarily uses a custom category price for this seatmap.")}
             </div>
-            <div
-              className={
-                syncStatus === "synced"
-                  ? "seatmap-editor__status-line seatmap-editor__status-line--success"
-                  : syncStatus === "failed"
-                    ? "seatmap-editor__status-line seatmap-editor__status-line--error"
-                    : "seatmap-editor__status-line seatmap-editor__status-line--idle"
-              }
-            >
-              {t("seatmapEditor.categoryManager.syncStatus", "Sync status:")}{" "}
-              {syncStatus === "not-synced"
-                ? t("seatmapEditor.categoryManager.status.notSynced", "Not synced")
-                : syncStatus === "syncing"
-                  ? t("seatmapEditor.categoryManager.status.syncing", "Syncing...")
-                  : syncStatus === "synced"
-                    ? t("seatmapEditor.categoryManager.status.synced", "Synced")
-                    : t("seatmapEditor.categoryManager.status.error", "Error")}
-            </div>
-            {fetchError && (
-              <div className="seatmap-editor__status-line seatmap-editor__status-line--error">
-                {fetchError}
-              </div>
-            )}
 
             <div className="seatmap-editor__table-grid">
               <div className="seatmap-editor__table-head">{t("seatmapEditor.categoryManager.table.category", "Category")}</div>
