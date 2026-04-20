@@ -3,10 +3,13 @@ import { join } from "node:path";
 
 const packageRoot = process.cwd();
 const distTypesPath = join(packageRoot, "dist/index.d.ts");
+const distRolledTypesPath = join(packageRoot, "dist/_tsup-dts-rollup.d.ts");
 const distJsPath = join(packageRoot, "dist/index.js");
 
 const distTypes = readFileSync(distTypesPath, "utf8");
+const distRolledTypes = readFileSync(distRolledTypesPath, "utf8");
 const distJs = readFileSync(distJsPath, "utf8");
+const combinedDistTypes = `${distTypes}\n${distRolledTypes}`;
 
 const requiredTypeFragments = [
   "locale?: string;",
@@ -27,14 +30,14 @@ const requiredRuntimeFragments = [
   "seatmapViewerSharedThemeClassNames",
 ];
 
-const missingTypes = requiredTypeFragments.filter((fragment) => !distTypes.includes(fragment));
+const missingTypes = requiredTypeFragments.filter((fragment) => !combinedDistTypes.includes(fragment));
 const missingRuntime = requiredRuntimeFragments.filter((fragment) => !distJs.includes(fragment));
 
 if (missingTypes.length > 0 || missingRuntime.length > 0) {
   const lines: string[] = ["viewer package export verification failed."];
 
   if (missingTypes.length > 0) {
-    lines.push(`Missing in dist/index.d.ts: ${missingTypes.join(", ")}`);
+    lines.push(`Missing in generated declaration output: ${missingTypes.join(", ")}`);
   }
 
   if (missingRuntime.length > 0) {

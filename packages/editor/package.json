@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-editor",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -32,8 +32,8 @@
     "prepublishOnly": "bun run prepack"
   },
   "dependencies": {
-    "@nex125/seatmap-core": "^0.1.15",
-    "@nex125/seatmap-react": "^0.1.18",
+    "@nex125/seatmap-core": "^0.1.17",
+    "@nex125/seatmap-react": "^0.1.20",
     "zustand": "^5.0.12"
   },
   "peerDependencies": {
