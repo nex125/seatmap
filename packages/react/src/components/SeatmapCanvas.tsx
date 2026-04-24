@@ -33,6 +33,12 @@ const SECTION_LABEL_COLLISION_PADDING_PX = 10;
 const SECTION_LABEL_MIN_SCALE_OVERVIEW = 0.42;
 const SECTION_LABEL_MIN_SCALE_SECTION = 0.5;
 
+type SectionLabelTextCacheEntry = {
+  text: Text;
+  width: number;
+  height: number;
+};
+
 function easeOutCubic(t: number): number {
   const p = 1 - t;
   return 1 - p * p * p;
@@ -270,7 +276,7 @@ export function SeatmapCanvas({
   // Background image texture cache
   const bgTextureRef = useRef<Texture | null>(null);
   const bgUrlRef = useRef<string>("");
-  const labelTextCacheRef = useRef<Map<string, Text>>(new Map());
+  const labelTextCacheRef = useRef<Map<string, SectionLabelTextCacheEntry>>(new Map());
 
   // Touch tracking
   const touchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -792,10 +798,10 @@ export function SeatmapCanvas({
           : false;
         if ((shouldShowFixedAreaLabel || (canShowOverviewLabel && sectionLabelVisible)) && bounds && labelPos && section.label.trim().length > 0) {
           const sectionLabelKey = `section:${section.id}:${lod}:${section.label}`;
-          let sectionLabel = labelTextCacheRef.current.get(sectionLabelKey);
-          if (!sectionLabel) {
+          let sectionLabelEntry = labelTextCacheRef.current.get(sectionLabelKey);
+          if (!sectionLabelEntry) {
             const textResolution = 1;
-            sectionLabel = new Text({
+            const sectionLabel = new Text({
               text: section.label,
               resolution: textResolution,
               style: {
@@ -807,11 +813,17 @@ export function SeatmapCanvas({
               },
             });
             sectionLabel.eventMode = "none";
-            labelTextCacheRef.current.set(sectionLabelKey, sectionLabel);
+            sectionLabelEntry = {
+              text: sectionLabel,
+              width: sectionLabel.width,
+              height: sectionLabel.height,
+            };
+            labelTextCacheRef.current.set(sectionLabelKey, sectionLabelEntry);
           }
-          const labelScale = getSectionLabelScale(sectionLabel.width, sectionLabel.height, bounds, lod);
+          const sectionLabel = sectionLabelEntry.text;
+          const labelScale = getSectionLabelScale(sectionLabelEntry.width, sectionLabelEntry.height, bounds, lod);
           const labelWorldBox = labelScale && sectionLabelWorld
-            ? getLabelWorldAABB(sectionLabelWorld, sectionLabel.width * labelScale, sectionLabel.height * labelScale, zoom)
+            ? getLabelWorldAABB(sectionLabelWorld, sectionLabelEntry.width * labelScale, sectionLabelEntry.height * labelScale, zoom)
             : null;
           const overlapsExistingLabel = !shouldShowFixedAreaLabel && labelWorldBox
             ? occupiedLabelBoxes.some((box) => intersectsAABB(box, labelWorldBox))

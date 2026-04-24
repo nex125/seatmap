@@ -1,0 +1,12 @@
+.git
+.gitignore
+node_modules
+dist
+.turbo
+coverage
+.devcontainer
+*.tsbuildinfo
+*.log
+.DS_Store
+seat.json
+package-lock.json
