@@ -49,6 +49,7 @@ export interface SeatmapViewerProps {
   onCartEvent?: (event: SeatmapCartEvent) => void;
   locale?: string;
   currency?: string;
+  maxSelectedSeats?: number;
   styles?: SeatmapViewerStyles;
   classNames?: SeatmapViewerClassNames;
   messages?: Partial<SeatmapViewerMessages>;
@@ -250,6 +251,7 @@ export function SeatmapViewerContent({
   onCartEvent,
   locale = "en-US",
   currency = "BYN",
+  maxSelectedSeats,
   styles = {},
   classNames = {},
   messages: messagesOverride = {},
@@ -379,6 +381,8 @@ export function SeatmapViewerContent({
   );
 
   const totalSelectedSeats = useMemo(() => cartSeats.length, [cartSeats]);
+  const isSelectionOverLimit =
+    typeof maxSelectedSeats === "number" && totalSelectedSeats > maxSelectedSeats;
   const totalCost = useMemo(() => cartSeats.reduce((sum, seat) => sum + seat.unitPrice, 0), [cartSeats]);
   const totalServiceFee = useMemo(() => cartSeats.reduce((sum, seat) => sum + seat.serviceFee, 0), [cartSeats]);
   const effectiveTooltipRenderer = useCallback(
@@ -562,9 +566,9 @@ export function SeatmapViewerContent({
   );
 
   const handleProceed = useCallback(() => {
-    if (cartPayload.seats.length === 0) return;
+    if (cartPayload.seats.length === 0 || isSelectionOverLimit) return;
     emitCartEvent({ type: "cart-proceed-clicked", payload: cartPayload });
-  }, [cartPayload, emitCartEvent]);
+  }, [cartPayload, emitCartEvent, isSelectionOverLimit]);
 
   const cartWidth = viewportWidth > 1200 ? Math.floor(viewportWidth / 5) : viewportWidth;
 
@@ -631,6 +635,7 @@ export function SeatmapViewerContent({
           type="button"
           className={mergeClassNames("seatmap-viewer__cart-chip-base", classNames.cartChip)}
           onClick={() => setIsCartOpen(true)}
+          disabled={isSelectionOverLimit}
           style={styles.cartChip}
         >
           {messages.cartChipLabel(totalSelectedSeats)}
@@ -782,12 +787,12 @@ export function SeatmapViewerContent({
               className={mergeClassNames("seatmap-viewer__cart-summary-base", classNames.cartSummary)}
               style={styles.cartSummary}
             >
-              {totalServiceFee > 0 && <div>{messages.cartServiceFeeSummary(formatMoney(totalServiceFee, locale, currency))}</div>}
               <div>{messages.cartSummary(totalSelectedSeats, formatMoney(totalCost, locale, currency))}</div>
+              {totalServiceFee > 0 && <div>{messages.cartServiceFeeSummary(formatMoney(totalServiceFee, locale, currency))}</div>}
             </div>
             <button
               type="button"
-              disabled={cartSeats.length === 0}
+              disabled={cartSeats.length === 0 || isSelectionOverLimit}
               onClick={handleProceed}
               className={mergeClassNames("seatmap-viewer__cart-proceed-button-base", classNames.cartProceedButton)}
               style={styles.cartProceedButton}
@@ -814,6 +819,7 @@ export function SeatmapViewer({
   onCartEvent,
   locale,
   currency,
+  maxSelectedSeats,
   styles,
   classNames,
   messages,
@@ -834,6 +840,7 @@ export function SeatmapViewer({
           onCartEvent={onCartEvent}
           locale={locale}
           currency={currency}
+          maxSelectedSeats={maxSelectedSeats}
           styles={styles}
           classNames={classNames}
           messages={messages}

@@ -14,6 +14,7 @@ const combinedDistTypes = `${distTypes}\n${distRolledTypes}`;
 const requiredTypeFragments = [
   "locale?: string;",
   "currency?: string;",
+  "maxSelectedSeats?: number;",
   "styles?: SeatmapViewerStyles;",
   "classNames?: SeatmapViewerClassNames;",
   "messages?: Partial<SeatmapViewerMessages>;",

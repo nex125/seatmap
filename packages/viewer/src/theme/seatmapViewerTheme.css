@@ -80,12 +80,12 @@
   transition: box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease, background-color 160ms ease;
 }
 
-.seatmap-viewer-theme .seatmap-viewer__cart-chip:hover {
+.seatmap-viewer-theme .seatmap-viewer__cart-chip:hover:not(:disabled) {
   background: color-mix(in srgb, var(--seatmap-viewer-surface-elevated) 92%, var(--seatmap-viewer-state-layer-hover));
   border-color: color-mix(in srgb, var(--seatmap-viewer-border) 65%, var(--seatmap-viewer-state-layer-hover));
 }
 
-.seatmap-viewer-theme .seatmap-viewer__cart-chip:active {
+.seatmap-viewer-theme .seatmap-viewer__cart-chip:active:not(:disabled) {
   transform: translateY(1px);
   background: color-mix(in srgb, var(--seatmap-viewer-surface-elevated) 88%, var(--seatmap-viewer-state-layer-pressed));
 }
@@ -93,6 +93,12 @@
 .seatmap-viewer-theme .seatmap-viewer__cart-chip:focus-visible {
   outline: 2px solid var(--seatmap-viewer-focus-ring);
   outline-offset: 2px;
+}
+
+.seatmap-viewer-theme .seatmap-viewer__cart-chip:disabled {
+  box-shadow: none;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .seatmap-viewer-theme .seatmap-viewer__cart-popup {

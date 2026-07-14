@@ -1,6 +1,6 @@
 {
   "name": "@nex125/seatmap-viewer",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
